@@ -1,0 +1,18 @@
+all data file grabbers are indicated by "dat" in their variable names
+
+#=============================================#
+#=============================================#
+#=============================================#
+
+tags$br(),tags$br(),tags$br(),tags$br(),tags$br(),
+                 tags$br(),tags$br(),tags$br(),tags$br(),tags$br(),
+
+list of reactive objects
+Data()
+Table()
+
+
+
+
+
+all user-input renderui are named with Ctrl at the back
