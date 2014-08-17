@@ -25,7 +25,7 @@ shinyServer(function(input,output){
   # 2. Data()[[2]] is the type of variable: continuous or categorical
   # 3. Data()[[3]] is the number of classes for categorical attributes, NA for cont.
   
-  #here begins the real work
+  #here begins the real work..
   
   #===============REACTIVE======================#
 
