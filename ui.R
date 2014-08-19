@@ -2,15 +2,19 @@ require(shiny)
 
 shinyUI(pageWithSidebar(
   
+  
+  
   #header panel
   headerPanel(
-    #headerPanel(getwd())
-    imageOutput("logoPNG",width="150px",height="50px")
+    imageOutput("logoPNG",width="180px",height="50px"),
+    windowTitle="Redhyte"
   ),#end header panel
   
   #sidebar panel
   sidebarPanel(
-    imageOutput("titlePNG",height="100px"),
+    imageOutput("titlePNG",height="70px"),
+    
+    tags$hr(),
     
     #data input
     fileInput('datFile', tags$h5(tags$strong('Choose .csv or .txt file to upload local file')),

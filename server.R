@@ -1,7 +1,7 @@
 require(shiny)
 
 titlePNG<-"images/title.png"
-logoPNG<-"images/logo.png"
+logoPNG<-"images/logo2.png"
 
 shinyServer(function(input,output){
   
