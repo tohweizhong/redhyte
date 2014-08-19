@@ -1,14 +1,17 @@
 require(shiny)
 
-shinyUI(pageWithSidebar(
+shinyUI(fluidPage(
   
+  titlePanel(imageOutput("logoPNG",width="180px",height="50px"),
+             tags$head(tags$link(rel="icon",type="image/png",href="browserlogo.png"),
+                       tags$title("Redhyte"))
+            ),
   
-  
-  #header panel
-  headerPanel(
-    imageOutput("logoPNG",width="180px",height="50px"),
-    windowTitle="Redhyte"
-  ),#end header panel
+#   #header panel
+#   headerPanel(
+#     
+#     windowTitle="Redhyte"
+#   ),#end header panel
   
   #sidebar panel
   sidebarPanel(
