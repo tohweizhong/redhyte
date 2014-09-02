@@ -49,6 +49,7 @@ shinyServer(function(input,output){
       }
     }
     names(typ)<-names(numCl)<-colnames(df)
+    
     return(list(df,typ,numCl))
   })
   
@@ -72,8 +73,13 @@ shinyServer(function(input,output){
   
   #second tab panel: "2. Data visualization"
   
-  #create two dropdown boxes to choose two variables,
-  #display boxplot and histogram for simple eda
+  #create two dropdown boxes to choose two attributes,
+  #display
+  # 1. Type of attribute (continuous or categorical)
+  # 2. Tukey's five number summary or counts
+  # 3. histogram or barplot
+  # 4. boxplots
+  # 5. scatterplot for simple eda
   output$edaCtrl1<-renderUI({
     selectizeInput("whichAttr1","Select attribute to visualize",colnames(Data()[[1]]))
   })
@@ -115,7 +121,7 @@ shinyServer(function(input,output){
   })
   
   output$tukeyfive2<-renderTable({
-    if(Data()[[2]][input$whichAttr1]=="Cont"){
+    if(Data()[[2]][input$whichAttr2]=="Cont"){
       qt<-as.data.frame(fivenum(Data()[[1]][,input$whichAttr2]))
       rownames(qt)<-c("Min","25%","Median","75%","Max")
       colnames(qt)<-NULL
@@ -161,6 +167,14 @@ shinyServer(function(input,output){
       boxplot(Data()[[1]][,input$whichAttr2])
   })
   
+  #plotting scatterplot
+  output$scatterplot<-renderPlot({
+    plot(Data()[[1]][,input$whichAttr2]~
+           Data()[[1]][,input$whichAttr1],
+         xlab=input$whichAttr1,
+         ylab=input$whichAttr2)
+  })
+  
   
 #=============================================#
 #==============3. Hypo testing================#
@@ -168,7 +182,7 @@ shinyServer(function(input,output){
   
   #third tab panel: "3. Hypothesis testing"
   
-  #dropdown boxes
+  #dropdown boxes to select tgt and cmp attr
   output$targetCtrl<-renderUI({
     selectizeInput("targetAttr","Indicate target attribute (May be continuous or categorical)",colnames(Data()[[1]]))
   })
@@ -176,7 +190,26 @@ shinyServer(function(input,output){
   output$comparingCtrl<-renderUI({
     selectizeInput("comparingAttr","Indicate comparing attribute (Must be categorical)",colnames(Data()[[1]]))
   })
-  
+
+  #checkboxes to select classes of Atgt and Acmp to form starting ctx
+  output$tgtClassCtrl<-renderUI({
+    if(Data()[[2]][input$targetAttr]=="Cate"){
+      checkboxGroupInput("whichtgtclasses",
+                         "Indicate which target attribute classes to use as part of starting context",
+                         choices=c("Use all classes",levels(Data()[[1]][,input$targetAttr]))
+                         )
+    }
+  })
+
+  output$cmpClassCtrl<-renderUI({
+    if(Data()[[2]][input$comparingAttr]=="Cate"){
+      checkboxGroupInput("whichcmpclasses",
+                         "Indicate which comparing attribute class to use as part of starting context",
+                         choices=c("Use all classes",levels(Data()[[1]][,input$comparingAttr]))
+                         )
+    }
+  })
+ 
   #display type of attribute: continuous or categorical
   output$targetType<-renderText({
     if(Data()[[2]][input$targetAttr]=="Cont")
@@ -206,6 +239,16 @@ shinyServer(function(input,output){
     colnames(qt)<-NULL
     qt
   })
+
+#   #===============REACTIVE======================#
+#   Data2<-reactive({
+#     
+#     dfWithCtx<-Data()[[1]]
+#     rowsToUse<-intersect(which(dfWithCtx[,input$targetAttr] == input$whichtgtclasses),
+#                          which(dfWithCtx[,input$comparingAttr] == input$whichcmpclasses))
+#     
+#     print(rowsToUse)
+#   })
 
   #generate contingency table if target attribute is cate.
   #else generate a comparison table

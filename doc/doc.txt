@@ -12,7 +12,7 @@ Data()
 Table()
 
 
-
+Data() has stringsAsFactors=T
 
 
 all user-input renderui are named with Ctrl at the back

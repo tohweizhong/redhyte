@@ -77,6 +77,9 @@ shinyUI(fluidPage(
                  tableOutput("tukeyfive2"),
                  plotOutput("hist2"),
                  plotOutput("boxplot2")
+               ),
+               sidebarPanel(
+                 plotOutput("scatterplot")
                )
                
                
@@ -84,22 +87,22 @@ shinyUI(fluidPage(
 
       tabPanel("3. Hypothesis testing",
                #some definitions and explanation
-               tags$h4("It's testing time."),
-               tags$h5("Definitions:"),
-               tags$h5("-> Target attribute: attribute representing the result or desired outcome, e.g. (lowering of) cholesterol levels"),
-               tags$h5("-> Comparing attribute: attribute representing the act of comparison and/or intervention, e.g. statin vs. placebo"),
-               tags$h5("Note that while the target attribute can be either continuous or discrete, the comparing attribute must be discrete (2-class)."),
-               tags$h4("Let's start by indicating target and comparing attributes."),
+#                tags$h4("It's testing time."),
+#                tags$h5("Definitions:"),
+#                tags$h5("-> Target attribute: attribute representing the result or desired outcome, e.g. (lowering of) cholesterol levels"),
+#                tags$h5("-> Comparing attribute: attribute representing the act of comparison and/or intervention, e.g. statin vs. placebo"),
+#                tags$h5("Note that while the target attribute can be either continuous or discrete, the comparing attribute must be discrete (2-class)."),
+#                tags$h4("Let's start by indicating target and comparing attributes."),
                sidebarPanel(
 #                  tags$style(type="text/css", '#leftPanel { width:200px; float:left;}'),
 #                  id = "leftPanel",
                  htmlOutput("targetCtrl"),
                  verbatimTextOutput("targetType"),
-                 #tableOutput("targetTukeyfive"),
-               
+                 htmlOutput("tgtClassCtrl"),
+                 
                  htmlOutput("comparingCtrl"),
-                 verbatimTextOutput("comparingType")
-                 #tableOutput("comparingTukeyfive")
+                 verbatimTextOutput("comparingType"),
+                 htmlOutput("cmpClassCtrl")
                ),
                tags$h6("Contingency table"),
                tableOutput("contTable"),
