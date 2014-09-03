@@ -114,7 +114,10 @@ shinyUI(fluidPage(
                  tableOutput("firstTest")
                
               )
-          )
+          ),
+      tabPanel("Test Data2()",
+               tableOutput("testData2")
+               )
 
     )
     

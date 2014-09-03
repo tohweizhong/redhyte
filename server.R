@@ -240,15 +240,58 @@ shinyServer(function(input,output){
     qt
   })
 
-#   #===============REACTIVE======================#
-#   Data2<-reactive({
-#     
-#     dfWithCtx<-Data()[[1]]
-#     rowsToUse<-intersect(which(dfWithCtx[,input$targetAttr] == input$whichtgtclasses),
-#                          which(dfWithCtx[,input$comparingAttr] == input$whichcmpclasses))
-#     
-#     print(rowsToUse)
-#   })
+  #===============REACTIVE======================#
+
+  #Because Data() contains information regarding the attributes,
+  #while Data2() considers starting context formed by specific
+  #classes of Atgt and Acmp, information in Data() can be re-used,
+  #except Data()[[3]].
+  #Data()[[3]] contains the number of classes for each categorical attribute,
+  #which changes for Atgt and Acmp
+  #030914: will return Data()[[[3]]] as it is anyway for now.
+
+  Data2<-reactive({
+    
+    dfWithCtx<-Data()[[1]]
+    
+    #consider the type of Atgt and Acmp
+    if(Data()[[2]][input$targetAttr] == "Cate" && Data()[[2]][input$comparingAttr] == "Cate"){
+      #use all?
+      if(input$whichtgtclasses == "Use all classes" && input$whichcmpclasses == "Use all classes")
+        rowsToUse<-seq(nrow(dfWithCtx)) #all rows
+      else if(input$whichtgtclasses == "Use all classes" && input$whichcmpclasses != "Use all classes")
+        rowsToUse<-which(dfWithCtx[,input$comparingAttr] == input$whichcmpclasses)
+      else if(input$whichtgtclasses != "Use all classes" && input$whichcmpclasses == "Use all classes")
+        rowsToUse<-which(dfWithCtx[,input$targetAttr] == input$whichtgtclasses)
+      else
+        rowsToUse<-intersect(which(dfWithCtx[,input$targetAttr] == input$whichtgtclasses),
+                             which(dfWithCtx[,input$comparingAttr] == input$whichcmpclasses)
+                             )
+    }
+    else if(Data()[[2]][input$targetAttr] == "Cate" && Data()[[2]][input$comparingAttr] != "Cate"){
+      if(input$whichtgtclasses == "Use all classes")
+        rowsToUse<-seq(nrow(dfWithCtx)) #all rows
+      else if(input$whichtgtclasses != "Use all classes")
+        rowsToUse<-which(dfWithCtx[,input$targetAttr] == input$whichtgtclasses)
+    }
+    else if(Data()[[2]][input$targetAttr] != "Cate" && Data()[[2]][input$comparingAttr] == "Cate"){
+      if(input$whichcmpclasses == "Use all classes")
+        rowsToUse<-seq(nrow(dfWithCtx)) #all rows
+      else if(input$whichcmpclasses != "Use all classes")
+        rowsToUse<-which(dfWithCtx[,input$comparingAttr] == input$whichcmpclasses)
+    }
+        
+    dfWithCtx<-dfWithCtx[rowsToUse,]
+    
+    return(list(dfWithCtx,Data()[[2]],Data()[[3]])) #
+  })
+  
+  output$testData2<-renderTable({
+    if (is.null(Data2()[1])) return(NULL)
+    rowsToDisplay<-20
+    if(rowsToDisplay > 0.5*nrow(Data2()[[1]])) rowsToDisplay<-0.5*nrow(Data2()[[1]])
+    data.frame(Data2()[[1]][1:rowsToDisplay,])
+  },digits=3)
 
   #generate contingency table if target attribute is cate.
   #else generate a comparison table
