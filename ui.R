@@ -47,9 +47,8 @@ shinyUI(pageWithSidebar(
     tags$hr(),
     
     #transpose data
-    checkboxInput('datTranspose','Transpose data?',FALSE)
-    
-  ), #end sidebar panel
+    checkboxInput('datTranspose','Transpose data?',FALSE),
+    width=3), #end sidebar panel
   
   #main panel
   mainPanel(
@@ -69,18 +68,18 @@ shinyUI(pageWithSidebar(
                 verbatimTextOutput("type1"),
                 tableOutput("tukeyfive1"),
                 plotOutput("hist1"),
-                plotOutput("boxplot1")
-               ),
+                plotOutput("boxplot1"),
+                width=3),
                sidebarPanel(
                  htmlOutput("edaCtrl2"),
                  verbatimTextOutput("type2"),
                  tableOutput("tukeyfive2"),
                  plotOutput("hist2"),
-                 plotOutput("boxplot2")
-               ),
+                 plotOutput("boxplot2"),
+                 width=3),
                sidebarPanel(
-                 plotOutput("scatterplot")
-               )
+                 plotOutput("scatterplot"),
+                 width=4)
                
                
               ),

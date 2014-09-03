@@ -175,11 +175,10 @@ shinyServer(function(input,output){
          ylab=input$whichAttr2)
   })
   
-  
-#=============================================#
-#==============3. Hypo testing================#
-#=============================================#
-  
+  #=============================================#
+  #==============3. Hypo testing================#
+  #=============================================#
+    
   #third tab panel: "3. Hypothesis testing"
   
   #dropdown boxes to select tgt and cmp attr
@@ -250,15 +249,24 @@ shinyServer(function(input,output){
   #which changes for Atgt and Acmp
   #030914: will return Data()[[[3]]] as it is anyway for now.
 
+  #Data2() consists of *FOUR* things at the moment
+  # 1. Data()[[1]] is the data itself
+  # 2. Data()[[2]] is the type of variable: continuous or categorical
+  # 3. Data()[[3]] is the number of classes for categorical attributes, NA for cont.
+  # 4. Data()[[4]] is the ctxFlag, indicating if a starting context is being used
+  
   Data2<-reactive({
     
     dfWithCtx<-Data()[[1]]
+    ctxFlag<-TRUE
     
     #consider the type of Atgt and Acmp
     if(Data()[[2]][input$targetAttr] == "Cate" && Data()[[2]][input$comparingAttr] == "Cate"){
       #use all?
-      if(input$whichtgtclasses == "Use all classes" && input$whichcmpclasses == "Use all classes")
+      if(input$whichtgtclasses == "Use all classes" && input$whichcmpclasses == "Use all classes"){
         rowsToUse<-seq(nrow(dfWithCtx)) #all rows
+        ctxFlag<-FALSE
+      }
       else if(input$whichtgtclasses == "Use all classes" && input$whichcmpclasses != "Use all classes")
         rowsToUse<-which(dfWithCtx[,input$comparingAttr] == input$whichcmpclasses)
       else if(input$whichtgtclasses != "Use all classes" && input$whichcmpclasses == "Use all classes")
@@ -269,21 +277,25 @@ shinyServer(function(input,output){
                              )
     }
     else if(Data()[[2]][input$targetAttr] == "Cate" && Data()[[2]][input$comparingAttr] != "Cate"){
-      if(input$whichtgtclasses == "Use all classes")
+      if(input$whichtgtclasses == "Use all classes"){
         rowsToUse<-seq(nrow(dfWithCtx)) #all rows
+        ctxFlag<-FALSE
+      }
       else if(input$whichtgtclasses != "Use all classes")
         rowsToUse<-which(dfWithCtx[,input$targetAttr] == input$whichtgtclasses)
     }
     else if(Data()[[2]][input$targetAttr] != "Cate" && Data()[[2]][input$comparingAttr] == "Cate"){
-      if(input$whichcmpclasses == "Use all classes")
+      if(input$whichcmpclasses == "Use all classes"){
         rowsToUse<-seq(nrow(dfWithCtx)) #all rows
+        ctxFlag<-FALSE
+      }
       else if(input$whichcmpclasses != "Use all classes")
         rowsToUse<-which(dfWithCtx[,input$comparingAttr] == input$whichcmpclasses)
     }
         
     dfWithCtx<-dfWithCtx[rowsToUse,]
     
-    return(list(dfWithCtx,Data()[[2]],Data()[[3]])) #
+    return(list(dfWithCtx,Data()[[2]],Data()[[3]],ctxFlag)) #Data()[[3]] is incorrect for now. refer to comments above
   })
   
   output$testData2<-renderTable({
@@ -301,23 +313,45 @@ shinyServer(function(input,output){
   #reactive wrapper for table
   Table<-reactive({
     #retrieve the relevant data
-    df<-Data()[[1]][c(input$targetAttr,input$comparingAttr)]
+    print(Data2()[[4]])
+    if(!Data2()[[4]]){ #no starting ctx
     
-    #is the target attribute continuous or categorical?
-    if(Data()[[2]][input$targetAttr] == "Cate")
-      return(list(table(df),"Contingency",length(unique(df[,input$comparingAttr]))))
-    
-    else{ #target attribute is continuous
-      cl<-unique(df[,input$comparingAttr]) #all classes of comparing attribute
-      means<-NULL
-      for(i in seq(length(cl))){
-        #for a given class of the comparing attribute,
-        #compute the mean value of the target attribute
-        whichones<-which(df[,2] == cl[i]) #2nd column is comparing attribute
-        means<-c(means,mean(df[whichones,1])) #1st column is target atrribute
+      df<-Data()[[1]][c(input$targetAttr,input$comparingAttr)]
+      #is the target attribute continuous or categorical?
+      if(Data()[[2]][input$targetAttr] == "Cate")
+        return(list(table(df),"Contingency",length(unique(df[,input$comparingAttr]))))
+      
+      else{ #target attribute is continuous
+        cl<-unique(df[,input$comparingAttr]) #all classes of comparing attribute
+        means<-NULL
+        for(i in seq(length(cl))){
+          #for a given class of the comparing attribute,
+          #compute the mean value of the target attribute
+          whichones<-which(df[,2] == cl[i]) #2nd column is comparing attribute
+          means<-c(means,mean(df[whichones,1])) #1st column is target atrribute
+        }
+        names(means)<-cl
+        return(list(data.frame(means),"Comparison",length(cl)))
       }
-      names(means)<-cl
-      return(list(data.frame(means),"Comparison",length(cl)))
+    }
+    else{ #there is a starting ctx
+      df<-Data2()[[1]][c(input$targetAttr,input$comparingAttr)]
+      #is the target attribute continuous or categorical?
+      if(Data2()[[2]][input$targetAttr] == "Cate")
+        return(list(table(df),"Contingency",length(unique(df[,input$comparingAttr]))))
+      
+      else{ #target attribute is continuous
+        cl<-unique(df[,input$comparingAttr]) #all classes of comparing attribute
+        means<-NULL
+        for(i in seq(length(cl))){
+          #for a given class of the comparing attribute,
+          #compute the mean value of the target attribute
+          whichones<-which(df[,2] == cl[i]) #2nd column is comparing attribute
+          means<-c(means,mean(df[whichones,1])) #1st column is target atrribute
+        }
+        names(means)<-cl
+        return(list(data.frame(means),"Comparison",length(cl)))
+      }
     }
   })
 
