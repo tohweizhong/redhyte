@@ -1,7 +1,7 @@
 require(shiny)
 
 titlePNG<-"images/title.png"
-logoPNG<-"images/logo2.png"
+logoPNG<-"images/logo.png"
 
 shinyServer(function(input,output){
   
@@ -20,6 +20,9 @@ shinyServer(function(input,output){
   #=============================================#
   
   #grabbing the data
+  
+  #===============REACTIVE======================#
+
   #Data() consists of *THREE* things at the moment
   # 1. Data()[[1]] is the data itself
   # 2. Data()[[2]] is the type of variable: continuous or categorical
@@ -27,8 +30,6 @@ shinyServer(function(input,output){
   
   #here begins the real work..
   
-  #===============REACTIVE======================#
-
   Data<-reactive({
     datFile<-input$datFile #still just the file name
     if (is.null(datFile)) return(NULL)
@@ -183,11 +184,15 @@ shinyServer(function(input,output){
   
   #dropdown boxes to select tgt and cmp attr
   output$targetCtrl<-renderUI({
-    selectizeInput("targetAttr","Indicate target attribute (May be continuous or categorical)",colnames(Data()[[1]]))
+    selectizeInput("targetAttr",
+                   "Indicate target attribute (May be continuous or categorical)",
+                   colnames(Data()[[1]]))
   })
   
   output$comparingCtrl<-renderUI({
-    selectizeInput("comparingAttr","Indicate comparing attribute (Must be categorical)",colnames(Data()[[1]]))
+    selectizeInput("comparingAttr",
+                   "Indicate comparing attribute (Must be categorical)",
+                   colnames(Data()[[1]]))
   })
 
   #checkboxes to select classes of Atgt and Acmp to form starting ctx
@@ -195,8 +200,8 @@ shinyServer(function(input,output){
     if(Data()[[2]][input$targetAttr]=="Cate"){
       checkboxGroupInput("whichtgtclasses",
                          "Indicate which target attribute classes to use as part of starting context",
-                         choices=c("Use all classes",levels(Data()[[1]][,input$targetAttr]))
-                         )
+                         choices=c("Use all classes",levels(Data()[[1]][,input$targetAttr])),
+                         selected="Use all classes")
     }
   })
 
@@ -204,8 +209,8 @@ shinyServer(function(input,output){
     if(Data()[[2]][input$comparingAttr]=="Cate"){
       checkboxGroupInput("whichcmpclasses",
                          "Indicate which comparing attribute class to use as part of starting context",
-                         choices=c("Use all classes",levels(Data()[[1]][,input$comparingAttr]))
-                         )
+                         choices=c("Use all classes",levels(Data()[[1]][,input$comparingAttr])),
+                         selected="Use all classes")
     }
   })
  
@@ -224,20 +229,20 @@ shinyServer(function(input,output){
     type
   })
 
-  #display boxplot stats (Tukey's five)
-  output$targetTukeyfive<-renderTable({
-    qt<-as.data.frame(fivenum(Data()[[1]][,input$targetAttr]))
-    rownames(qt)<-c("Min","25%","Median","75%","Max")
-    colnames(qt)<-NULL
-    qt
-  })
-  
-  output$comparingTukeyfive<-renderTable({
-    qt<-as.data.frame(fivenum(Data()[[1]][,input$comparingAttr]))
-    rownames(qt)<-c("Min","25%","Median","75%","Max")
-    colnames(qt)<-NULL
-    qt
-  })
+#   #display boxplot stats (Tukey's five)
+#   output$targetTukeyfive<-renderTable({
+#     qt<-as.data.frame(fivenum(Data()[[1]][,input$targetAttr]))
+#     rownames(qt)<-c("Min","25%","Median","75%","Max")
+#     colnames(qt)<-NULL
+#     qt
+#   })
+#   
+#   output$comparingTukeyfive<-renderTable({
+#     qt<-as.data.frame(fivenum(Data()[[1]][,input$comparingAttr]))
+#     rownames(qt)<-c("Min","25%","Median","75%","Max")
+#     colnames(qt)<-NULL
+#     qt
+#   })
 
   #===============REACTIVE======================#
 
@@ -258,46 +263,63 @@ shinyServer(function(input,output){
   Data2<-reactive({
     
     dfWithCtx<-Data()[[1]]
-    ctxFlag<-TRUE
+    
+    #assuming no starting ctx yet
+    rowsToUse<-seq(nrow(dfWithCtx))
+    ctxFlag<-FALSE
     
     #consider the type of Atgt and Acmp
+    #starting context can only be considered for categorical attributes,
+    #ie. Atgt must be categorical while Acmp is already categorical
+    
+    #both`Atgt and Acmp are categorical
     if(Data()[[2]][input$targetAttr] == "Cate" && Data()[[2]][input$comparingAttr] == "Cate"){
       #use all?
-      if(input$whichtgtclasses == "Use all classes" && input$whichcmpclasses == "Use all classes"){
+      if(input$whichtgtclasses == "Use all classes" && input$whichcmpclasses == "Use all classes")
         rowsToUse<-seq(nrow(dfWithCtx)) #all rows
-        ctxFlag<-FALSE
+      else if(input$whichtgtclasses == "Use all classes" && input$whichcmpclasses != "Use all classes"){
+        rowsToUse<-which(dfWithCtx[,input$comparingAttr] == input$whichcmpclasses) # <------ PROBLEM IS HERE
+        ctxFlag<-TRUE
       }
-      else if(input$whichtgtclasses == "Use all classes" && input$whichcmpclasses != "Use all classes")
-        rowsToUse<-which(dfWithCtx[,input$comparingAttr] == input$whichcmpclasses)
-      else if(input$whichtgtclasses != "Use all classes" && input$whichcmpclasses == "Use all classes")
-        rowsToUse<-which(dfWithCtx[,input$targetAttr] == input$whichtgtclasses)
-      else
+      else if(input$whichtgtclasses != "Use all classes" && input$whichcmpclasses == "Use all classes"){
+        rowsToUse<-which(dfWithCtx[,input$targetAttr] == input$whichtgtclasses) # <------ PROBLEM IS HERE
+        ctxFlag<-TRUE
+      }
+      else{
         rowsToUse<-intersect(which(dfWithCtx[,input$targetAttr] == input$whichtgtclasses),
-                             which(dfWithCtx[,input$comparingAttr] == input$whichcmpclasses)
-                             )
+                             which(dfWithCtx[,input$comparingAttr] == input$whichcmpclasses)) # <------ PROBLEM IS HERE
+        ctxFlag<-TRUE
+      }
     }
+    
+    #Only Atgt is categorical and Acmp is not
+    #(does not comply to Redhyte's algorithm)
     else if(Data()[[2]][input$targetAttr] == "Cate" && Data()[[2]][input$comparingAttr] != "Cate"){
-      if(input$whichtgtclasses == "Use all classes"){
+      if(input$whichtgtclasses == "Use all classes")
         rowsToUse<-seq(nrow(dfWithCtx)) #all rows
-        ctxFlag<-FALSE
+      else if(input$whichtgtclasses != "Use all classes"){
+        rowsToUse<-which(dfWithCtx[,input$targetAttr] == input$whichtgtclasses) # <------ PROBLEM IS HERE
+        ctxFlag<-TRUE
       }
-      else if(input$whichtgtclasses != "Use all classes")
-        rowsToUse<-which(dfWithCtx[,input$targetAttr] == input$whichtgtclasses)
     }
+    
+    #only Acmp is categorical and Atgt is not
     else if(Data()[[2]][input$targetAttr] != "Cate" && Data()[[2]][input$comparingAttr] == "Cate"){
-      if(input$whichcmpclasses == "Use all classes"){
+      if(input$whichcmpclasses == "Use all classes")
         rowsToUse<-seq(nrow(dfWithCtx)) #all rows
-        ctxFlag<-FALSE
+      else if(input$whichcmpclasses != "Use all classes"){
+        rowsToUse<-which(dfWithCtx[,input$comparingAttr] == input$whichcmpclasses) # <------ PROBLEM IS HERE
+        ctxFlag<-TRUE
       }
-      else if(input$whichcmpclasses != "Use all classes")
-        rowsToUse<-which(dfWithCtx[,input$comparingAttr] == input$whichcmpclasses)
     }
         
     dfWithCtx<-dfWithCtx[rowsToUse,]
     
-    return(list(dfWithCtx,Data()[[2]],Data()[[3]],ctxFlag)) #Data()[[3]] is incorrect for now. refer to comments above
+    return(list(dfWithCtx,Data()[[2]],Data()[[3]],ctxFlag))
+    #Data2()[[3]] is incorrect for now. refer to comments above
   })
   
+  #for testing Data2()
   output$testData2<-renderTable({
     if (is.null(Data2()[1])) return(NULL)
     rowsToDisplay<-20
@@ -313,8 +335,8 @@ shinyServer(function(input,output){
   #reactive wrapper for table
   Table<-reactive({
     #retrieve the relevant data
-    print(Data2()[[4]])
-    if(!Data2()[[4]]){ #no starting ctx
+    
+    if(Data2()[[4]] == FALSE){ #no starting ctx
     
       df<-Data()[[1]][c(input$targetAttr,input$comparingAttr)]
       #is the target attribute continuous or categorical?
@@ -334,8 +356,14 @@ shinyServer(function(input,output){
         return(list(data.frame(means),"Comparison",length(cl)))
       }
     }
-    else{ #there is a starting ctx
+    
+    else if(Data2()[[4]] == TRUE){ #there is a starting ctx
+      
       df<-Data2()[[1]][c(input$targetAttr,input$comparingAttr)]
+
+      print(tail(df))
+      print(str(df))
+      
       #is the target attribute continuous or categorical?
       if(Data2()[[2]][input$targetAttr] == "Cate")
         return(list(table(df),"Contingency",length(unique(df[,input$comparingAttr]))))
