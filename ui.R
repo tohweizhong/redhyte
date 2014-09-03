@@ -1,9 +1,9 @@
 require(shiny)
 
-shinyUI(fluidPage(
+shinyUI(pageWithSidebar(
   
   titlePanel(imageOutput("logoPNG",width="180px",height="50px"),
-             tags$head(tags$link(rel="icon",type="image/png",href="browserlogo.png"),
+             tags$head(tags$link(rel="icon",type="image/png",href="browserlogo.png",sizes="64x64"),
                        tags$title("Redhyte"))
             ),
   

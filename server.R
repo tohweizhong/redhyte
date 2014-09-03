@@ -363,6 +363,4 @@ shinyServer(function(input,output){
       }
     }
   })
-
-
 })
