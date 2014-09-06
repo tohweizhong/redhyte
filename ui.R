@@ -59,7 +59,9 @@ shinyUI(pageWithSidebar(
                ),
       #data preview tab panel
       tabPanel("1. Data preview",
-               tags$h4("Displaying the first 10 rows of your data"),
+               tags$h4("Displaying a preview of your data"),
+               sliderInput("previewRows","Number of rows to display",
+                           min=1,max=20,value=1,step=1,animate=TRUE),
                tableOutput("dataPreview")
                ),
       
@@ -104,7 +106,8 @@ shinyUI(pageWithSidebar(
                  
                  htmlOutput("comparingCtrl"),
                  verbatimTextOutput("comparingType"),
-                 htmlOutput("cmpClassCtrl")
+                 htmlOutput("cmpClassCtrl"),
+                 width=3
                ),
                tags$h6("Table based on initial context"),
                tableOutput("contTable"),

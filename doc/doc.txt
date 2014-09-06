@@ -21,3 +21,6 @@ all user-input renderui are named with Ctrl at the back
 
 
 data is read in with stringsAsFactors=F option
+
+
+using sidebarPanels in the tabPanels => the sidebarPanels are fixed and cannot move

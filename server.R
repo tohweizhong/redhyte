@@ -66,7 +66,7 @@ shinyServer(function(input,output){
   #10 rows, all columns
   output$dataPreview<-renderTable({
     if (is.null(Data()[1])) return(NULL)
-    data.frame(Data()[[1]][1:10,])
+    data.frame(Data()[[1]][1:input$previewRows,])
   },digits=3)
   
   #=============================================#
@@ -351,7 +351,7 @@ shinyServer(function(input,output){
           means<-c(means,mean(df[whichones,1])) #1st column is target atrribute
         }
         names(means)<-cl
-        tmp<data.frame(means)
+        tmp<-data.frame(means)
         colnames(tmp)<-paste("means of ",input$targetAttr,sep="")
         return(list(tmp,
                     "Comparison",
