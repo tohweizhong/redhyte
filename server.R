@@ -1,18 +1,19 @@
 require(shiny)
 
-titlePNG<-"images/title.png"
-logoPNG<-"images/logo.png"
-
 shinyServer(function(input,output){
   
   #fancy work here
   #render images
   output$titlePNG<-renderImage({
-    list(src=titlePNG, alt=NULL)
+    list(src="images/title.png", alt=NULL)
   },deleteFile=FALSE)
   
   output$logoPNG<-renderImage({
-    list(src=logoPNG, alt=NULL)
+    list(src="images/logo.png", alt=NULL)
+  },deleteFile=FALSE)
+  
+  output$algoPNG<-renderImage({
+    list(src="images/redhyte algo.png",alt=NULL)
   },deleteFile=FALSE)
   
   #=============================================#
@@ -56,10 +57,10 @@ shinyServer(function(input,output){
   })
   
   #=============================================#
-  #==============1. Uploaded data===============#
+  #==============1. Data preview================#
   #=============================================#
   
-  #first tab panel: "1. Uploaded data"
+  #first tab panel: "1. Data preview"
   
   #displaying a preview of the data
   #10 rows, all columns
@@ -177,10 +178,10 @@ shinyServer(function(input,output){
   })
   
   #=============================================#
-  #==============3. Hypo testing================#
+  #==============3. Initial test================#
   #=============================================#
     
-  #third tab panel: "3. Hypothesis testing"
+  #third tab panel: "3. Initial test"
   
   #dropdown boxes to select tgt and cmp attr
   output$targetCtrl<-renderUI({
@@ -199,7 +200,7 @@ shinyServer(function(input,output){
   output$tgtClassCtrl<-renderUI({
     if(Data()[[2]][input$targetAttr]=="Cate"){
       checkboxGroupInput("whichtgtclasses",
-                         "Indicate which target attribute classes to use as part of starting context",
+                         "Indicate which target attribute classes to use as part of initial context",
                          choices=c("Use all classes",unique(Data()[[1]][,input$targetAttr])),
                          selected="Use all classes")
     }
@@ -208,7 +209,7 @@ shinyServer(function(input,output){
   output$cmpClassCtrl<-renderUI({
     if(Data()[[2]][input$comparingAttr]=="Cate"){
       checkboxGroupInput("whichcmpclasses",
-                         "Indicate which comparing attribute class to use as part of starting context",
+                         "Indicate which comparing attribute class to use as part of initial context",
                          choices=c("Use all classes",unique(Data()[[1]][,input$comparingAttr])),
                          selected="Use all classes")
     }
@@ -306,13 +307,13 @@ shinyServer(function(input,output){
     #Data2()[[3]] is incorrect for now. refer to comments above
   })
   
-  #for testing Data2()
-  output$testData2<-renderTable({
-    if (is.null(Data2()[1])) return(NULL)
-    rowsToDisplay<-20
-    if(rowsToDisplay > 0.5*nrow(Data2()[[1]])) rowsToDisplay<-0.5*nrow(Data2()[[1]])
-    data.frame(Data2()[[1]][1:rowsToDisplay,])
-  },digits=3)
+#   #for testing Data2()
+#   output$testData2<-renderTable({
+#     if (is.null(Data2()[1])) return(NULL)
+#     rowsToDisplay<-20
+#     if(rowsToDisplay > 0.5*nrow(Data2()[[1]])) rowsToDisplay<-0.5*nrow(Data2()[[1]])
+#     data.frame(Data2()[[1]][1:rowsToDisplay,])
+#   },digits=3)
 
   #generate contingency table if target attribute is cate.
   #else generate a comparison table
@@ -350,7 +351,9 @@ shinyServer(function(input,output){
           means<-c(means,mean(df[whichones,1])) #1st column is target atrribute
         }
         names(means)<-cl
-        return(list(data.frame(means),
+        tmp<data.frame(means)
+        colnames(tmp)<-paste("means of ",input$targetAttr,sep="")
+        return(list(tmp,
                     "Comparison",
                     length(cl),
                     df))
@@ -377,7 +380,9 @@ shinyServer(function(input,output){
           means<-c(means,mean(df[whichones,1])) #1st column is target atrribute
         }
         names(means)<-cl
-        return(list(data.frame(means),
+        tmp<-data.frame(means)
+        colnames(tmp)<-paste("means of ",input$targetAttr,sep="")
+        return(list(tmp,
                     "Comparison",
                     length(cl),
                     df))
@@ -389,8 +394,8 @@ shinyServer(function(input,output){
     Table()[[1]]
   })
 
-  #first test
-  output$firstTest<-renderTable({
+  #initial parametric test
+  output$initialTest<-renderTable({
 
     #check the type of table
     if(Table()[[2]] == "Contingency"){
@@ -438,4 +443,19 @@ shinyServer(function(input,output){
       }
     }
   })
+  #=============================================#
+  #============4. Test diagnostics==============#
+  #=============================================#
+
+  #test diagnostics for t-test and ANOVA only  
+  
+
+
+  #===============REACTIVE======================#
+  Test<-reactive({
+    if(Table()[[2]] == "Contingency") return("t-test")
+    else if(Table()[[3]] == 2) return("chisq-test")
+    else if(Table()[[3]] > 2) return("anova")
+  })
+
 })

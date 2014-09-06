@@ -54,8 +54,11 @@ shinyUI(pageWithSidebar(
   mainPanel(
     
     tabsetPanel(
+      tabPanel("0. Introduction to Redhyte",
+               imageOutput("algoPNG",height="500px")
+               ),
       #data preview tab panel
-      tabPanel("1. Uploaded data",
+      tabPanel("1. Data preview",
                tags$h4("Displaying the first 10 rows of your data"),
                tableOutput("dataPreview")
                ),
@@ -84,7 +87,7 @@ shinyUI(pageWithSidebar(
                
               ),
 
-      tabPanel("3. Hypothesis testing",
+      tabPanel("3. Initial test",
                #some definitions and explanation
 #                tags$h4("It's testing time."),
 #                tags$h5("Definitions:"),
@@ -103,20 +106,21 @@ shinyUI(pageWithSidebar(
                  verbatimTextOutput("comparingType"),
                  htmlOutput("cmpClassCtrl")
                ),
-               tags$h6("Contingency table"),
+               tags$h6("Table based on initial context"),
                tableOutput("contTable"),
                sidebarPanel(
 #                  tags$style(type="text/css", '#rightPanel { width:220px; float:left;}'),
 #                  id = "rightPanel",
                  
-                 tags$h6("First test"),
-                 tableOutput("firstTest")
+                 tags$h6("Initial test"),
+                 tableOutput("initialTest")
                
               )
           ),
-      tabPanel("Test Data2()",
-               tableOutput("testData2")
-               )
+#       tabPanel("Test Data2()",
+#                tableOutput("testData2")
+#                )
+      tabPanel("4. Test diagnostics")
 
     )
     
