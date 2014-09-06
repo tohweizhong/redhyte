@@ -33,7 +33,8 @@ shinyServer(function(input,output){
   Data<-reactive({
     datFile<-input$datFile #still just the file name
     if (is.null(datFile)) return(NULL)
-    df<-read.csv(datFile$datapath,header=input$datHeader,sep=input$datSep,quote=input$datQuote)
+    df<-read.csv(datFile$datapath,header=input$datHeader,sep=input$datSep,quote=input$datQuote,
+                 stringsAsFactors=F)
     
     #checking the variable type of the attributes: continuous or categorical
     #and number of classes for cate. attr.
@@ -53,7 +54,6 @@ shinyServer(function(input,output){
     
     return(list(df,typ,numCl))
   })
-  
   
   #=============================================#
   #==============1. Uploaded data===============#
@@ -187,32 +187,32 @@ shinyServer(function(input,output){
     selectizeInput("targetAttr",
                    "Indicate target attribute (May be continuous or categorical)",
                    colnames(Data()[[1]]))
-  })
+  }) #return: input$targetAttr
   
   output$comparingCtrl<-renderUI({
     selectizeInput("comparingAttr",
                    "Indicate comparing attribute (Must be categorical)",
                    colnames(Data()[[1]]))
-  })
+  }) #return: input$comparingAttr
 
   #checkboxes to select classes of Atgt and Acmp to form starting ctx
   output$tgtClassCtrl<-renderUI({
     if(Data()[[2]][input$targetAttr]=="Cate"){
       checkboxGroupInput("whichtgtclasses",
                          "Indicate which target attribute classes to use as part of starting context",
-                         choices=c("Use all classes",levels(Data()[[1]][,input$targetAttr])),
+                         choices=c("Use all classes",unique(Data()[[1]][,input$targetAttr])),
                          selected="Use all classes")
     }
-  })
+  }) #return: input$whichtgtclasses
 
   output$cmpClassCtrl<-renderUI({
     if(Data()[[2]][input$comparingAttr]=="Cate"){
       checkboxGroupInput("whichcmpclasses",
                          "Indicate which comparing attribute class to use as part of starting context",
-                         choices=c("Use all classes",levels(Data()[[1]][,input$comparingAttr])),
+                         choices=c("Use all classes",unique(Data()[[1]][,input$comparingAttr])),
                          selected="Use all classes")
     }
-  })
+  }) #return: input$whichcmpclasses
  
   #display type of attribute: continuous or categorical
   output$targetType<-renderText({
@@ -228,21 +228,6 @@ shinyServer(function(input,output){
     else type<-"Type: Categorical"
     type
   })
-
-#   #display boxplot stats (Tukey's five)
-#   output$targetTukeyfive<-renderTable({
-#     qt<-as.data.frame(fivenum(Data()[[1]][,input$targetAttr]))
-#     rownames(qt)<-c("Min","25%","Median","75%","Max")
-#     colnames(qt)<-NULL
-#     qt
-#   })
-#   
-#   output$comparingTukeyfive<-renderTable({
-#     qt<-as.data.frame(fivenum(Data()[[1]][,input$comparingAttr]))
-#     rownames(qt)<-c("Min","25%","Median","75%","Max")
-#     colnames(qt)<-NULL
-#     qt
-#   })
 
   #===============REACTIVE======================#
 
@@ -271,23 +256,23 @@ shinyServer(function(input,output){
     #consider the type of Atgt and Acmp
     #starting context can only be considered for categorical attributes,
     #ie. Atgt must be categorical while Acmp is already categorical
-    
     #both`Atgt and Acmp are categorical
     if(Data()[[2]][input$targetAttr] == "Cate" && Data()[[2]][input$comparingAttr] == "Cate"){
       #use all?
       if(input$whichtgtclasses == "Use all classes" && input$whichcmpclasses == "Use all classes")
         rowsToUse<-seq(nrow(dfWithCtx)) #all rows
       else if(input$whichtgtclasses == "Use all classes" && input$whichcmpclasses != "Use all classes"){
-        rowsToUse<-which(dfWithCtx[,input$comparingAttr] == input$whichcmpclasses) # <------ PROBLEM IS HERE
+        rowsToUse<-which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclasses == TRUE) # <------ PROBLEM IS HERE
+        #060914: PROBLEM RESOLVED
         ctxFlag<-TRUE
       }
       else if(input$whichtgtclasses != "Use all classes" && input$whichcmpclasses == "Use all classes"){
-        rowsToUse<-which(dfWithCtx[,input$targetAttr] == input$whichtgtclasses) # <------ PROBLEM IS HERE
+        rowsToUse<-which(dfWithCtx[,input$targetAttr] %in% input$whichtgtclasses == TRUE) # <------ PROBLEM IS HERE
         ctxFlag<-TRUE
       }
       else{
-        rowsToUse<-intersect(which(dfWithCtx[,input$targetAttr] == input$whichtgtclasses),
-                             which(dfWithCtx[,input$comparingAttr] == input$whichcmpclasses)) # <------ PROBLEM IS HERE
+        rowsToUse<-intersect(which(dfWithCtx[,input$targetAttr] %in% input$whichtgtclasses == TRUE),
+                             which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclasses ==  TRUE)) # <------ PROBLEM IS HERE
         ctxFlag<-TRUE
       }
     }
@@ -308,11 +293,13 @@ shinyServer(function(input,output){
       if(input$whichcmpclasses == "Use all classes")
         rowsToUse<-seq(nrow(dfWithCtx)) #all rows
       else if(input$whichcmpclasses != "Use all classes"){
-        rowsToUse<-which(dfWithCtx[,input$comparingAttr] == input$whichcmpclasses) # <------ PROBLEM IS HERE
+        rowsToUse<-which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclasses == TRUE) # <------ PROBLEM IS HERE
         ctxFlag<-TRUE
       }
     }
-        
+    
+    #retrieve the row numbers of the row to be used in subsequent analysis,
+    #forming the starting context
     dfWithCtx<-dfWithCtx[rowsToUse,]
     
     return(list(dfWithCtx,Data()[[2]],Data()[[3]],ctxFlag))
@@ -332,6 +319,12 @@ shinyServer(function(input,output){
 
   #===============REACTIVE======================#
 
+  #Table() consists of *FOUR* things at the moment
+  # 1. Table()[[1]] is the table itself, be it contingency or comparison table
+  # 2. Table()[[2]] is the type of table: contingency or comparison
+  # 3. Table()[[3]] is the number of classes for the categorical Acmp
+  # 4. Table()[[4]] is the data with the starting context itself
+  
   #reactive wrapper for table
   Table<-reactive({
     #retrieve the relevant data
@@ -339,9 +332,13 @@ shinyServer(function(input,output){
     if(Data2()[[4]] == FALSE){ #no starting ctx
     
       df<-Data()[[1]][c(input$targetAttr,input$comparingAttr)]
+      
       #is the target attribute continuous or categorical?
       if(Data()[[2]][input$targetAttr] == "Cate")
-        return(list(table(df),"Contingency",length(unique(df[,input$comparingAttr]))))
+        return(list(table(df),
+                    "Contingency",
+                    length(unique(df[,input$comparingAttr])),
+                    df))
       
       else{ #target attribute is continuous
         cl<-unique(df[,input$comparingAttr]) #all classes of comparing attribute
@@ -353,20 +350,22 @@ shinyServer(function(input,output){
           means<-c(means,mean(df[whichones,1])) #1st column is target atrribute
         }
         names(means)<-cl
-        return(list(data.frame(means),"Comparison",length(cl)))
+        return(list(data.frame(means),
+                    "Comparison",
+                    length(cl),
+                    df))
       }
     }
     
     else if(Data2()[[4]] == TRUE){ #there is a starting ctx
       
       df<-Data2()[[1]][c(input$targetAttr,input$comparingAttr)]
-
-      print(tail(df))
-      print(str(df))
-      
       #is the target attribute continuous or categorical?
       if(Data2()[[2]][input$targetAttr] == "Cate")
-        return(list(table(df),"Contingency",length(unique(df[,input$comparingAttr]))))
+        return(list(table(df),
+                    "Contingency",
+                    length(unique(df[,input$comparingAttr])),
+                    df))
       
       else{ #target attribute is continuous
         cl<-unique(df[,input$comparingAttr]) #all classes of comparing attribute
@@ -378,7 +377,10 @@ shinyServer(function(input,output){
           means<-c(means,mean(df[whichones,1])) #1st column is target atrribute
         }
         names(means)<-cl
-        return(list(data.frame(means),"Comparison",length(cl)))
+        return(list(data.frame(means),
+                    "Comparison",
+                    length(cl),
+                    df))
       }
     }
   })
@@ -392,36 +394,47 @@ shinyServer(function(input,output){
 
     #check the type of table
     if(Table()[[2]] == "Contingency"){
-      test<-chisq.test(Table()[[1]])
+      test<-chisq.test(Table()[[1]]) #chisq.test() works on the table itself
       stats<-test$statistic
       pvalue<-test$p.value
       method<-test$method
       
       returnMe<-as.data.frame(c(as.character(method),
                                  as.character(round(stats,3)),
-                                 as.character(round(pvalue,5))
+                                 as.character(round(pvalue,7))
                                  ))
-      rownames(returnMe)<-c("Method","Test-statistic","p-value")
+      rownames(returnMe)<-c("Method","Test statistic","p-value")
       colnames(returnMe)<-NULL
       returnMe
     }
     else if(Table()[[2]] == "Comparison"){
       if(Table()[[3]] == 2){ #t-test
-        test<-t.test(Table()[[1]])
+        test<-t.test(Table()[[1]]) #Table()[[1]] is a data.frame of means
         stats<-test$statistic
         pvalue<-test$p.value
         method<-test$method
         
         returnMe<-as.data.frame(c(as.character(method),
                                   as.character(round(stats,3)),
-                                  as.character(round(pvalue,5))
+                                  as.character(round(pvalue,7))
         ))
-        rownames(returnMe)<-c("Method","Test-statistic","p-value")
+        rownames(returnMe)<-c("Method","Test statistic","p-value")
         colnames(returnMe)<-NULL
         returnMe
       }
       else{ #anova
-        return(NULL) #not implemented yet
+        
+        test<-aov(data=Table()[[4]],formula=as.formula(paste(input$targetAttr,"~",input$comparingAttr)))
+        stats<-summary(test)[[1]]$"F value"[1]
+        pvalue<-summary(test)[[1]]$"Pr(>F)"[1]
+        method<-"Analysis of variance (AOV)"
+        
+        returnMe<-as.data.frame(c(as.character(method),
+                                  as.character(round(stats,3)),
+                                  as.character(round(pvalue,7))))
+        rownames(returnMe)<-c("Method","Test statistic","p-value")
+        colnames(returnMe)<-NULL
+        returnMe
       }
     }
   })
