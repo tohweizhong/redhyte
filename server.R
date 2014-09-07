@@ -35,9 +35,15 @@ shinyServer(function(input,output){
   
   Data<-reactive({
     datFile<-input$datFile #still just the file name
-    if (is.null(datFile)) return(NULL)
-    df<-read.csv(datFile$datapath,header=input$datHeader,sep=input$datSep,quote=input$datQuote,
-                 stringsAsFactors=F)
+    #if (is.null(datFile)) return(NULL)
+    df<-read.table(datFile$datapath,
+                 header=input$datHeader,
+                 sep=input$datSep,
+                 quote=input$datQuote,
+                 stringsAsFactors=F,
+                 strip.white=TRUE)
+    
+    print(str(df))
     
     #checking the variable type of the attributes: continuous or categorical
     #and number of classes for cate. attr.
@@ -54,6 +60,7 @@ shinyServer(function(input,output){
       }
     }
     names(typ)<-names(numCl)<-colnames(df)
+    print(str(df))
     
     return(list(df,typ,numCl))
   })
@@ -72,7 +79,7 @@ shinyServer(function(input,output){
   },digits=3)
   
   #=============================================#
-  #==============1. Data viz====================#
+  #==============2. Data viz====================#
   #=============================================#
   
   #second tab panel: "2. Data visualization"
@@ -198,6 +205,19 @@ shinyServer(function(input,output){
                    colnames(Data()[[1]]))
   }) #return: input$comparingAttr
 
+  output$tgtAttrValueCtrl<-renderUI({
+    if(Data()[[2]][input$targetAttr] == "Cate"){
+      selectizeInput("tgtAttrValue",
+                     "Indicate target attribute value",
+                     unique(Data()[[1]][,input$targetAttr]))
+    }
+    else{
+      selectizeInput("tgtAttrValue",
+                     "Indicate target attribute value",
+                     "NA")
+    }
+  })
+  
   #checkboxes to select classes of Atgt and Acmp to form starting ctx
   output$tgtClassCtrl<-renderUI({
     if(Data()[[2]][input$targetAttr]=="Cate"){
@@ -304,7 +324,11 @@ shinyServer(function(input,output){
     #retrieve the row numbers of the row to be used in subsequent analysis,
     #forming the starting context
     dfWithCtx<-dfWithCtx[rowsToUse,]
-    
+#     print(rowsToUse)
+#     print(is.null(rowsToUse))
+#     print(str(rowsToUse))
+#     print(tail(rowsToUse))
+#     print(str(dfWithCtx))
     return(list(dfWithCtx,Data()[[2]],Data()[[3]],ctxFlag))
     #Data2()[[3]] is incorrect for now. refer to comments above
   })
@@ -464,11 +488,26 @@ shinyServer(function(input,output){
 
   #first step: build the two RF models
   minedAttributes<-reactive({
-    df<-Data()[[2]]
-    modtgt<-randomForest(input$targetAttr~.,data=df,importance=T)
-    modcmp<-randomForest(input$comparingAttr~.,data=df,importance=T)
+    df<-Data2()[[1]]
+    
+    #need to convert the character attributes to factors first before building models
+    whichchar<-which(Data2()[[2]] == "Cate")
+    df[,whichchar]<-lapply(df[,whichchar],factor)
+    df<-df[1:nrow(df),1:ncol(df)]
+    #print(str(df))
+    #print(summary(df))
+    modtgt<-randomForest(data=df,
+                         formula=as.formula(paste(input$targetAttr,"~.",sep="")),
+                         importance=T)
+    modcmp<-randomForest(data=df,
+                         formula=as.formula(paste(input$comparingAttr,"~.",sep="")),
+                         importance=T)
+    
+    return(list(modtgt$confusion,modcmp$confusion))
     
     #compute accuracies
   })
-
+  output$testRF<-renderTable({
+    minedAttributes()[[1]]
+  })
 })
