@@ -1,4 +1,6 @@
 require(shiny)
+require(randomForest)
+source("related_codes/settings.R")
 
 shinyServer(function(input,output){
   
@@ -241,10 +243,10 @@ shinyServer(function(input,output){
   #030914: will return Data()[[[3]]] as it is anyway for now.
 
   #Data2() consists of *FOUR* things at the moment
-  # 1. Data()[[1]] is the data itself
-  # 2. Data()[[2]] is the type of variable: continuous or categorical
-  # 3. Data()[[3]] is the number of classes for categorical attributes, NA for cont.
-  # 4. Data()[[4]] is the ctxFlag, indicating if a starting context is being used
+  # 1. Data2()[[1]] is the data itself
+  # 2. Data2()[[2]] is the type of variable: continuous or categorical
+  # 3. Data2()[[3]] is the number of classes for categorical attributes, NA for cont.
+  # 4. Data2()[[4]] is the ctxFlag, indicating if a starting context is being used
   
   Data2<-reactive({
     
@@ -449,13 +451,24 @@ shinyServer(function(input,output){
 
   #test diagnostics for t-test and ANOVA only  
   
-
-
   #===============REACTIVE======================#
   Test<-reactive({
     if(Table()[[2]] == "Contingency") return("t-test")
     else if(Table()[[3]] == 2) return("chisq-test")
     else if(Table()[[3]] > 2) return("anova")
+  })
+
+  #=============================================#
+  #==========5. Hypothesis mining===============#
+  #=============================================#
+
+  #first step: build the two RF models
+  minedAttributes<-reactive({
+    df<-Data()[[2]]
+    modtgt<-randomForest(input$targetAttr~.,data=df,importance=T)
+    modcmp<-randomForest(input$comparingAttr~.,data=df,importance=T)
+    
+    #compute accuracies
   })
 
 })

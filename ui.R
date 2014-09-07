@@ -1,5 +1,3 @@
-require(shiny)
-
 shinyUI(pageWithSidebar(
   
   titlePanel(imageOutput("logoPNG",width="180px",height="50px"),
@@ -55,7 +53,7 @@ shinyUI(pageWithSidebar(
     
     tabsetPanel(
       tabPanel("0. Introduction to Redhyte",
-               imageOutput("algoPNG",height="500px")
+               imageOutput("algoPNG",height="700px")
                ),
       #data preview tab panel
       tabPanel("1. Data preview",
@@ -123,7 +121,11 @@ shinyUI(pageWithSidebar(
 #       tabPanel("Test Data2()",
 #                tableOutput("testData2")
 #                )
-      tabPanel("4. Test diagnostics")
+      tabPanel("4. Test diagnostics"), #not implemented yet, will come back to this
+      tabPanel("5. Hypothesis mining",
+               tags$h6("Redhyte's hypothesis mining implementation works by first constructing two
+                       random forest models, using the context attributes to predict the
+                       target and comparing attributes."))
 
     )
     
