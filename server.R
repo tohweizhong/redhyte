@@ -44,10 +44,8 @@ shinyServer(function(input,output){
                  sep=input$datSep,
                  quote=input$datQuote,
                  stringsAsFactors=F)
-    
-    print(str(df))
-    print(str(datFile))
-    print(datFile$datapath)
+    #this part is ok, based on the response i got from SO
+
     #checking the variable type of the attributes: continuous or categorical
     #and number of classes for cate. attr.
     typ<-NULL
@@ -325,11 +323,6 @@ shinyServer(function(input,output){
     #retrieve the row numbers of the row to be used in subsequent analysis,
     #forming the starting context
     dfWithCtx<-dfWithCtx[rowsToUse,]
-#     print(rowsToUse)
-#     print(is.null(rowsToUse))
-#     print(str(rowsToUse))
-#     print(tail(rowsToUse))
-#     print(str(dfWithCtx))
     return(list(dfWithCtx,Data()[[2]],Data()[[3]],ctxFlag))
     #Data2()[[3]] is incorrect for now. refer to comments above
   })
@@ -492,19 +485,33 @@ shinyServer(function(input,output){
     df<-Data2()[[1]]
     
     #need to convert the character attributes to factors first before building models
-    whichchar<-which(Data2()[[2]] == "Cate")
-    df[,whichchar]<-lapply(df[,whichchar],factor)
-    df<-df[1:nrow(df),1:ncol(df)]
-    #print(str(df))
-    #print(summary(df))
-    modtgt<-randomForest(data=df,
-                         formula=as.formula(paste(input$targetAttr,"~.",sep="")),
-                         importance=T)
-    modcmp<-randomForest(data=df,
-                         formula=as.formula(paste(input$comparingAttr,"~.",sep="")),
-                         importance=T)
+    which.are.char<-which(Data2()[[2]] == "Cate")
+    df[,which.are.char]<-lapply(df[,which.are.char],factor)
     
-    return(list(modtgt$confusion,modcmp$confusion))
+    #formulate the formulae for random forest models
+    col.names.tgt<-colnames(df)[which(colnames(df) != input$targetAttr)]
+    col.names.cmp<-colnames(df)[which(colnames(df) != input$comparingAttr)]
+    fm.tgt<-paste(" ",col.names.tgt,sep="",collapse="+")
+    fm.cmp<-paste(" ",col.names.cmp,sep="",collapse="+")
+    fm.tgt<-as.formula(paste(input$targetAttr,"~",fm.tgt,sep=""))
+    fm.cmp<-as.formula(paste(input$comparingAttr,"~",fm.cmp,sep=""))
+
+    #construct models
+    mod.tgt<-randomForest(formula=fm.tgt,
+                          data=df,
+                          importance=T)
+    mod.cmp<-randomForest(formula=fm.cmp,
+                          data=df,
+                          importance=T)
+    
+    #now evaluate whether mod.tgt has been accurate
+    #three things to consider:
+    # @ whether Atgt is continous or categorical
+    # @ if Atgt is categorical, whether Atgt is binary or multi-class
+    # @ if Atgt is categorical, whether Atgt has class-imbalance
+    #the only piece of additional input required to
+    
+    return(list(mod.tgt$confusion,mod.cmp$confusion))
     
     #compute accuracies
   })
