@@ -36,15 +36,18 @@ shinyServer(function(input,output){
   Data<-reactive({
     datFile<-input$datFile #still just the file name
     #if (is.null(datFile)) return(NULL)
-    df<-read.table(datFile$datapath,
+    
+    path<-as.character(datFile$datapath)
+    
+    df<-read.csv(path,
                  header=input$datHeader,
                  sep=input$datSep,
                  quote=input$datQuote,
-                 stringsAsFactors=F,
-                 strip.white=TRUE)
+                 stringsAsFactors=F)
     
     print(str(df))
-    
+    print(str(datFile))
+    print(datFile$datapath)
     #checking the variable type of the attributes: continuous or categorical
     #and number of classes for cate. attr.
     typ<-NULL
@@ -60,8 +63,6 @@ shinyServer(function(input,output){
       }
     }
     names(typ)<-names(numCl)<-colnames(df)
-    print(str(df))
-    
     return(list(df,typ,numCl))
   })
   

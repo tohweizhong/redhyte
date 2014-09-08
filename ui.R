@@ -28,7 +28,7 @@ shinyUI(pageWithSidebar(
                  tags$h5(tags$strong("Separator")),
                  c("Comma(.csv)"=',',
                    "Tab(.txt/.tsv)"='\t'),
-                  'Comma(.csv)'),
+                  ','),
     
     tags$hr(),
     
@@ -38,7 +38,7 @@ shinyUI(pageWithSidebar(
                  c(None='',
                    'Double Quotes'='"',
                    'Single Quotes'="'"),
-                 'Double Quotes'),
+                 '"'),
     
     tags$hr(),
     
