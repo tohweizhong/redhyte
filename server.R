@@ -24,7 +24,7 @@ shinyServer(function(input,output){
   
   #grabbing the data
   
-  #===============REACTIVE======================#
+  #***************REACTIVE**********************#
 
   #Data() consists of *THREE* things at the moment
   # 1. Data()[[1]] is the data itself
@@ -44,14 +44,19 @@ shinyServer(function(input,output){
                  sep=input$datSep,
                  quote=input$datQuote,
                  stringsAsFactors=F)
-    #this part is ok, based on the response i got from SO
+    #this part is ok, based on the response I got from stackoverflow
+    #the NULL that appears after
+    
+    #print(str(df))
+    
+    #is apparently the property of print.default()
 
     #checking the variable type of the attributes: continuous or categorical
     #and number of classes for cate. attr.
     typ<-NULL
     numCl<-NULL
     for(i in seq(ncol(df))){
-      if(is.numeric(df[,i])){
+      if(is.numeric(df[,i])){ # <--- POSSIBLE SOURCE OF BUG, BECAUSE THIS IS A LITTLE HARD-CODING HERE
         typ<-c(typ,"Cont")
         numCl<-c(numCl,NA)
       }
@@ -64,14 +69,13 @@ shinyServer(function(input,output){
     return(list(df,typ,numCl))
   })
   
+  #*********************************************#
+  
   #=============================================#
   #==============1. Data preview================#
   #=============================================#
   
-  #first tab panel: "1. Data preview"
-  
-  #displaying a preview of the data
-  #10 rows, all columns
+  #displaying a preview of the data, 10 rows, all columns
   output$dataPreview<-renderTable({
     if (is.null(Data()[1])) return(NULL)
     data.frame(Data()[[1]][1:input$previewRows,])
@@ -81,19 +85,17 @@ shinyServer(function(input,output){
   #==============2. Data viz====================#
   #=============================================#
   
-  #second tab panel: "2. Data visualization"
-  
-  #create two dropdown boxes to choose two attributes,
-  #display
+  #create two dropdown boxes to choose two attributes, display:
   # 1. Type of attribute (continuous or categorical)
   # 2. Tukey's five number summary or counts
   # 3. histogram or barplot
   # 4. boxplots
   # 5. scatterplot for simple eda
+  
+  #selecting which attributes to visualise
   output$edaCtrl1<-renderUI({
     selectizeInput("whichAttr1","Select attribute to visualize",colnames(Data()[[1]]))
   })
-  
   output$edaCtrl2<-renderUI({
     selectizeInput("whichAttr2","Select attribute to visualize",colnames(Data()[[1]]))
   })
@@ -105,7 +107,6 @@ shinyServer(function(input,output){
     else type<-"Type: Categorical"
     type
   })
-  
   output$type2<-renderText({
     if(Data()[[2]][input$whichAttr2]=="Cont")
       type<-"Type: Continuous"
@@ -129,7 +130,6 @@ shinyServer(function(input,output){
     }
 
   })
-  
   output$tukeyfive2<-renderTable({
     if(Data()[[2]][input$whichAttr2]=="Cont"){
       qt<-as.data.frame(fivenum(Data()[[1]][,input$whichAttr2]))
@@ -155,7 +155,6 @@ shinyServer(function(input,output){
     }
       
   })
-  
   output$hist2<-renderPlot({
     if(Data()[[2]][input$whichAttr2]=="Cont")
       hist(Data()[[1]][,input$whichAttr2],main="",xlab="")
@@ -171,7 +170,6 @@ shinyServer(function(input,output){
     if(Data()[[2]][input$whichAttr1]=="Cont")
       boxplot(Data()[[1]][,input$whichAttr1])
   })
-  
   output$boxplot2<-renderPlot({
     if(Data()[[2]][input$whichAttr2]=="Cont")
       boxplot(Data()[[1]][,input$whichAttr2])
@@ -188,22 +186,20 @@ shinyServer(function(input,output){
   #=============================================#
   #==============3. Initial test================#
   #=============================================#
-    
-  #third tab panel: "3. Initial test"
   
-  #dropdown boxes to select tgt and cmp attr
+  #dropdown boxes to select Atgt and Acmp
   output$targetCtrl<-renderUI({
     selectizeInput("targetAttr",
                    "Indicate target attribute (May be continuous or categorical)",
                    colnames(Data()[[1]]))
   }) #return: input$targetAttr
-  
   output$comparingCtrl<-renderUI({
     selectizeInput("comparingAttr",
                    "Indicate comparing attribute (Must be categorical)",
                    colnames(Data()[[1]]))
   }) #return: input$comparingAttr
 
+  #dropdown box to select vtgt
   output$tgtAttrValueCtrl<-renderUI({
     if(Data()[[2]][input$targetAttr] == "Cate"){
       selectizeInput("tgtAttrValue",
@@ -215,7 +211,7 @@ shinyServer(function(input,output){
                      "Indicate target attribute value",
                      "NA")
     }
-  })
+  }) #return: input$tgtAttrValue
   
   #checkboxes to select classes of Atgt and Acmp to form starting ctx
   output$tgtClassCtrl<-renderUI({
@@ -226,7 +222,6 @@ shinyServer(function(input,output){
                          selected="Use all classes")
     }
   }) #return: input$whichtgtclasses
-
   output$cmpClassCtrl<-renderUI({
     if(Data()[[2]][input$comparingAttr]=="Cate"){
       checkboxGroupInput("whichcmpclasses",
@@ -243,7 +238,6 @@ shinyServer(function(input,output){
     else type<-"Type: Categorical"
     type
   })
-  
   output$comparingType<-renderText({
     if(Data()[[2]][input$comparingAttr]=="Cont")
       type<-"Type: Continuous"
@@ -251,11 +245,11 @@ shinyServer(function(input,output){
     type
   })
 
-  #===============REACTIVE======================#
-
+  #***************REACTIVE**********************#
+  
   #The objectives of Data2() are:
   # -> subsetting the data based on the user's initial context
-  # -> if Atgt is continuous, include a binary attribute based on the
+  # -> if Atgt is continuous, include a binary attribute based on
   #    median(Atgt). This is done because it will speed up the
   #    construction of the RF models later. (Regression RF is
   #    apparently slower than classification RF.)
@@ -265,11 +259,11 @@ shinyServer(function(input,output){
   #classes of Atgt and Acmp, information in Data() can be re-used,
   #except Data()[[3]].
   #Data()[[3]] contains the number of classes for each categorical attribute,
-  #which changes for Atgt and Acmp
+  #which changes for Atgt and Acmp, depending on initial context
   #030914: will return Data()[[[3]]] as it is anyway for now.
 
   #Data2() consists of *FOUR* things at the moment
-  # 1. Data2()[[1]] is the data itself, with the median cutoff attribute
+  # 1. Data2()[[1]] is the data itself, including the median cutoff attribute
   # 2. Data2()[[2]] is the type of variable: continuous or categorical
   # 3. Data2()[[3]] is the number of classes for categorical attributes, NA for cont.
   # 4. Data2()[[4]] is the ctxFlag, indicating if a starting context is being used
@@ -285,6 +279,7 @@ shinyServer(function(input,output){
     #consider the type of Atgt and Acmp
     #starting context can only be considered for categorical attributes,
     #ie. Atgt must be categorical while Acmp is already categorical
+    
     #both`Atgt and Acmp are categorical
     if(Data()[[2]][input$targetAttr] == "Cate" && Data()[[2]][input$comparingAttr] == "Cate"){
       #use all?
@@ -331,23 +326,37 @@ shinyServer(function(input,output){
     #forming the starting context
     dfWithCtx<-dfWithCtx[rowsToUse,]
     
-    #finally, add the median cutoff attribute if Atgt is continuous
+    #lastly, add the median cutoff attribute if Atgt is continuous
+    #this median value based on the data after considering Cinitial
     if(Data()[[2]][input$targetAttr] == "Cont"){
-      med<-median(dfWithCtx[,input$targetAttr])
+      m<-mean(dfWithCtx[,input$targetAttr])
+      #using mean instead of median,
+      #because median cannot handle extremely skewed data
+      
+      print(unique(dfWithCtx[,input$targetAttr]))
+      
       dfWithCtx$tgt.class<-sapply(dfWithCtx[,input$targetAttr],
                                   FUN=function(x){
-                                    if(x>=med) return("High")
+                                    if(x>=m) return("High")
                                     else return("Low")})
     }
     
-    return(list(dfWithCtx,c(Data()[[2]],"Cate"),Data()[[3]],ctxFlag))
+    #add the attribute type for the cutoff attribute if required
+    attr.type<-Data()[[2]]
+    if(ncol(dfWithCtx) > ncol(Data()[[1]])){ #meaning the cutoff attribute is added
+      attr.type<-c(attr.type,"Cate")
+    }
+    
+    return(list(dfWithCtx,attr.type,Data()[[3]],ctxFlag))
     #Data2()[[3]] is incorrect for now. refer to comments above
   })
+  
+  #*********************************************#
   
   #for testing Data2()
   output$testData2<-renderTable({
     if (is.null(Data2()[1])) return(NULL)
-    rowsToDisplay<-20
+    rowsToDisplay<-10
     if(rowsToDisplay > 0.5*nrow(Data2()[[1]])) rowsToDisplay<-0.5*nrow(Data2()[[1]])
     data.frame(Data2()[[1]][1:rowsToDisplay,])
   },digits=3)
@@ -355,7 +364,7 @@ shinyServer(function(input,output){
   #generate contingency table if target attribute is cate.
   #else generate a comparison table
 
-  #===============REACTIVE======================#
+  #***************REACTIVE**********************#
 
   #Table() consists of *FOUR* things at the moment
   # 1. Table()[[1]] is the table itself, be it contingency or comparison table
@@ -427,6 +436,9 @@ shinyServer(function(input,output){
     }
   })
 
+  #*********************************************#
+  
+  #render the comparison or contingency table
   output$contTable<-renderTable({
     Table()[[1]]
   })
@@ -480,28 +492,38 @@ shinyServer(function(input,output){
       }
     }
   })
+  #yet to implement non-parametric test yet
+  
   #=============================================#
   #============4. Test diagnostics==============#
   #=============================================#
 
   #test diagnostics for t-test and ANOVA only  
+  #not implemented yet
   
-  #===============REACTIVE======================#
+  #***************REACTIVE**********************#
+  
   Test<-reactive({
     if(Table()[[2]] == "Contingency") return("t-test")
     else if(Table()[[3]] == 2) return("chisq-test")
     else if(Table()[[3]] > 2) return("anova")
-  })
-
+  }) #not implemented yet
+  
+  #*********************************************#
+  
   #=============================================#
   #==========5. Hypothesis mining===============#
   #=============================================#
 
   #first step: build the two RF models
+  
+  #***************REACTIVE**********************#
+  
   minedAttributes<-reactive({
     df<-Data2()[[1]]
     
     #need to convert the character attributes to factors first before building models
+    #initial data input options use stringsAsFactors=FALSE (see doc.txt)
     which.are.char<-which(Data2()[[2]] == "Cate")
     df[,which.are.char]<-lapply(df[,which.are.char],factor)
     
@@ -511,6 +533,7 @@ shinyServer(function(input,output){
     #start with Atgt
     if(!is.null(df$tgt.class)){
       #df$tgt.class has been defined, meaning Atgt is continuous
+      #find all other context attributes
       col.names.tgt<-intersect(
         colnames(df)[which(colnames(df) != input$targetAttr)],
         colnames(df)[which(colnames(df) != "tgt.class")])
@@ -530,6 +553,9 @@ shinyServer(function(input,output){
     fm.cmp<-paste(" ",col.names.cmp,sep="",collapse="+")
     fm.cmp<-as.formula(paste(input$comparingAttr,"~",fm.cmp,sep=""))
 
+    print(fm.tgt)
+    print(fm.cmp)
+    
     #construct models
     mod.tgt<-randomForest(formula=fm.tgt,
                           data=df,
@@ -551,6 +577,7 @@ shinyServer(function(input,output){
     #compute accuracies
   })
   
+  #*********************************************#
   
   output$testRF<-renderTable({
     minedAttributes()[[1]]

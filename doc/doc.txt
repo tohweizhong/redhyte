@@ -1,27 +1,27 @@
-all data file grabbers are indicated by "dat" in their variable names
+This is a piece of coding documentation/text dump/code dump
 
 #=============================================#
 #=============================================#
 #=============================================#
 
 tags$br(),tags$br(),tags$br(),tags$br(),tags$br(),
-                 tags$br(),tags$br(),tags$br(),tags$br(),tags$br(),
+tags$br(),tags$br(),tags$br(),tags$br(),tags$br(),
 
-list of reactive objects
+*LIST OF REACTIVE OBJECTS*
 Data()
 Table()
+Data2()
+Test() (incomplete implementation)
+minedAttributes()
 
 
-Data() has stringsAsFactors=T
+Data() has stringsAsFactors=F, because if use TRUE,
+generated tables will consist of all classes on Atgt and/or Acmp,
+instead of just the initial context
 
 
 all user-input renderui are named with Ctrl at the back
-
-
-
-
-data is read in with stringsAsFactors=F option
-
+all options and data file grabbers are indicated by "dat" in their variable names
 
 using sidebarPanels in the tabPanels => the sidebarPanels are fixed and cannot move
 
@@ -36,3 +36,18 @@ using sidebarPanels in the tabPanels => the sidebarPanels are fixed and cannot m
 
 #                  tags$style(type="text/css", '#leftPanel { width:200px; float:left;}'),
 #                  id = "leftPanel",
+
+
+#=============================================#
+#=============================================#
+#=============================================#
+WISHLIST
+
+1. using googleVis or similiar API/packages to do interactive graphics
+2.
+
+PROBLEMS/UNIMPLEMENTED FEATURES
+1. Atgt = capital.gain, Acmp = relationship,
+   Cinitial = {Acmp = Husband, Acmp = Wife}
+   capital.gain is skewed after the subsetting, using median cannot work while using mean leaves class-imbalance
+   best is to use mean and employ class-imbalance learning techniques

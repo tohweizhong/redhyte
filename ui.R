@@ -50,7 +50,9 @@ shinyUI(pageWithSidebar(
   mainPanel(
     
     tabsetPanel(
-      #0. Introduction to Redhyte
+      #=============================================#
+      #================0. Intro=====================#
+      #=============================================#
       tabPanel("0. Introduction to Redhyte",
                imageOutput("algoPNG",height="700px")),
       
@@ -118,6 +120,9 @@ shinyUI(pageWithSidebar(
       #=============================================#
       
       tabPanel("4. Test diagnostics"), #not implemented yet, will come back to this
+      
+      #============Test Data2()=====================#
+      
       tabPanel("Test Data2()",
                tableOutput("testData2")),
       
