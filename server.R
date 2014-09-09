@@ -333,7 +333,7 @@ shinyServer(function(input,output){
       #using mean instead of median,
       #because median cannot handle extremely skewed data
       
-      print(unique(dfWithCtx[,input$targetAttr]))
+      #print(unique(dfWithCtx[,input$targetAttr]))
       
       dfWithCtx$tgt.class<-sapply(dfWithCtx[,input$targetAttr],
                                   FUN=function(x){
@@ -534,23 +534,27 @@ shinyServer(function(input,output){
     if(!is.null(df$tgt.class)){
       #df$tgt.class has been defined, meaning Atgt is continuous
       #find all other context attributes
-      col.names.tgt<-intersect(
-        colnames(df)[which(colnames(df) != input$targetAttr)],
+      ctx.col.names<-intersect(
+        colnames(df)[which(colnames(df) != input$comparingAttr)],
+        colnames(df)[which(colnames(df) != input$targetAttr)])
+      
+      ctx.col.names<-intersect(ctx.col.names,
         colnames(df)[which(colnames(df) != "tgt.class")])
-        
-        fm.tgt<-paste(" ",col.names.tgt,sep="",collapse="+")
-        fm.tgt<-as.formula(paste("tgt.class","~",fm.tgt,sep=""))
+      
+      fm.tgt<-paste(" ",ctx.col.names,sep="",collapse="+")
+      fm.tgt<-as.formula(paste("tgt.class","~",fm.tgt,sep=""))
     }
     else{
-      col.names.tgt<-colnames(df)[which(colnames(df) != input$targetAttr)]
+      ctx.col.names<-intersect(
+        colnames(df)[which(colnames(df) != input$comparingAttr)],
+        colnames(df)[which(colnames(df) != input$targetAttr)])
       
-      fm.tgt<-paste(" ",col.names.tgt,sep="",collapse="+")
+      fm.tgt<-paste(" ",ctx.col.names,sep="",collapse="+")
       fm.tgt<-as.formula(paste(input$targetAttr,"~",fm.tgt,sep=""))
     }
     
     #now formulate for Acmp
-    col.names.cmp<-colnames(df)[which(colnames(df) != input$comparingAttr)]
-    fm.cmp<-paste(" ",col.names.cmp,sep="",collapse="+")
+    fm.cmp<-paste(" ",ctx.col.names,sep="",collapse="+")
     fm.cmp<-as.formula(paste(input$comparingAttr,"~",fm.cmp,sep=""))
 
     print(fm.tgt)
@@ -559,27 +563,70 @@ shinyServer(function(input,output){
     #construct models
     mod.tgt<-randomForest(formula=fm.tgt,
                           data=df,
-                          importance=T)
+                          importance=TRUE)
     mod.cmp<-randomForest(formula=fm.cmp,
                           data=df,
-                          importance=T)
+                          importance=TRUE)
+    
+    #compute accuracies
+    cm.tgt<-mod.tgt$confusion
+    cm.cmp<-mod.cmp$confusion
+    cm.tgt<-cm.tgt[,-ncol(cm.tgt)]
+    cm.cmp<-cm.cmp[,-ncol(cm.cmp)]
+    
+    #090914: consider only the diagonal entries of the confusion matrices for now
+    acc.tgt<-sum(diag(cm.tgt))/sum(cm.tgt)
+    acc.cmp<-sum(diag(cm.cmp))/sum(cm.cmp)
+    #this is severly affected by class-imbalance and multi-classes
+    
+    #compare the accuracies of the models with the default accuracy threshold
+    #defined in related_codes/settings.R
+    #3 cases:
+    # -> acc.tgt >= acc.rf.default && acc.cmp >= acc.rf.default
+    # -> acc.tgt >= acc.rf.default && acc.cmp <  acc.rf.default
+    # -> acc.tgt <  acc.rf.default && acc.cmp >= acc.rf.default
+    
+    if(acc.tgt >= acc.rf.default && acc.cmp < acc.rf.default){
+      mined.attr<-rownames(mod.tgt$importance)[seq(k)]
+    }
+    else if(acc.tgt < acc.rf.default && acc.cmp >= acc.rf.default){
+      mined.attr<-rownames(mod.cmp$importance)[seq(k)]
+    }
+    else{
+      #both models are accurate; extract top k attributes
+      #from the intersection of the top attributes in
+      #both models based on variable importance (VI)
+      
+      #combine the list of MeanDecreaseAccuracy
+      mda.tgt<-mod.tgt$importance[,"MeanDecreaseAccuracy"]
+      mda.cmp<-mod.cmp$importance[,"MeanDecreaseAccuracy"]
+      
+      names(mda.tgt)<-paste(mda.tgt,".tgt",sep="")
+      names(mda.cmp)<-paste(mda.cmp,".cmp",sep="")
+      
+      mda.both<-c(mda.tgt,mda.cmp)
+      mda.both<-sort(mda.both)
+      
+    }
     
     #now evaluate whether mod.tgt has been accurate
     #three things to consider:
     # @ whether Atgt is continous or categorical
     # @ if Atgt is categorical, whether Atgt is binary or multi-class
     # @ if Atgt is categorical, whether Atgt has class-imbalance
-    #the only piece of additional input from the user is vtgt,
-    #which is the 
+    #the only piece of additional guiding input from the user is vtgt
+    #the other problems need to be resolved using class-imbalance learning techniques
     
     return(list(mod.tgt$confusion,mod.cmp$confusion))
-    
-    #compute accuracies
   })
   
   #*********************************************#
   
-  output$testRF<-renderTable({
+  output$testRF1<-renderTable({
     minedAttributes()[[1]]
+  })
+  
+  output$testRF2<-renderTable({
+    minedAttributes()[[2]]
   })
 })

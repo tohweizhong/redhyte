@@ -134,7 +134,8 @@ shinyUI(pageWithSidebar(
                tags$h6("Redhyte's hypothesis mining implementation works by first constructing two
                        random forest models, using the context attributes to predict the
                        target and comparing attributes."),
-               tableOutput("testRF"))
+               tableOutput("testRF1"),
+               tableOutput("testRF2"))
 
     )#end tabset panel
   ) #end main panel

@@ -1,3 +1,4 @@
 #settings
 
-rf.acc<-.75
+acc.rf.default<-.75
+k<-5
