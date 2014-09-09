@@ -253,6 +253,13 @@ shinyServer(function(input,output){
 
   #===============REACTIVE======================#
 
+  #The objectives of Data2() are:
+  # -> subsetting the data based on the user's initial context
+  # -> if Atgt is continuous, include a binary attribute based on the
+  #    median(Atgt). This is done because it will speed up the
+  #    construction of the RF models later. (Regression RF is
+  #    apparently slower than classification RF.)
+  
   #Because Data() contains information regarding the attributes,
   #while Data2() considers starting context formed by specific
   #classes of Atgt and Acmp, information in Data() can be re-used,
@@ -262,7 +269,7 @@ shinyServer(function(input,output){
   #030914: will return Data()[[[3]]] as it is anyway for now.
 
   #Data2() consists of *FOUR* things at the moment
-  # 1. Data2()[[1]] is the data itself
+  # 1. Data2()[[1]] is the data itself, with the median cutoff attribute
   # 2. Data2()[[2]] is the type of variable: continuous or categorical
   # 3. Data2()[[3]] is the number of classes for categorical attributes, NA for cont.
   # 4. Data2()[[4]] is the ctxFlag, indicating if a starting context is being used
@@ -323,17 +330,27 @@ shinyServer(function(input,output){
     #retrieve the row numbers of the row to be used in subsequent analysis,
     #forming the starting context
     dfWithCtx<-dfWithCtx[rowsToUse,]
-    return(list(dfWithCtx,Data()[[2]],Data()[[3]],ctxFlag))
+    
+    #finally, add the median cutoff attribute if Atgt is continuous
+    if(Data()[[2]][input$targetAttr] == "Cont"){
+      med<-median(dfWithCtx[,input$targetAttr])
+      dfWithCtx$tgt.class<-sapply(dfWithCtx[,input$targetAttr],
+                                  FUN=function(x){
+                                    if(x>=med) return("High")
+                                    else return("Low")})
+    }
+    
+    return(list(dfWithCtx,c(Data()[[2]],"Cate"),Data()[[3]],ctxFlag))
     #Data2()[[3]] is incorrect for now. refer to comments above
   })
   
-#   #for testing Data2()
-#   output$testData2<-renderTable({
-#     if (is.null(Data2()[1])) return(NULL)
-#     rowsToDisplay<-20
-#     if(rowsToDisplay > 0.5*nrow(Data2()[[1]])) rowsToDisplay<-0.5*nrow(Data2()[[1]])
-#     data.frame(Data2()[[1]][1:rowsToDisplay,])
-#   },digits=3)
+  #for testing Data2()
+  output$testData2<-renderTable({
+    if (is.null(Data2()[1])) return(NULL)
+    rowsToDisplay<-20
+    if(rowsToDisplay > 0.5*nrow(Data2()[[1]])) rowsToDisplay<-0.5*nrow(Data2()[[1]])
+    data.frame(Data2()[[1]][1:rowsToDisplay,])
+  },digits=3)
 
   #generate contingency table if target attribute is cate.
   #else generate a comparison table
@@ -488,12 +505,29 @@ shinyServer(function(input,output){
     which.are.char<-which(Data2()[[2]] == "Cate")
     df[,which.are.char]<-lapply(df[,which.are.char],factor)
     
+    str(df)
+    
     #formulate the formulae for random forest models
-    col.names.tgt<-colnames(df)[which(colnames(df) != input$targetAttr)]
+    #start with Atgt
+    if(!is.null(df$tgt.class)){
+      #df$tgt.class has been defined, meaning Atgt is continuous
+      col.names.tgt<-intersect(
+        colnames(df)[which(colnames(df) != input$targetAttr)],
+        colnames(df)[which(colnames(df) != "tgt.class")])
+        
+        fm.tgt<-paste(" ",col.names.tgt,sep="",collapse="+")
+        fm.tgt<-as.formula(paste("tgt.class","~",fm.tgt,sep=""))
+    }
+    else{
+      col.names.tgt<-colnames(df)[which(colnames(df) != input$targetAttr)]
+      
+      fm.tgt<-paste(" ",col.names.tgt,sep="",collapse="+")
+      fm.tgt<-as.formula(paste(input$targetAttr,"~",fm.tgt,sep=""))
+    }
+    
+    #now formulate for Acmp
     col.names.cmp<-colnames(df)[which(colnames(df) != input$comparingAttr)]
-    fm.tgt<-paste(" ",col.names.tgt,sep="",collapse="+")
     fm.cmp<-paste(" ",col.names.cmp,sep="",collapse="+")
-    fm.tgt<-as.formula(paste(input$targetAttr,"~",fm.tgt,sep=""))
     fm.cmp<-as.formula(paste(input$comparingAttr,"~",fm.cmp,sep=""))
 
     #construct models
@@ -509,12 +543,15 @@ shinyServer(function(input,output){
     # @ whether Atgt is continous or categorical
     # @ if Atgt is categorical, whether Atgt is binary or multi-class
     # @ if Atgt is categorical, whether Atgt has class-imbalance
-    #the only piece of additional input required to
+    #the only piece of additional input from the user is vtgt,
+    #which is the 
     
     return(list(mod.tgt$confusion,mod.cmp$confusion))
     
     #compute accuracies
   })
+  
+  
   output$testRF<-renderTable({
     minedAttributes()[[1]]
   })

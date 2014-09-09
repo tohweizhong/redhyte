@@ -118,6 +118,8 @@ shinyUI(pageWithSidebar(
       #=============================================#
       
       tabPanel("4. Test diagnostics"), #not implemented yet, will come back to this
+      tabPanel("Test Data2()",
+               tableOutput("testData2")),
       
       #=============================================#
       #==========5. Hypothesis mining===============#
