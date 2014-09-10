@@ -512,9 +512,9 @@ shinyServer(function(input,output){
   #*********************************************#
   
   #=============================================#
-  #==========5. Hypothesis mining===============#
+  #============5. Context mining================#
   #=============================================#
-
+  
   #first step: build the two RF models
   
   #***************REACTIVE**********************#
@@ -526,8 +526,6 @@ shinyServer(function(input,output){
     #initial data input options use stringsAsFactors=FALSE (see doc.txt)
     which.are.char<-which(Data2()[[2]] == "Cate")
     df[,which.are.char]<-lapply(df[,which.are.char],factor)
-    
-    str(df)
     
     #formulate the formulae for random forest models
     #start with Atgt
@@ -556,9 +554,6 @@ shinyServer(function(input,output){
     #now formulate for Acmp
     fm.cmp<-paste(" ",ctx.col.names,sep="",collapse="+")
     fm.cmp<-as.formula(paste(input$comparingAttr,"~",fm.cmp,sep=""))
-
-    print(fm.tgt)
-    print(fm.cmp)
     
     #construct models
     mod.tgt<-randomForest(formula=fm.tgt,
@@ -567,17 +562,28 @@ shinyServer(function(input,output){
     mod.cmp<-randomForest(formula=fm.cmp,
                           data=df,
                           importance=TRUE)
+
+    #now evaluate whether the models has been accurate
+    #three things to consider:
+    # @ whether Atgt is continous or categorical
+    # @ if Atgt is categorical, whether Atgt is binary or multi-class
+    # @ if Atgt is categorical, whether Atgt has class-imbalance
+    #the only piece of additional guiding input from the user is vtgt
+    #the other problems need to be resolved using class-imbalance learning techniques
     
     #compute accuracies
     cm.tgt<-mod.tgt$confusion
     cm.cmp<-mod.cmp$confusion
     cm.tgt<-cm.tgt[,-ncol(cm.tgt)]
     cm.cmp<-cm.cmp[,-ncol(cm.cmp)]
-    
+
     #090914: consider only the diagonal entries of the confusion matrices for now
     acc.tgt<-sum(diag(cm.tgt))/sum(cm.tgt)
     acc.cmp<-sum(diag(cm.cmp))/sum(cm.cmp)
     #this is severly affected by class-imbalance and multi-classes
+    
+    print(acc.tgt)
+    print(acc.cmp)
     
     #compare the accuracies of the models with the default accuracy threshold
     #defined in related_codes/settings.R
@@ -588,11 +594,13 @@ shinyServer(function(input,output){
     
     if(acc.tgt >= acc.rf.default && acc.cmp < acc.rf.default){
       mined.attr<-rownames(mod.tgt$importance)[seq(k)]
+      names(mined.attr)<-paste(mined.attr,".tgt",sep="")
     }
     else if(acc.tgt < acc.rf.default && acc.cmp >= acc.rf.default){
       mined.attr<-rownames(mod.cmp$importance)[seq(k)]
+      names(mined.attr)<-paste(mined.attr,".cmp",sep="")
     }
-    else{
+    else if(acc.tgt >= acc.rf.default && acc.cmp >= acc.rf.default){
       #both models are accurate; extract top k attributes
       #from the intersection of the top attributes in
       #both models based on variable importance (VI)
@@ -601,23 +609,41 @@ shinyServer(function(input,output){
       mda.tgt<-mod.tgt$importance[,"MeanDecreaseAccuracy"]
       mda.cmp<-mod.cmp$importance[,"MeanDecreaseAccuracy"]
       
-      names(mda.tgt)<-paste(mda.tgt,".tgt",sep="")
-      names(mda.cmp)<-paste(mda.cmp,".cmp",sep="")
+      names(mda.tgt)<-paste(names(mda.tgt),".tgt",sep="")
+      names(mda.cmp)<-paste(names(mda.cmp),".cmp",sep="")
       
       mda.both<-c(mda.tgt,mda.cmp)
-      mda.both<-sort(mda.both)
+      mda.both<-sort(mda.both,decreasing=TRUE)
       
+      #take the first k attributes, consider them shortlisted
+      mined.attr<-names(mda.both)[seq(5)]
+      
+      #print("sl:")
+      #print(sl)
+      
+      #function to remove the tails ".tgt" and ".cmp"
+      mined.attr<-sapply(mined.attr,FUN=function(s){
+        last.dot<-regexpr("\\.[^\\.]*$", s)
+        return(substr(s,1,last.dot-1))
+      })
+      
+      #print("sl after remove.tail")
+      #print(sl)
+      
+      #while-loop to remove duplicates in sl and add new ones
+      idx<-k
+      while(length(unique(mined.attr)) != length(mined.attr)){
+        dup<-which(duplicated(mined.attr) == TRUE)
+        mined.attr<-mined.attr[-dup[1]] #remove one at a time
+        original.name<-names(mda.both)[idx+1]
+        mined.attr<-c(mined.attr,remove.tail(names(mda.both)[idx+1]))
+        names(mined.attr)[(length(mined.attr))]<-original.name
+        idx<-idx+1
+        print(idx)
+      }
+      print(mined.attr)
     }
-    
-    #now evaluate whether mod.tgt has been accurate
-    #three things to consider:
-    # @ whether Atgt is continous or categorical
-    # @ if Atgt is categorical, whether Atgt is binary or multi-class
-    # @ if Atgt is categorical, whether Atgt has class-imbalance
-    #the only piece of additional guiding input from the user is vtgt
-    #the other problems need to be resolved using class-imbalance learning techniques
-    
-    return(list(mod.tgt$confusion,mod.cmp$confusion))
+    return(list(mod.tgt$confusion,mod.cmp$confusion,mined.attr))
   })
   
   #*********************************************#
@@ -625,8 +651,12 @@ shinyServer(function(input,output){
   output$testRF1<-renderTable({
     minedAttributes()[[1]]
   })
-  
   output$testRF2<-renderTable({
     minedAttributes()[[2]]
+  })
+  output$testRF3<-renderTable({
+    df<-data.frame(minedAttributes()[[3]])
+    colnames(df)<-"Mined context attributes"
+    df
   })
 })

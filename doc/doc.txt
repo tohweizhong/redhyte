@@ -44,10 +44,14 @@ using sidebarPanels in the tabPanels => the sidebarPanels are fixed and cannot m
 WISHLIST
 
 1. using googleVis or similiar API/packages to do interactive graphics
-2.
+2. display proportions p in the initial test tab
+3. An analysis log like MetaboNexus'
 
 PROBLEMS/UNIMPLEMENTED FEATURES
 1. Atgt = capital.gain, Acmp = relationship,
    Cinitial = {Acmp = Husband, Acmp = Wife}
    capital.gain is skewed after the subsetting, using median cannot work while using mean leaves class-imbalance
    best is to use mean and employ class-imbalance learning techniques
+
+2. scatterplot for one continuous, one categorical attribute
+
