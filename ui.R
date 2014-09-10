@@ -144,7 +144,8 @@ shinyUI(pageWithSidebar(
                           tableOutput("testRF3")),
                  tabPanel("Visualization",
                           sidebarPanel(
-                            htmlOutput("minedAttrCtrl"))),
+                            htmlOutput("minedAttrCtrl")),
+                          plotOutput("mined.attr.viz")),
                  widths=c(3,9))),
       
       #=============================================#

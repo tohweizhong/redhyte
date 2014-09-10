@@ -382,7 +382,7 @@ shinyServer(function(input,output){
       
       #is the target attribute continuous or categorical?
       if(Data()[[2]][input$targetAttr] == "Cate")
-        return(list(table(df),
+        return(list(t(table(df)),
                     "Contingency",
                     length(unique(df[,input$comparingAttr])),
                     df))
@@ -411,7 +411,7 @@ shinyServer(function(input,output){
       df<-Data2()[[1]][c(input$targetAttr,input$comparingAttr)]
       #is the target attribute continuous or categorical?
       if(Data2()[[2]][input$targetAttr] == "Cate")
-        return(list(table(df),
+        return(list(t(table(df)),
                     "Contingency",
                     length(unique(df[,input$comparingAttr])),
                     df))
@@ -661,55 +661,73 @@ shinyServer(function(input,output){
   })
   
   #visualization of the mined context attrtibutes
-  
   output$minedAttrCtrl<-renderUI({
     selectizeInput("mined.attr",
                    "Which mined attribute?",
                    minedAttributes()[[3]])
+  }) #return: input$mined.attr
+  
+  #render the plot for one mined attribute indicated by user
+  output$mined.attr.viz<-renderPlot({
+    #this visualization requires at least two, at most three attributes
+    tgt.attr<-input$targetAttr
+    cmp.attr<-input$comparingAttr
+    mined.attr<-input$mined.attr
+    
+    #consider Cinitial for Acmp
+    c.initial.cmp<-input$whichcmpclasses #have not considered "Use all classes" yet
+    num.classes.cmp<-length(c.initial.cmp)
+    #will need to consider Atgt as well
+    
+    #grab the relevant data
+    df.to.plot<-Data2()[[1]][,c(tgt.attr,cmp.attr,mined.attr)]
+    
+    #need to consider whether Atgt is continuous or categorical
+    #check this using the Data()[[2]]
+    if(Data()[[2]][tgt.attr]=="Cont"){
+      #Atgt is continuous, simulate a comparison table
+      #plotting only involves two attributes:
+      # -> mined.attr
+      # -> cmp.attr
+      
+      par(mfrow=c(length(num.classes.cmp,1)))
+      
+      for(i in seq(length(num.classes.cmp))){
+        #grab the subset of data
+        plot.dat<-df.to.plot[which(df.to.plot[,cmp.attr] == c.initial.cmp[i]),mined.attr]
+        if(Data()[[3]][mined.attr] == "Cate") barplot(plot.dat)
+        else if(Data()[[3]][mined.attr == "Cont"]) hist(plot.data)
+      }
+    }
+    else if(Data()[[2]][tgt.attr] == "Cate"){
+      #Atgt is continuous, simulate a contingency table
+      #plotting now involves all three attributes
+      
+      #consider Cinitial defined by Atgt
+      c.initial.tgt<-input$whichtgtclasses
+      num.classes.tgt<-length(c.initial.tgt)
+      
+      par(mfrow=c(num.classes.cmp,num.classes.tgt))
+      print(num.classes.cmp)
+      print(num.classes.tgt)
+      
+      for(i in seq(num.classes.cmp)){
+        for(j in seq(num.classes.tgt)){
+          
+          rowsToPlot<-intersect(which(df.to.plot[,cmp.attr] == c.initial.cmp[i]),
+                                which(df.to.plot[,tgt.attr] == c.initial.tgt[j]))
+          
+          plot.dat<-df.to.plot[rowsToPlot,mined.attr]
+          if(Data()[[2]][mined.attr] == "Cate"){
+            barplot(data.frame(table(plot.dat))[,2],
+                    main=paste(cmp.attr,"=",c.initial.cmp[i],",",
+                               tgt.attr,"=",c.initial.tgt[j],sep=""))
+          }
+          else if(Data()[[2]][mined.attr] == "Cont")
+            hist(plot.dat,main=paste(cmp.attr,"=",c.initial.cmp[i],",",
+                                     tgt.attr,"=",c.initial.tgt[j],sep=""))
+        }
+      }
+    }
   })
-  
-#   output$mined.attr.viz<-renderPlot({
-#     
-#     #need to consider whether Atgt is continuous or categorical
-#     #check this using the Table()
-#     mined.attr<-minedAttributes()[[3]]
-#     
-#     if(Data()[[2]][input$targetAttr] == "Cont"){
-#       #Atgt is continuous, consider the Cinitial defined by Acmp
-#       c.initial.cmp<-input$whichcmpclasses
-#       
-#       #plotting only involves 3 attributes:
-#       # -> the mined context attr, input$mined.attr
-#       # -> input$target
-#     }
-#     
-#     df.to.plot<-Data2()[[1]][,c(input$targetAttr,input$comparingAttr)]
-#     
-#     c.initial.tgt<-input$whichtgtclasses
-#     c.initial.cmp<-input$whichcmpclasses
-#     par(mfrow(length(c.initial.cmp),
-#               length(c.initial.tgt)))
-#     
-#     for(i in length(c.initial.tgt)){
-#       for(j in length(c.initial.cmp)){
-#         
-#         which.rows<-which(df.to.plot)
-#         
-#       }
-#     }
-#     
-#   })
-  
-  #input$whichtgtclasses
-  
-  #   output$hist1<-renderPlot({
-#     if(Data()[[2]][input$whichAttr1]=="Cont")
-#       hist(Data()[[1]][,input$whichAttr1],main="",xlab="")
-#     else{
-#       tb<-data.frame(table(Data()[[1]][,input$whichAttr1]))
-#       colnames(tb)<-c(input$whichAttr1,"Frequency")
-#       barplot(tb$Frequency)
-#     }
-#     
-#  })
-})
+}) #end shinyServer
