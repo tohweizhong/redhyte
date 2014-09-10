@@ -504,7 +504,7 @@ shinyServer(function(input,output){
   #***************REACTIVE**********************#
   
   Test<-reactive({
-    if(Table()[[2]] == "Contingency") return("t-test")
+    if(Table()[[2]] == "Contingency") return("t-test") # <--- WRONG
     else if(Table()[[3]] == 2) return("chisq-test")
     else if(Table()[[3]] > 2) return("anova")
   }) #not implemented yet
@@ -630,7 +630,7 @@ shinyServer(function(input,output){
       #print("sl after remove.tail")
       #print(sl)
       
-      #while-loop to remove duplicates in sl and add new ones
+      #while-loop to remove duplicates in mined.attr and add new ones
       idx<-k
       while(length(unique(mined.attr)) != length(mined.attr)){
         dup<-which(duplicated(mined.attr) == TRUE)
@@ -659,4 +659,57 @@ shinyServer(function(input,output){
     colnames(df)<-"Mined context attributes"
     df
   })
+  
+  #visualization of the mined context attrtibutes
+  
+  output$minedAttrCtrl<-renderUI({
+    selectizeInput("mined.attr",
+                   "Which mined attribute?",
+                   minedAttributes()[[3]])
+  })
+  
+#   output$mined.attr.viz<-renderPlot({
+#     
+#     #need to consider whether Atgt is continuous or categorical
+#     #check this using the Table()
+#     mined.attr<-minedAttributes()[[3]]
+#     
+#     if(Data()[[2]][input$targetAttr] == "Cont"){
+#       #Atgt is continuous, consider the Cinitial defined by Acmp
+#       c.initial.cmp<-input$whichcmpclasses
+#       
+#       #plotting only involves 3 attributes:
+#       # -> the mined context attr, input$mined.attr
+#       # -> input$target
+#     }
+#     
+#     df.to.plot<-Data2()[[1]][,c(input$targetAttr,input$comparingAttr)]
+#     
+#     c.initial.tgt<-input$whichtgtclasses
+#     c.initial.cmp<-input$whichcmpclasses
+#     par(mfrow(length(c.initial.cmp),
+#               length(c.initial.tgt)))
+#     
+#     for(i in length(c.initial.tgt)){
+#       for(j in length(c.initial.cmp)){
+#         
+#         which.rows<-which(df.to.plot)
+#         
+#       }
+#     }
+#     
+#   })
+  
+  #input$whichtgtclasses
+  
+  #   output$hist1<-renderPlot({
+#     if(Data()[[2]][input$whichAttr1]=="Cont")
+#       hist(Data()[[1]][,input$whichAttr1],main="",xlab="")
+#     else{
+#       tb<-data.frame(table(Data()[[1]][,input$whichAttr1]))
+#       colnames(tb)<-c(input$whichAttr1,"Frequency")
+#       barplot(tb$Frequency)
+#     }
+#     
+#  })
 })

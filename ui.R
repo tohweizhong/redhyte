@@ -137,9 +137,15 @@ shinyUI(pageWithSidebar(
                tags$h6("For each of these two models, Redhyte extract the top k attributes that contribute
                        to the classification of target and/or comparing attributes, if the model(s) is accurate."),
                tags$h6("Confusion matrices of the models will be displayed, as well as the list of mined context attributes."),
-               tableOutput("testRF1"),
-               tableOutput("testRF2"),
-               tableOutput("testRF3")),
+               navlistPanel(
+                 tabPanel("Mined context attributes",
+                          tableOutput("testRF1"),
+                          tableOutput("testRF2"),
+                          tableOutput("testRF3")),
+                 tabPanel("Visualization",
+                          sidebarPanel(
+                            htmlOutput("minedAttrCtrl"))),
+                 widths=c(3,9))),
       
       #=============================================#
       #===========6. Hypothesis mining==============#
