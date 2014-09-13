@@ -35,10 +35,7 @@ shinyServer(function(input,output){
   
   Data<-reactive({
     datFile<-input$datFile #still just the file name
-    #if (is.null(datFile)) return(NULL)
-    
     path<-as.character(datFile$datapath)
-    
     df<-read.csv(path,
                  header=input$datHeader,
                  sep=input$datSep,
@@ -250,7 +247,7 @@ shinyServer(function(input,output){
   #The objectives of Data2() are:
   # -> subsetting the data based on the user's initial context
   # -> if Atgt is continuous, include a binary attribute based on
-  #    median(Atgt). This is done because it will speed up the
+  #    mean(Atgt). This is done because it will speed up the
   #    construction of the RF models later. (Regression RF is
   #    apparently slower than classification RF.)
   
@@ -326,7 +323,7 @@ shinyServer(function(input,output){
     #forming the starting context
     dfWithCtx<-dfWithCtx[rowsToUse,]
     
-    #lastly, add the median cutoff attribute if Atgt is continuous
+    #lastly, add the mean cutoff attribute if Atgt is continuous
     #this median value based on the data after considering Cinitial
     if(Data()[[2]][input$targetAttr] == "Cont"){
       m<-mean(dfWithCtx[,input$targetAttr])
