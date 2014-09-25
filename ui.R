@@ -1,3 +1,4 @@
+#redhyte1.0
 shinyUI(pageWithSidebar(
   
   titlePanel(imageOutput("logoPNG",width="180px",height="50px"),
