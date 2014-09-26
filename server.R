@@ -2,9 +2,6 @@ require(shiny)
 require(randomForest)
 source("related_codes/settings.R")
 
-#test branching
-#test branching again
-
 shinyServer(function(input,output){
   
   #fancy work here
@@ -198,39 +195,7 @@ shinyServer(function(input,output){
                    "Indicate comparing attribute (Must be categorical)",
                    colnames(Data()[[1]]))
   }) #return: input$comparingAttr
-
-  #dropdown box to select vtgt
-  output$tgtAttrValueCtrl<-renderUI({
-    if(Data()[[2]][input$targetAttr] == "Cate"){
-      selectizeInput("tgtAttrValue",
-                     "Indicate target attribute value",
-                     unique(Data()[[1]][,input$targetAttr]))
-    }
-    else{
-      selectizeInput("tgtAttrValue",
-                     "Indicate target attribute value",
-                     "NA")
-    }
-  }) #return: input$tgtAttrValue
   
-  #checkboxes to select classes of Atgt and Acmp to form starting ctx
-  output$tgtClassCtrl<-renderUI({
-    if(Data()[[2]][input$targetAttr]=="Cate"){
-      checkboxGroupInput("whichtgtclasses",
-                         "Indicate which target attribute classes to use as part of initial context",
-                         choices=c("Use all classes",unique(Data()[[1]][,input$targetAttr])),
-                         selected="Use all classes")
-    }
-  }) #return: input$whichtgtclasses
-  output$cmpClassCtrl<-renderUI({
-    if(Data()[[2]][input$comparingAttr]=="Cate"){
-      checkboxGroupInput("whichcmpclasses",
-                         "Indicate which comparing attribute class to use as part of initial context",
-                         choices=c("Use all classes",unique(Data()[[1]][,input$comparingAttr])),
-                         selected="Use all classes")
-    }
-  }) #return: input$whichcmpclasses
- 
   #display type of attribute: continuous or categorical
   output$targetType<-renderText({
     if(Data()[[2]][input$targetAttr]=="Cont")
@@ -244,6 +209,88 @@ shinyServer(function(input,output){
     else type<-"Type: Categorical"
     type
   })
+  
+
+#   #dropdown box to select vtgt
+#   output$tgtAttrValueCtrl<-renderUI({
+#     if(Data()[[2]][input$targetAttr] == "Cate"){
+#       selectizeInput("tgtAttrValue",
+#                      "Indicate target attribute value",
+#                      unique(Data()[[1]][,input$targetAttr]))
+#     }
+#     else{
+#       selectizeInput("tgtAttrValue",
+#                      "Indicate target attribute value",
+#                      "NA")
+#     }
+#   }) #return: input$tgtAttrValue
+  
+  #checkboxes to select classes of Atgt and Acmp to form starting ctx
+  output$tgtClassCtrlA<-renderUI({
+    if(Data()[[2]][input$targetAttr] == "Cate"){
+      checkboxGroupInput("whichtgtclassesA",
+                         "Indicate which target attribute classes to form group A",
+                         choices=c(unique(Data()[[1]][,input$targetAttr])))
+    }
+  }) #return: input$whichtgtclassesA
+  output$tgtClassCtrlB<-renderUI({
+    if(Data()[[2]][input$targetAttr] == "Cate"){
+      checkboxGroupInput("whichtgtclassesB",
+                         "Indicate which target attribute classes to form group B",
+                         choices=c(unique(Data()[[1]][,input$targetAttr])))
+    }
+  }) #return: input$whichtgtclassesB
+  output$cmpClassCtrlX<-renderUI({
+    if(Data()[[2]][input$comparingAttr] == "Cate"){ #this must be true
+      checkboxGroupInput("whichcmpclassesX",
+                         "Indicate which comparing attribute class to form group X",
+                         choices=c(unique(Data()[[1]][,input$comparingAttr])))
+    }
+  }) #return: input$whichcmpclassesX
+  output$cmpClassCtrlY<-renderUI({
+    if(Data()[[2]][input$comparingAttr] == "Cate"){ #this must be true
+      checkboxGroupInput("whichcmpclasesY",
+                         "Indicate which comparing attribute classes to form group Y",
+                         choices=c(unique(Data()[[1]][,input$comparingAttr])))
+    }
+  }) #return: input$whichcmpclassesY
+
+  output$ctxAttrCtrl<-renderUI({
+    tmp.choices<-colnames(Data()[[1]])[intersect(
+      which(colnames(Data()[[1]]) != input$targetAttr),
+      which(colnames(Data()[[1]]) != input$comparingAttr))]
+    
+    .choices<-NULL
+    for(c in tmp.choices){
+      if(Data()[[2]][c] == "Cate") .choices<-c(.choices,c)
+    }
+    
+    checkboxGroupInput("ctxAttr",
+                       "Indicate which categorical attributes to form initial context",
+                       choices=.choices)
+  }) #return: input$ctxAttr
+
+  output$ctxItemCtrl<-renderUI({
+    ctx.attr<-input$ctxAttr
+    if(is.null(ctx.attr)) return()
+    .choices<-NULL
+    
+    paste.fun<-function(attr,class){
+      return(paste(attr, " =", class, sep=""))
+    }
+    
+    for(i in seq(length(ctx.attr))){
+      classes<-unique(Data()[[1]][,ctx.attr[i]])
+      for(j in seq(length(classes))){
+        .choices<-c(.choices,paste.fun(ctx.attr[i],classes[j]))
+      }
+    }
+    checkboxGroupInput("ctxItems",
+                       "Indicate which items to form initial context",
+                       choices=.choices)
+    
+  })
+
 
   #***************REACTIVE**********************#
   

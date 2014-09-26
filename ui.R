@@ -95,19 +95,37 @@ shinyUI(pageWithSidebar(
       #=============================================#
       
       tabPanel("3. Initial test",
+               tags$h5("In the context of <context>, there is a difference in Atgt (Group A vs B) vs in the populations of Acmp (Group X  vs Group Y)"),
                navlistPanel(
-                 tabPanel("Initial context",
+                 tabPanel("Target attribute",
                           sidebarPanel(
                             htmlOutput("targetCtrl"),
                             verbatimTextOutput("targetType"),
-                            htmlOutput("tgtClassCtrl"),
-                            htmlOutput("tgtAttrValueCtrl"),
                             width=4),
+                          sidebarPanel(
+                            htmlOutput("tgtClassCtrlA"),
+                            width=4),
+                          sidebarPanel(
+                            htmlOutput("tgtClassCtrlB"),
+                            width=4)),
+                 tabPanel("Comparing attribute",
                           sidebarPanel(
                             htmlOutput("comparingCtrl"),
                             verbatimTextOutput("comparingType"),
-                            htmlOutput("cmpClassCtrl"),
+                            width=4),
+                          sidebarPanel(
+                            htmlOutput("cmpClassCtrlX"),
+                            width=4),
+                          sidebarPanel(
+                            htmlOutput("cmpClassCtrlY"),
                             width=4)),
+                 tabPanel("Initial context",
+                          sidebarPanel(
+                            htmlOutput("ctxAttrCtrl"),
+                            width=4),
+                          sidebarPanel(
+                            htmlOutput("ctxItemCtrl"),
+                            width=8)),
                  tabPanel("Table & test",
                           tableOutput("contTable"),
                           sidebarPanel(
