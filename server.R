@@ -34,7 +34,7 @@ shinyServer(function(input,output){
   #here begins the real work..
   
   Data<-reactive({
-    datFile<-input$datFile #still just the file name
+    datFile<-input$datFile
     path<-as.character(datFile$datapath)
     df<-read.csv(path,
                  header=input$datHeader,
@@ -210,21 +210,6 @@ shinyServer(function(input,output){
     type
   })
   
-
-#   #dropdown box to select vtgt
-#   output$tgtAttrValueCtrl<-renderUI({
-#     if(Data()[[2]][input$targetAttr] == "Cate"){
-#       selectizeInput("tgtAttrValue",
-#                      "Indicate target attribute value",
-#                      unique(Data()[[1]][,input$targetAttr]))
-#     }
-#     else{
-#       selectizeInput("tgtAttrValue",
-#                      "Indicate target attribute value",
-#                      "NA")
-#     }
-#   }) #return: input$tgtAttrValue
-  
   #checkboxes to select classes of Atgt and Acmp to form starting ctx
   output$tgtClassCtrlA<-renderUI({
     if(Data()[[2]][input$targetAttr] == "Cate"){
@@ -249,12 +234,13 @@ shinyServer(function(input,output){
   }) #return: input$whichcmpclassesX
   output$cmpClassCtrlY<-renderUI({
     if(Data()[[2]][input$comparingAttr] == "Cate"){ #this must be true
-      checkboxGroupInput("whichcmpclasesY",
+      checkboxGroupInput("whichcmpclassesY",
                          "Indicate which comparing attribute classes to form group Y",
                          choices=c(unique(Data()[[1]][,input$comparingAttr])))
     }
   }) #return: input$whichcmpclassesY
 
+  #context control
   output$ctxAttrCtrl<-renderUI({
     tmp.choices<-colnames(Data()[[1]])[intersect(
       which(colnames(Data()[[1]]) != input$targetAttr),
@@ -269,7 +255,6 @@ shinyServer(function(input,output){
                        "Indicate which categorical attributes to form initial context",
                        choices=.choices)
   }) #return: input$ctxAttr
-
   output$ctxItemCtrl<-renderUI({
     ctx.attr<-input$ctxAttr
     if(is.null(ctx.attr)) return()
@@ -289,7 +274,7 @@ shinyServer(function(input,output){
                        "Indicate which items to form initial context",
                        choices=.choices)
     
-  })
+  }) #return input$ctxItems
 
 
   #***************REACTIVE**********************#
@@ -319,82 +304,171 @@ shinyServer(function(input,output){
     
     dfWithCtx<-Data()[[1]]
     
-    #assuming no starting ctx yet
-    rowsToUse<-seq(nrow(dfWithCtx))
-    ctxFlag<-FALSE
+    #retrieve all elements of initial context first
+    grpA.classes<-input$whichtgtclasssA # <--- could be NULL if Atgt is cont
+    grpB.classes<-input$whichtgtclassesB # <--- could be NULL
+    grpX.classes<-input$whichcmpclassesX
+    grpY.classes<-input$whichcmpclassesY
+    ctx.attr    <-input$ctxAttr
+    ctx.items   <-input$ctxItems # in the format of Actx = vctx
     
-    #consider the type of Atgt and Acmp
-    #starting context can only be considered for categorical attributes,
-    #ie. Atgt must be categorical while Acmp is already categorical
+    rowsToUse.cmp<-seq(nrow(dfWithCtx))
+    rowsToUse.tgt<-seq(nrow(dfWithCtx))
+    rowsToUse.ctx<-seq(nrow(dfWithCtx))
     
-    #both`Atgt and Acmp are categorical
-    if(Data()[[2]][input$targetAttr] == "Cate" && Data()[[2]][input$comparingAttr] == "Cate"){
-      #use all?
-      if(input$whichtgtclasses == "Use all classes" && input$whichcmpclasses == "Use all classes")
-        rowsToUse<-seq(nrow(dfWithCtx)) #all rows
-      else if(input$whichtgtclasses == "Use all classes" && input$whichcmpclasses != "Use all classes"){
-        rowsToUse<-which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclasses == TRUE) # <------ PROBLEM IS HERE
-        #060914: PROBLEM RESOLVED
-        ctxFlag<-TRUE
-      }
-      else if(input$whichtgtclasses != "Use all classes" && input$whichcmpclasses == "Use all classes"){
-        rowsToUse<-which(dfWithCtx[,input$targetAttr] %in% input$whichtgtclasses == TRUE) # <------ PROBLEM IS HERE
-        ctxFlag<-TRUE
-      }
-      else{
-        rowsToUse<-intersect(which(dfWithCtx[,input$targetAttr] %in% input$whichtgtclasses == TRUE),
-                             which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclasses ==  TRUE)) # <------ PROBLEM IS HERE
-        ctxFlag<-TRUE
-      }
+    #start with Acmp
+    rowsToUse.cmp<-which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclassesX == TRUE) #only X
+    rowsToUse.cmp<-union(
+      rowsToUse.cmp,
+      which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclassesY == TRUE)) #X U Y
+    
+    #now with Atgt
+    if(Data()[[2]][input$targetAttr] == "Cate"){
+      rowsToUse.tgt<-which(dfWithCtx[,input$targetAttr] %in% input$whichtgtclassesA == TRUE) #only A
+      rowsToUse.tgt<-union(
+        rowsToUse.tgt,
+        which(dfWithCtx[,input$targetAttr] %in% input$whichtgtclassesB == TRUE)) #A U B
     }
     
-    #Only Atgt is categorical and Acmp is not
-    #(does not comply to Redhyte's algorithm)
-    else if(Data()[[2]][input$targetAttr] == "Cate" && Data()[[2]][input$comparingAttr] != "Cate"){
-      if(input$whichtgtclasses == "Use all classes")
-        rowsToUse<-seq(nrow(dfWithCtx)) #all rows
-      else if(input$whichtgtclasses != "Use all classes"){
-        rowsToUse<-which(dfWithCtx[,input$targetAttr] == input$whichtgtclasses) # <------ PROBLEM IS HERE
-        ctxFlag<-TRUE
-      }
+    #finally, Actx
+    trim<-function(x){gsub("(^[[:space:]]+|[[:space:]]+$)","",x)}
+    items.df<-data.frame(t(sapply(sapply(ctx.items,FUN=strsplit,"="),trim)))
+    rownames(items.df)<-NULL
+    colnames(items.df)<-c("Actx","vctx")
+    
+    print(items.df)
+    #ok up till here
+    
+    for(i in seq(nrow(items.df))){
+        attr<-items.df$Actx[i]
+        class<-items.df$vctx[i]
+        rowsToUse.ctx<-union(
+          rowsToUse.ctx,
+          which(dfWithCtx[,attr] %in% class == TRUE))
     }
     
-    #only Acmp is categorical and Atgt is not
-    else if(Data()[[2]][input$targetAttr] != "Cate" && Data()[[2]][input$comparingAttr] == "Cate"){
-      if(input$whichcmpclasses == "Use all classes")
-        rowsToUse<-seq(nrow(dfWithCtx)) #all rows
-      else if(input$whichcmpclasses != "Use all classes"){
-        rowsToUse<-which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclasses == TRUE) # <------ PROBLEM IS HERE
-        ctxFlag<-TRUE
-      }
-    }
+    #now, combine the rowsToUse
+    rowsToUse<-intersect(rowsToUse.cmp,intersect(rowsToUse.tgt,rowsToUse.ctx))
+
     
-    #retrieve the row numbers of the row to be used in subsequent analysis,
-    #forming the starting context
+    
+    #retrieve the data
     dfWithCtx<-dfWithCtx[rowsToUse,]
     
-    #lastly, add the mean cutoff attribute if Atgt is continuous
-    #this median value based on the data after considering Cinitial
+    print(length(rowsToUse))
+    
+    print(unique(dfWithCtx$workclass))
+    print(unique(dfWithCtx$education))
+    print(unique(dfWithCtx$marital.status))
+    
+    str(dfWithCtx)
+    
+    #add class attributes (A,B,X,Y)
+    #start with Atgt
     if(Data()[[2]][input$targetAttr] == "Cont"){
       m<-mean(dfWithCtx[,input$targetAttr])
       #using mean instead of median,
       #because median cannot handle extremely skewed data
-      
       #print(unique(dfWithCtx[,input$targetAttr]))
-      
       dfWithCtx$tgt.class<-sapply(dfWithCtx[,input$targetAttr],
                                   FUN=function(x){
-                                    if(x>=m) return("High")
-                                    else return("Low")})
+                                  if(x>=m) return("High")
+                                  else return("Low")})
     }
+    else{ #Atgt is continuous
+      dfWithCtx$tgt.class<-sapply(dfWithCtx[,input$targetAttr],
+                                  FUN=function(x){
+                                    if(x %in% grpA.classes) return("A")
+                                    else if(x %in% grpB.classes) return("B")})
+    }
+    #now with Acmp
+    dfWithCtx$cmp.class<-sapply(dfWithCtx[,input$comparingAttr],
+                                FUN=function(x){
+                                  if(x %in% grpX.classes) return("X")
+                                  else if(x %in% grpY.classes) return("Y")})
+    
     
     #add the attribute type for the cutoff attribute if required
     attr.type<-Data()[[2]]
-    if(ncol(dfWithCtx) > ncol(Data()[[1]])){ #meaning the cutoff attribute is added
-      attr.type<-c(attr.type,"Cate")
-    }
-    
-    return(list(dfWithCtx,attr.type,Data()[[3]],ctxFlag))
+    attr.type<-c(attr.type,"Cate","Cate")
+        
+    return(list(dfWithCtx,attr.type,Data()[[3]]))
+#     #assuming no starting ctx yet
+#     rowsToUse<-seq(nrow(dfWithCtx))
+#     ctxFlag<-FALSE
+#     
+#     #consider the type of Atgt and Acmp
+#     #starting context can only be considered for categorical attributes,
+#     #ie. Atgt must be categorical while Acmp is already categorical
+#     
+#     #both`Atgt and Acmp are categorical
+#     if(Data()[[2]][input$targetAttr] == "Cate" && Data()[[2]][input$comparingAttr] == "Cate"){
+#       #use all?
+#       if(input$whichtgtclasses == "Use all classes" && input$whichcmpclasses == "Use all classes")
+#         rowsToUse<-seq(nrow(dfWithCtx)) #all rows
+#       else if(input$whichtgtclasses == "Use all classes" && input$whichcmpclasses != "Use all classes"){
+#         rowsToUse<-which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclasses == TRUE) # <------ PROBLEM IS HERE
+#         #060914: PROBLEM RESOLVED
+#         ctxFlag<-TRUE
+#       }
+#       else if(input$whichtgtclasses != "Use all classes" && input$whichcmpclasses == "Use all classes"){
+#         rowsToUse<-which(dfWithCtx[,input$targetAttr] %in% input$whichtgtclasses == TRUE) # <------ PROBLEM IS HERE
+#         ctxFlag<-TRUE
+#       }
+#       else{
+#         rowsToUse<-intersect(which(dfWithCtx[,input$targetAttr] %in% input$whichtgtclasses == TRUE),
+#                              which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclasses ==  TRUE)) # <------ PROBLEM IS HERE
+#         ctxFlag<-TRUE
+#       }
+#     }
+#     
+#     #Only Atgt is categorical and Acmp is not
+#     #(does not comply to Redhyte's algorithm)
+#     else if(Data()[[2]][input$targetAttr] == "Cate" && Data()[[2]][input$comparingAttr] != "Cate"){
+#       if(input$whichtgtclasses == "Use all classes")
+#         rowsToUse<-seq(nrow(dfWithCtx)) #all rows
+#       else if(input$whichtgtclasses != "Use all classes"){
+#         rowsToUse<-which(dfWithCtx[,input$targetAttr] == input$whichtgtclasses) # <------ PROBLEM IS HERE
+#         ctxFlag<-TRUE
+#       }
+#     }
+#     
+#     #only Acmp is categorical and Atgt is not
+#     else if(Data()[[2]][input$targetAttr] != "Cate" && Data()[[2]][input$comparingAttr] == "Cate"){
+#       if(input$whichcmpclasses == "Use all classes")
+#         rowsToUse<-seq(nrow(dfWithCtx)) #all rows
+#       else if(input$whichcmpclasses != "Use all classes"){
+#         rowsToUse<-which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclasses == TRUE) # <------ PROBLEM IS HERE
+#         ctxFlag<-TRUE
+#       }
+#     }
+#     
+#     #retrieve the row numbers of the row to be used in subsequent analysis,
+#     #forming the starting context
+#     dfWithCtx<-dfWithCtx[rowsToUse,]
+#     
+#     #lastly, add the mean cutoff attribute if Atgt is continuous
+#     #this median value based on the data after considering Cinitial
+#     if(Data()[[2]][input$targetAttr] == "Cont"){
+#       m<-mean(dfWithCtx[,input$targetAttr])
+#       #using mean instead of median,
+#       #because median cannot handle extremely skewed data
+#       
+#       #print(unique(dfWithCtx[,input$targetAttr]))
+#       
+#       dfWithCtx$tgt.class<-sapply(dfWithCtx[,input$targetAttr],
+#                                   FUN=function(x){
+#                                     if(x>=m) return("High")
+#                                     else return("Low")})
+#     }
+#     
+#     #add the attribute type for the cutoff attribute if required
+#     attr.type<-Data()[[2]]
+#     if(ncol(dfWithCtx) > ncol(Data()[[1]])){ #meaning the cutoff attribute is added
+#       attr.type<-c(attr.type,"Cate")
+#     }
+#     
+#     return(list(dfWithCtx,attr.type,Data()[[3]],ctxFlag))
     #Data2()[[3]] is incorrect for now. refer to comments above
   })
   
