@@ -210,7 +210,7 @@ shinyServer(function(input,output){
     type
   })
   
-  #checkboxes to select classes of Atgt and Acmp to form starting ctx
+  #target and comparing control
   output$tgtClassCtrlA<-renderUI({
     if(Data()[[2]][input$targetAttr] == "Cate"){
       checkboxGroupInput("whichtgtclassesA",
@@ -261,7 +261,7 @@ shinyServer(function(input,output){
     .choices<-NULL
     
     paste.fun<-function(attr,class){
-      return(paste(attr, " =", class, sep=""))
+      return(paste(attr, "=", class, sep=""))
     }
     
     for(i in seq(length(ctx.attr))){
@@ -305,7 +305,7 @@ shinyServer(function(input,output){
     dfWithCtx<-Data()[[1]]
     
     #retrieve all elements of initial context first
-    grpA.classes<-input$whichtgtclasssA # <--- could be NULL if Atgt is cont
+    grpA.classes<-input$whichtgtclassesA # <--- could be NULL if Atgt is cont
     grpB.classes<-input$whichtgtclassesB # <--- could be NULL
     grpX.classes<-input$whichcmpclassesX
     grpY.classes<-input$whichcmpclassesY
@@ -314,7 +314,7 @@ shinyServer(function(input,output){
     
     rowsToUse.cmp<-seq(nrow(dfWithCtx))
     rowsToUse.tgt<-seq(nrow(dfWithCtx))
-    rowsToUse.ctx<-seq(nrow(dfWithCtx))
+    rowsToUse.ctx<-NULL
     
     #start with Acmp
     rowsToUse.cmp<-which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclassesX == TRUE) #only X
@@ -330,39 +330,29 @@ shinyServer(function(input,output){
         which(dfWithCtx[,input$targetAttr] %in% input$whichtgtclassesB == TRUE)) #A U B
     }
     
-    #finally, Actx
-    trim<-function(x){gsub("(^[[:space:]]+|[[:space:]]+$)","",x)}
-    items.df<-data.frame(t(sapply(sapply(ctx.items,FUN=strsplit,"="),trim)))
+    items.df<-data.frame(t(data.frame(sapply(ctx.items,FUN=strsplit,"="),
+                                      stringsAsFactors=F)),
+                         stringsAsFactors=F) #ugly, will change this later
     rownames(items.df)<-NULL
     colnames(items.df)<-c("Actx","vctx")
-    
-    print(items.df)
-    #ok up till here
-    
+
     for(i in seq(nrow(items.df))){
         attr<-items.df$Actx[i]
         class<-items.df$vctx[i]
-        rowsToUse.ctx<-union(
-          rowsToUse.ctx,
-          which(dfWithCtx[,attr] %in% class == TRUE))
+        rowsToUse.ctx<-c(rowsToUse.ctx,which(dfWithCtx[,attr] == class))
     }
+    rowsToUse.ctx<-unique(rowsToUse.ctx)
     
     #now, combine the rowsToUse
     rowsToUse<-intersect(rowsToUse.cmp,intersect(rowsToUse.tgt,rowsToUse.ctx))
 
-    
+    print(length(rowsToUse.cmp))
+    print(length(rowsToUse.tgt))
+    print(length(rowsToUse.ctx))
     
     #retrieve the data
     dfWithCtx<-dfWithCtx[rowsToUse,]
-    
-    print(length(rowsToUse))
-    
-    print(unique(dfWithCtx$workclass))
-    print(unique(dfWithCtx$education))
-    print(unique(dfWithCtx$marital.status))
-    
-    str(dfWithCtx)
-    
+
     #add class attributes (A,B,X,Y)
     #start with Atgt
     if(Data()[[2]][input$targetAttr] == "Cont"){
@@ -391,8 +381,11 @@ shinyServer(function(input,output){
     #add the attribute type for the cutoff attribute if required
     attr.type<-Data()[[2]]
     attr.type<-c(attr.type,"Cate","Cate")
-        
+    
+    str(dfWithCtx)
+    
     return(list(dfWithCtx,attr.type,Data()[[3]]))
+    #081014: context bug resolved
 #     #assuming no starting ctx yet
 #     rowsToUse<-seq(nrow(dfWithCtx))
 #     ctxFlag<-FALSE
