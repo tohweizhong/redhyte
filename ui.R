@@ -95,7 +95,10 @@ shinyUI(pageWithSidebar(
       #=============================================#
       
       tabPanel("3. Initial test",
-               tags$h5("In the context of <context>, there is a difference in Atgt (Group A vs B) vs in the populations of Acmp (Group X  vs Group Y)"),
+               tags$h5("Example hypothesis:"),
+               tags$h5("In the context of <smoking=true, lung.cancer.hist=true>, 
+                       there is a difference in incidence of <tgt1:lung.cancer=adenocarcinoma or squamous-cell> vs. <tgt2:lung.cancer=small-cell>
+                       in the populations of <cmp1:gender=male vs. cmp2:gender=female>"),
                navlistPanel(
                  tabPanel("Target attribute",
                           sidebarPanel(

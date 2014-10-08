@@ -378,7 +378,7 @@ shinyServer(function(input,output){
                                   else if(x %in% grpY.classes) return("Y")})
     
     
-    #add the attribute type for the cutoff attribute if required
+    #add the attribute type for the cutoff attribute
     attr.type<-Data()[[2]]
     attr.type<-c(attr.type,"Cate","Cate")
     
@@ -386,6 +386,7 @@ shinyServer(function(input,output){
     
     return(list(dfWithCtx,attr.type,Data()[[3]]))
     #081014: context bug resolved
+    
 #     #assuming no starting ctx yet
 #     rowsToUse<-seq(nrow(dfWithCtx))
 #     ctxFlag<-FALSE
