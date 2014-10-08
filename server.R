@@ -491,39 +491,7 @@ shinyServer(function(input,output){
   Table<-reactive({
     #retrieve the relevant data
     
-    if(Data2()[[4]] == FALSE){ #no starting ctx
-    
-      df<-Data()[[1]][c(input$targetAttr,input$comparingAttr)]
-      
-      #is the target attribute continuous or categorical?
-      if(Data()[[2]][input$targetAttr] == "Cate")
-        return(list(t(table(df)),
-                    "Contingency",
-                    length(unique(df[,input$comparingAttr])),
-                    df))
-      
-      else{ #target attribute is continuous
-        cl<-unique(df[,input$comparingAttr]) #all classes of comparing attribute
-        means<-NULL
-        for(i in seq(length(cl))){
-          #for a given class of the comparing attribute,
-          #compute the mean value of the target attribute
-          whichones<-which(df[,2] == cl[i]) #2nd column is comparing attribute
-          means<-c(means,mean(df[whichones,1])) #1st column is target atrribute
-        }
-        names(means)<-cl
-        tmp<-data.frame(means)
-        colnames(tmp)<-paste("means of ",input$targetAttr,sep="")
-        return(list(tmp,
-                    "Comparison",
-                    length(cl),
-                    df))
-      }
-    }
-    
-    else if(Data2()[[4]] == TRUE){ #there is a starting ctx
-      
-      df<-Data2()[[1]][c(input$targetAttr,input$comparingAttr)]
+     df<-Data2()[[1]][c(input$targetAttr,input$comparingAttr)]
       #is the target attribute continuous or categorical?
       if(Data2()[[2]][input$targetAttr] == "Cate")
         return(list(t(table(df)),
@@ -548,7 +516,6 @@ shinyServer(function(input,output){
                     length(cl),
                     df))
       }
-    }
   })
 
   #*********************************************#
@@ -560,6 +527,9 @@ shinyServer(function(input,output){
 
   #initial parametric test
   output$initialTest<-renderTable({
+    
+    #081014: only t-test and chi-squared tests are used now.
+    #2 groups only
 
     #check the type of table
     if(Table()[[2]] == "Contingency"){
