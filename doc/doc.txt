@@ -19,9 +19,17 @@ Data() has stringsAsFactors=F, because if use TRUE,
 generated tables will consist of all classes on Atgt and/or Acmp,
 instead of just the initial context
 
+***KEYWORDS***
 
-all user-input renderui are named with Ctrl at the back
+all user-input renderui are tagged with "ctrl"
 all options and data file grabbers are indicated by "dat" in their variable names
+1. preview
+2. viz
+3. test
+4. ctx.view
+5. diag
+6. ctx.mine
+
 
 using sidebarPanels in the tabPanels => the sidebarPanels are fixed and cannot move
 
@@ -41,17 +49,129 @@ using sidebarPanels in the tabPanels => the sidebarPanels are fixed and cannot m
 #=============================================#
 #=============================================#
 #=============================================#
-WISHLIST
 
-1. using googleVis or similiar API/packages to do interactive graphics
-2. display proportions p in the initial test tab
-3. An analysis log like MetaboNexus'
 
-PROBLEMS/UNIMPLEMENTED FEATURES
-1. Atgt = capital.gain, Acmp = relationship,
-   Cinitial = {Acmp = Husband, Acmp = Wife}
-   capital.gain is skewed after the subsetting, using median cannot work while using mean leaves class-imbalance
-   best is to use mean and employ class-imbalance learning techniques
 
-2. scatterplot for one continuous, one categorical attribute
 
+
+
+df.to.tab<-Data2()[[1]][c(i)]
+    
+    if(Data2()[[4]] == FALSE){ #no starting ctx
+    
+      df<-Data()[[1]][c(input$targetAttr,input$comparingAttr)]
+      
+      #is the target attribute continuous or categorical?
+      if(Data()[[2]][input$targetAttr] == "Cate")
+        return(list(t(table(df)),
+                    "Contingency",
+                    length(unique(df[,input$comparingAttr])),
+                    df))
+      
+      else{ #target attribute is continuous
+        cl<-unique(df[,input$comparingAttr]) #all classes of comparing attribute
+        means<-NULL
+        for(i in seq(length(cl))){
+          #for a given class of the comparing attribute,
+          #compute the mean value of the target attribute
+          whichones<-which(df[,2] == cl[i]) #2nd column is comparing attribute
+          means<-c(means,mean(df[whichones,1])) #1st column is target atrribute
+        }
+        names(means)<-cl
+        tmp<-data.frame(means)
+        colnames(tmp)<-paste("means of ",input$targetAttr,sep="")
+        return(list(tmp,
+                    "Comparison",
+                    length(cl),
+                    df))
+      }
+    }
+    
+    else if(Data2()[[4]] == TRUE){ #there is a starting ctx
+      
+     
+
+
+
+
+
+
+
+    
+#     #assuming no starting ctx yet
+#     rowsToUse<-seq(nrow(dfWithCtx))
+#     ctxFlag<-FALSE
+#     
+#     #consider the type of Atgt and Acmp
+#     #starting context can only be considered for categorical attributes,
+#     #ie. Atgt must be categorical while Acmp is already categorical
+#     
+#     #both`Atgt and Acmp are categorical
+#     if(Data()[[2]][input$targetAttr] == "Cate" && Data()[[2]][input$comparingAttr] == "Cate"){
+#       #use all?
+#       if(input$whichtgtclasses == "Use all classes" && input$whichcmpclasses == "Use all classes")
+#         rowsToUse<-seq(nrow(dfWithCtx)) #all rows
+#       else if(input$whichtgtclasses == "Use all classes" && input$whichcmpclasses != "Use all classes"){
+#         rowsToUse<-which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclasses == TRUE) # <------ PROBLEM IS HERE
+#         #060914: PROBLEM RESOLVED
+#         ctxFlag<-TRUE
+#       }
+#       else if(input$whichtgtclasses != "Use all classes" && input$whichcmpclasses == "Use all classes"){
+#         rowsToUse<-which(dfWithCtx[,input$targetAttr] %in% input$whichtgtclasses == TRUE) # <------ PROBLEM IS HERE
+#         ctxFlag<-TRUE
+#       }
+#       else{
+#         rowsToUse<-intersect(which(dfWithCtx[,input$targetAttr] %in% input$whichtgtclasses == TRUE),
+#                              which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclasses ==  TRUE)) # <------ PROBLEM IS HERE
+#         ctxFlag<-TRUE
+#       }
+#     }
+#     
+#     #Only Atgt is categorical and Acmp is not
+#     #(does not comply to Redhyte's algorithm)
+#     else if(Data()[[2]][input$targetAttr] == "Cate" && Data()[[2]][input$comparingAttr] != "Cate"){
+#       if(input$whichtgtclasses == "Use all classes")
+#         rowsToUse<-seq(nrow(dfWithCtx)) #all rows
+#       else if(input$whichtgtclasses != "Use all classes"){
+#         rowsToUse<-which(dfWithCtx[,input$targetAttr] == input$whichtgtclasses) # <------ PROBLEM IS HERE
+#         ctxFlag<-TRUE
+#       }
+#     }
+#     
+#     #only Acmp is categorical and Atgt is not
+#     else if(Data()[[2]][input$targetAttr] != "Cate" && Data()[[2]][input$comparingAttr] == "Cate"){
+#       if(input$whichcmpclasses == "Use all classes")
+#         rowsToUse<-seq(nrow(dfWithCtx)) #all rows
+#       else if(input$whichcmpclasses != "Use all classes"){
+#         rowsToUse<-which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclasses == TRUE) # <------ PROBLEM IS HERE
+#         ctxFlag<-TRUE
+#       }
+#     }
+#     
+#     #retrieve the row numbers of the row to be used in subsequent analysis,
+#     #forming the starting context
+#     dfWithCtx<-dfWithCtx[rowsToUse,]
+#     
+#     #lastly, add the mean cutoff attribute if Atgt is continuous
+#     #this median value based on the data after considering Cinitial
+#     if(Data()[[2]][input$targetAttr] == "Cont"){
+#       m<-mean(dfWithCtx[,input$targetAttr])
+#       #using mean instead of median,
+#       #because median cannot handle extremely skewed data
+#       
+#       #print(unique(dfWithCtx[,input$targetAttr]))
+#       
+#       dfWithCtx$tgt.class<-sapply(dfWithCtx[,input$targetAttr],
+#                                   FUN=function(x){
+#                                     if(x>=m) return("High")
+#                                     else return("Low")})
+#     }
+#     
+#     #add the attribute type for the cutoff attribute if required
+#     attr.type<-Data()[[2]]
+#     if(ncol(dfWithCtx) > ncol(Data()[[1]])){ #meaning the cutoff attribute is added
+#       attr.type<-c(attr.type,"Cate")
+#     }
+#     
+#     return(list(dfWithCtx,attr.type,Data()[[3]],ctxFlag))
+    #Data2()[[3]] is incorrect for now. refer to comments above

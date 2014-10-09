@@ -9,11 +9,9 @@ shinyServer(function(input,output){
   output$titlePNG<-renderImage({
     list(src="images/title.png", alt=NULL)
   },deleteFile=FALSE)
-  
   output$logoPNG<-renderImage({
     list(src="images/logo.png", alt=NULL)
   },deleteFile=FALSE)
-  
   output$algoPNG<-renderImage({
     list(src="images/redhyte algo.png",alt=NULL)
   },deleteFile=FALSE)
@@ -73,7 +71,7 @@ shinyServer(function(input,output){
   #=============================================#
   
   #displaying a preview of the data, 10 rows, all columns
-  output$dataPreview<-renderTable({
+  output$data.preview<-renderTable({
     if (is.null(Data()[1])) return(NULL)
     data.frame(Data()[[1]][1:input$previewRows,])
   },digits=3)
@@ -90,22 +88,22 @@ shinyServer(function(input,output){
   # 5. scatterplot for simple eda
   
   #selecting which attributes to visualise
-  output$edaCtrl1<-renderUI({
-    selectizeInput("whichAttr1","Select attribute to visualize",colnames(Data()[[1]]))
+  output$viz.ctrl1<-renderUI({
+    selectizeInput("viz.which.attr1","Select attribute to visualize",colnames(Data()[[1]]))
   })
-  output$edaCtrl2<-renderUI({
-    selectizeInput("whichAttr2","Select attribute to visualize",colnames(Data()[[1]]))
+  output$viz.ctrl2<-renderUI({
+    selectizeInput("viz.which.attr2","Select attribute to visualize",colnames(Data()[[1]]))
   })
   
   #display type of attribute: continuous or categorical
-  output$type1<-renderText({
-    if(Data()[[2]][input$whichAttr1]=="Cont")
+  output$viz.type1<-renderText({
+    if(Data()[[2]][input$viz.which.attr1]=="Cont")
       type<-"Type: Continuous"
     else type<-"Type: Categorical"
     type
   })
-  output$type2<-renderText({
-    if(Data()[[2]][input$whichAttr2]=="Cont")
+  output$viz.type2<-renderText({
+    if(Data()[[2]][input$viz.which.attr2]=="Cont")
       type<-"Type: Continuous"
     else type<-"Type: Categorical"
     type
@@ -113,71 +111,71 @@ shinyServer(function(input,output){
   
   #display boxplot stats (Tukey's five) if cont,
   #else display frequencies
-  output$tukeyfive1<-renderTable({
-    if(Data()[[2]][input$whichAttr1]=="Cont"){
-      qt<-as.data.frame(fivenum(Data()[[1]][,input$whichAttr1]))
+  output$viz.tukeyfive1<-renderTable({
+    if(Data()[[2]][input$viz.which.attr1]=="Cont"){
+      qt<-as.data.frame(fivenum(Data()[[1]][,input$viz.which.attr1]))
       rownames(qt)<-c("Min","25%","Median","75%","Max")
       colnames(qt)<-NULL
       qt
     }
     else{
-      tb<-data.frame(table(Data()[[1]][,input$whichAttr1]))
-      colnames(tb)<-c(input$whichAttr1,"Frequency")
+      tb<-data.frame(table(Data()[[1]][,input$viz.which.attr1]))
+      colnames(tb)<-c(input$viz.which.attr1,"Frequency")
       tb
     }
 
   })
-  output$tukeyfive2<-renderTable({
-    if(Data()[[2]][input$whichAttr2]=="Cont"){
-      qt<-as.data.frame(fivenum(Data()[[1]][,input$whichAttr2]))
+  output$viz.tukeyfive2<-renderTable({
+    if(Data()[[2]][input$viz.which.attr2]=="Cont"){
+      qt<-as.data.frame(fivenum(Data()[[1]][,input$viz.which.attr2]))
       rownames(qt)<-c("Min","25%","Median","75%","Max")
       colnames(qt)<-NULL
       qt
     }
     else{
-      tb<-data.frame(table(Data()[[1]][,input$whichAttr2]))
-      colnames(tb)<-c(input$whichAttr2,"Frequency")
+      tb<-data.frame(table(Data()[[1]][,input$viz.which.attr2]))
+      colnames(tb)<-c(input$viz.which.attr2,"Frequency")
       tb
     }
   })
   
   #plotting histograms or barcharts
-  output$hist1<-renderPlot({
-    if(Data()[[2]][input$whichAttr1]=="Cont")
-      hist(Data()[[1]][,input$whichAttr1],main="",xlab="")
+  output$viz.hist1<-renderPlot({
+    if(Data()[[2]][input$viz.which.attr1]=="Cont")
+      hist(Data()[[1]][,input$viz.which.attr1],main="",xlab="")
     else{
-      tb<-data.frame(table(Data()[[1]][,input$whichAttr1]))
-      colnames(tb)<-c(input$whichAttr1,"Frequency")
+      tb<-data.frame(table(Data()[[1]][,input$viz.which.attr1]))
+      colnames(tb)<-c(input$viz.whichAttr1,"Frequency")
       barplot(tb$Frequency)
     }
       
   })
-  output$hist2<-renderPlot({
-    if(Data()[[2]][input$whichAttr2]=="Cont")
-      hist(Data()[[1]][,input$whichAttr2],main="",xlab="")
+  output$viz.hist2<-renderPlot({
+    if(Data()[[2]][input$viz.which.attr2]=="Cont")
+      hist(Data()[[1]][,input$viz.which.attr2],main="",xlab="")
     else{
-      tb<-data.frame(table(Data()[[1]][,input$whichAttr2]))
-      colnames(tb)<-c(input$whichAttr2,"Frequency")
+      tb<-data.frame(table(Data()[[1]][,input$viz.which.attr2]))
+      colnames(tb)<-c(input$viz.which.attr2,"Frequency")
       barplot(tb$Frequency)
     }
   })
   
   #plotting boxplots
-  output$boxplot1<-renderPlot({
-    if(Data()[[2]][input$whichAttr1]=="Cont")
-      boxplot(Data()[[1]][,input$whichAttr1])
+  output$viz.boxplot1<-renderPlot({
+    if(Data()[[2]][input$viz.which.attr1]=="Cont")
+      boxplot(Data()[[1]][,input$viz.which.attr1])
   })
-  output$boxplot2<-renderPlot({
-    if(Data()[[2]][input$whichAttr2]=="Cont")
-      boxplot(Data()[[1]][,input$whichAttr2])
+  output$viz.boxplot2<-renderPlot({
+    if(Data()[[2]][input$viz.which.attr2]=="Cont")
+      boxplot(Data()[[1]][,input$viz.which.attr2])
   })
   
   #plotting scatterplot
-  output$scatterplot<-renderPlot({
-    plot(Data()[[1]][,input$whichAttr2]~
-           Data()[[1]][,input$whichAttr1],
-         xlab=input$whichAttr1,
-         ylab=input$whichAttr2)
+  output$viz.scatterplot<-renderPlot({
+    plot(Data()[[1]][,input$viz.which.attr2]~
+           Data()[[1]][,input$viz.which.attr1],
+         xlab=input$viz.which.attr1,
+         ylab=input$viz.which.attr2)
   })
   
   #=============================================#
@@ -185,25 +183,25 @@ shinyServer(function(input,output){
   #=============================================#
   
   #dropdown boxes to select Atgt and Acmp
-  output$targetCtrl<-renderUI({
+  output$test.tgt.ctrl<-renderUI({
     selectizeInput("targetAttr",
                    "Indicate target attribute (May be continuous or categorical)",
                    colnames(Data()[[1]]))
   }) #return: input$targetAttr
-  output$comparingCtrl<-renderUI({
+  output$test.cmp.ctrl<-renderUI({
     selectizeInput("comparingAttr",
                    "Indicate comparing attribute (Must be categorical)",
                    colnames(Data()[[1]]))
   }) #return: input$comparingAttr
   
   #display type of attribute: continuous or categorical
-  output$targetType<-renderText({
+  output$test.tgt.type<-renderText({
     if(Data()[[2]][input$targetAttr]=="Cont")
       type<-"Type: Continuous"
     else type<-"Type: Categorical"
     type
   })
-  output$comparingType<-renderText({
+  output$test.cmp.type<-renderText({
     if(Data()[[2]][input$comparingAttr]=="Cont")
       type<-"Type: Continuous"
     else type<-"Type: Categorical"
@@ -211,28 +209,28 @@ shinyServer(function(input,output){
   })
   
   #target and comparing control
-  output$tgtClassCtrlA<-renderUI({
+  output$test.tgt.class.ctrl1<-renderUI({
     if(Data()[[2]][input$targetAttr] == "Cate"){
       checkboxGroupInput("whichtgtclassesA",
                          "Indicate which target attribute classes to form group A",
                          choices=c(unique(Data()[[1]][,input$targetAttr])))
     }
   }) #return: input$whichtgtclassesA
-  output$tgtClassCtrlB<-renderUI({
+  output$test.tgt.class.ctrl2<-renderUI({
     if(Data()[[2]][input$targetAttr] == "Cate"){
       checkboxGroupInput("whichtgtclassesB",
                          "Indicate which target attribute classes to form group B",
                          choices=c(unique(Data()[[1]][,input$targetAttr])))
     }
   }) #return: input$whichtgtclassesB
-  output$cmpClassCtrlX<-renderUI({
+  output$test.cmp.class.ctrl1<-renderUI({
     if(Data()[[2]][input$comparingAttr] == "Cate"){ #this must be true
       checkboxGroupInput("whichcmpclassesX",
                          "Indicate which comparing attribute class to form group X",
                          choices=c(unique(Data()[[1]][,input$comparingAttr])))
     }
   }) #return: input$whichcmpclassesX
-  output$cmpClassCtrlY<-renderUI({
+  output$test.cmp.class.ctrl2<-renderUI({
     if(Data()[[2]][input$comparingAttr] == "Cate"){ #this must be true
       checkboxGroupInput("whichcmpclassesY",
                          "Indicate which comparing attribute classes to form group Y",
@@ -241,7 +239,7 @@ shinyServer(function(input,output){
   }) #return: input$whichcmpclassesY
 
   #context control
-  output$ctxAttrCtrl<-renderUI({
+  output$test.ctx.ctrl<-renderUI({
     tmp.choices<-colnames(Data()[[1]])[intersect(
       which(colnames(Data()[[1]]) != input$targetAttr),
       which(colnames(Data()[[1]]) != input$comparingAttr))]
@@ -255,7 +253,7 @@ shinyServer(function(input,output){
                        "Indicate which categorical attributes to form initial context",
                        choices=.choices)
   }) #return: input$ctxAttr
-  output$ctxItemCtrl<-renderUI({
+  output$test.ctx.item.ctrl<-renderUI({
     ctx.attr<-input$ctxAttr
     if(is.null(ctx.attr)) return()
     .choices<-NULL
@@ -312,6 +310,8 @@ shinyServer(function(input,output){
     ctx.attr    <-input$ctxAttr
     ctx.items   <-input$ctxItems # in the format of Actx = vctx
     
+    print(ctx.attr)
+    
     rowsToUse.cmp<-seq(nrow(dfWithCtx))
     rowsToUse.tgt<-seq(nrow(dfWithCtx))
     rowsToUse.ctx<-NULL
@@ -330,24 +330,28 @@ shinyServer(function(input,output){
         which(dfWithCtx[,input$targetAttr] %in% input$whichtgtclassesB == TRUE)) #A U B
     }
     
-    items.df<-data.frame(t(data.frame(sapply(ctx.items,FUN=strsplit,"="),
-                                      stringsAsFactors=F)),
-                         stringsAsFactors=F) #ugly, will change this later
-    rownames(items.df)<-NULL
-    colnames(items.df)<-c("Actx","vctx")
-
-    for(i in seq(nrow(items.df))){
-        attr<-items.df$Actx[i]
-        class<-items.df$vctx[i]
-        rowsToUse.ctx<-c(rowsToUse.ctx,which(dfWithCtx[,attr] == class))
+    rowsToUse<-intersect(rowsToUse.tgt,rowsToUse.cmp)    
+    #now for Actx
+    if(!is.null(ctx.attr)){
+      items.df<-data.frame(t(data.frame(sapply(ctx.items,FUN=strsplit,"="),
+                                        stringsAsFactors=F)),
+                           stringsAsFactors=F) #ugly, will change this later
+      rownames(items.df)<-NULL
+      colnames(items.df)<-c("Actx","vctx")
+  
+      for(i in seq(nrow(items.df))){
+          attr<-items.df$Actx[i]
+          class<-items.df$vctx[i]
+          rowsToUse.ctx<-c(rowsToUse.ctx,which(dfWithCtx[,attr] == class))
+      }
+      rowsToUse.ctx<-unique(rowsToUse.ctx)
+      #now, combine the rowsToUse
+      rowsToUse<-intersect(rowsToUse.cmp,intersect(rowsToUse.tgt,rowsToUse.ctx))
     }
-    rowsToUse.ctx<-unique(rowsToUse.ctx)
     
-    #now, combine the rowsToUse
-    rowsToUse<-intersect(rowsToUse.cmp,intersect(rowsToUse.tgt,rowsToUse.ctx))
-
-    print(length(rowsToUse.cmp))
+    print(length(rowsToUse))
     print(length(rowsToUse.tgt))
+    print(length(rowsToUse.cmp))
     print(length(rowsToUse.ctx))
     
     #retrieve the data
@@ -368,14 +372,14 @@ shinyServer(function(input,output){
     else{ #Atgt is continuous
       dfWithCtx$tgt.class<-sapply(dfWithCtx[,input$targetAttr],
                                   FUN=function(x){
-                                    if(x %in% grpA.classes) return("A")
-                                    else if(x %in% grpB.classes) return("B")})
+                                    if(x %in% grpA.classes) return("1")
+                                    else if(x %in% grpB.classes) return("2")})
     }
     #now with Acmp
     dfWithCtx$cmp.class<-sapply(dfWithCtx[,input$comparingAttr],
                                 FUN=function(x){
-                                  if(x %in% grpX.classes) return("X")
-                                  else if(x %in% grpY.classes) return("Y")})
+                                  if(x %in% grpX.classes) return("1")
+                                  else if(x %in% grpY.classes) return("2")})
     
     
     #add the attribute type for the cutoff attribute
@@ -386,90 +390,12 @@ shinyServer(function(input,output){
     
     return(list(dfWithCtx,attr.type,Data()[[3]]))
     #081014: context bug resolved
-    
-#     #assuming no starting ctx yet
-#     rowsToUse<-seq(nrow(dfWithCtx))
-#     ctxFlag<-FALSE
-#     
-#     #consider the type of Atgt and Acmp
-#     #starting context can only be considered for categorical attributes,
-#     #ie. Atgt must be categorical while Acmp is already categorical
-#     
-#     #both`Atgt and Acmp are categorical
-#     if(Data()[[2]][input$targetAttr] == "Cate" && Data()[[2]][input$comparingAttr] == "Cate"){
-#       #use all?
-#       if(input$whichtgtclasses == "Use all classes" && input$whichcmpclasses == "Use all classes")
-#         rowsToUse<-seq(nrow(dfWithCtx)) #all rows
-#       else if(input$whichtgtclasses == "Use all classes" && input$whichcmpclasses != "Use all classes"){
-#         rowsToUse<-which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclasses == TRUE) # <------ PROBLEM IS HERE
-#         #060914: PROBLEM RESOLVED
-#         ctxFlag<-TRUE
-#       }
-#       else if(input$whichtgtclasses != "Use all classes" && input$whichcmpclasses == "Use all classes"){
-#         rowsToUse<-which(dfWithCtx[,input$targetAttr] %in% input$whichtgtclasses == TRUE) # <------ PROBLEM IS HERE
-#         ctxFlag<-TRUE
-#       }
-#       else{
-#         rowsToUse<-intersect(which(dfWithCtx[,input$targetAttr] %in% input$whichtgtclasses == TRUE),
-#                              which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclasses ==  TRUE)) # <------ PROBLEM IS HERE
-#         ctxFlag<-TRUE
-#       }
-#     }
-#     
-#     #Only Atgt is categorical and Acmp is not
-#     #(does not comply to Redhyte's algorithm)
-#     else if(Data()[[2]][input$targetAttr] == "Cate" && Data()[[2]][input$comparingAttr] != "Cate"){
-#       if(input$whichtgtclasses == "Use all classes")
-#         rowsToUse<-seq(nrow(dfWithCtx)) #all rows
-#       else if(input$whichtgtclasses != "Use all classes"){
-#         rowsToUse<-which(dfWithCtx[,input$targetAttr] == input$whichtgtclasses) # <------ PROBLEM IS HERE
-#         ctxFlag<-TRUE
-#       }
-#     }
-#     
-#     #only Acmp is categorical and Atgt is not
-#     else if(Data()[[2]][input$targetAttr] != "Cate" && Data()[[2]][input$comparingAttr] == "Cate"){
-#       if(input$whichcmpclasses == "Use all classes")
-#         rowsToUse<-seq(nrow(dfWithCtx)) #all rows
-#       else if(input$whichcmpclasses != "Use all classes"){
-#         rowsToUse<-which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclasses == TRUE) # <------ PROBLEM IS HERE
-#         ctxFlag<-TRUE
-#       }
-#     }
-#     
-#     #retrieve the row numbers of the row to be used in subsequent analysis,
-#     #forming the starting context
-#     dfWithCtx<-dfWithCtx[rowsToUse,]
-#     
-#     #lastly, add the mean cutoff attribute if Atgt is continuous
-#     #this median value based on the data after considering Cinitial
-#     if(Data()[[2]][input$targetAttr] == "Cont"){
-#       m<-mean(dfWithCtx[,input$targetAttr])
-#       #using mean instead of median,
-#       #because median cannot handle extremely skewed data
-#       
-#       #print(unique(dfWithCtx[,input$targetAttr]))
-#       
-#       dfWithCtx$tgt.class<-sapply(dfWithCtx[,input$targetAttr],
-#                                   FUN=function(x){
-#                                     if(x>=m) return("High")
-#                                     else return("Low")})
-#     }
-#     
-#     #add the attribute type for the cutoff attribute if required
-#     attr.type<-Data()[[2]]
-#     if(ncol(dfWithCtx) > ncol(Data()[[1]])){ #meaning the cutoff attribute is added
-#       attr.type<-c(attr.type,"Cate")
-#     }
-#     
-#     return(list(dfWithCtx,attr.type,Data()[[3]],ctxFlag))
-    #Data2()[[3]] is incorrect for now. refer to comments above
   })
   
   #*********************************************#
   
   #for testing Data2()
-  output$testData2<-renderTable({
+  output$ctx.data<-renderTable({
     if (is.null(Data2()[1])) return(NULL)
     rowsToDisplay<-10
     if(rowsToDisplay > 0.5*nrow(Data2()[[1]])) rowsToDisplay<-0.5*nrow(Data2()[[1]])
@@ -491,13 +417,20 @@ shinyServer(function(input,output){
   Table<-reactive({
     #retrieve the relevant data
     
-     df<-Data2()[[1]][c(input$targetAttr,input$comparingAttr)]
+     df<-Data2()[[1]][c(input$targetAttr,input$comparingAttr,"tgt.class","cmp.class")]
       #is the target attribute continuous or categorical?
-      if(Data2()[[2]][input$targetAttr] == "Cate")
-        return(list(t(table(df)),
+      if(Data2()[[2]][input$targetAttr] == "Cate"){
+        tab<-t(table(df[,c("tgt.class","cmp.class")]))
+        rownames(tab)<-c(paste(input$whichcmpclassesX,collapse="&"),
+                         paste(input$whichcmpclassesY,collapse="&"))
+        colnames(tab)<-c(paste(input$whichtgtclassesA,collapse="&"),
+                         paste(input$whichtgtclassesB,collapse="&"))
+        
+        return(list(tab,
                     "Contingency",
-                    length(unique(df[,input$comparingAttr])),
+                    length(unique(df[,"cmp.class"])), # <--- must be 2 now
                     df))
+      }
       
       else{ #target attribute is continuous
         cl<-unique(df[,input$comparingAttr]) #all classes of comparing attribute
@@ -513,7 +446,7 @@ shinyServer(function(input,output){
         colnames(tmp)<-paste("means of ",input$targetAttr,sep="")
         return(list(tmp,
                     "Comparison",
-                    length(cl),
+                    length(cl), # <--- must be 2 now
                     df))
       }
   })

@@ -1,0 +1,7 @@
+WISHLIST
+
+1. using googleVis or similiar API/packages to do interactive graphics
+2. display proportions p in the initial test tab
+3. An analysis log like MetaboNexus'
+4. Cleaning of code to make naming of variables, functions, modules more consistent
+5. render text in initial test tab to describe the Hinitial

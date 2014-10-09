@@ -1,0 +1,7 @@
+issues
+1. Atgt = capital.gain, Acmp = relationship,
+Cinitial = {Acmp = Husband, Acmp = Wife}
+capital.gain is skewed after the subsetting, using median cannot work while using mean leaves class-imbalance
+best is to use mean and employ class-imbalance learning techniques
+
+2. viz.scatterplot for one continuous, one categorical attribute

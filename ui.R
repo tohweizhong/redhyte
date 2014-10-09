@@ -64,7 +64,7 @@ shinyUI(pageWithSidebar(
                tags$h4("Displaying a preview of your data"),
                sliderInput("previewRows","Number of rows to display",
                            min=1,max=20,value=1,step=1,animate=TRUE),
-               tableOutput("dataPreview")),
+               tableOutput("data.preview")),
       
       #=============================================#
       #==============2. Data viz====================#
@@ -73,21 +73,21 @@ shinyUI(pageWithSidebar(
       tabPanel("2. Data visualization",
                tags$h4("Simple exploratory data analysis"),
                sidebarPanel(
-                htmlOutput("edaCtrl1"),
-                verbatimTextOutput("type1"),
-                tableOutput("tukeyfive1"),
-                plotOutput("hist1"),
-                plotOutput("boxplot1"),
+                htmlOutput("viz.ctrl1"),
+                verbatimTextOutput("viz.type1"),
+                tableOutput("viz.tukeyfive1"),
+                plotOutput("viz.hist1"),
+                plotOutput("viz.boxplot1"),
                 width=3),
                sidebarPanel(
-                 htmlOutput("edaCtrl2"),
-                 verbatimTextOutput("type2"),
-                 tableOutput("tukeyfive2"),
-                 plotOutput("hist2"),
-                 plotOutput("boxplot2"),
+                 htmlOutput("viz.ctrl2"),
+                 verbatimTextOutput("viz.type2"),
+                 tableOutput("viz.tukeyfive2"),
+                 plotOutput("viz.hist2"),
+                 plotOutput("viz.boxplot2"),
                  width=3),
                sidebarPanel(
-                 plotOutput("scatterplot"),
+                 plotOutput("viz.scatterplot"),
                  width=5)),
       
       #=============================================#
@@ -102,32 +102,32 @@ shinyUI(pageWithSidebar(
                navlistPanel(
                  tabPanel("Target attribute",
                           sidebarPanel(
-                            htmlOutput("targetCtrl"),
-                            verbatimTextOutput("targetType"),
+                            htmlOutput("test.tgt.ctrl"),
+                            verbatimTextOutput("test.tgt.type"),
                             width=4),
                           sidebarPanel(
-                            htmlOutput("tgtClassCtrlA"),
+                            htmlOutput("test.tgt.class.ctrl1"),
                             width=4),
                           sidebarPanel(
-                            htmlOutput("tgtClassCtrlB"),
+                            htmlOutput("test.tgt.class.ctrl2"),
                             width=4)),
                  tabPanel("Comparing attribute",
                           sidebarPanel(
-                            htmlOutput("comparingCtrl"),
-                            verbatimTextOutput("comparingType"),
+                            htmlOutput("test.cmp.ctrl"),
+                            verbatimTextOutput("test.cmp.type"),
                             width=4),
                           sidebarPanel(
-                            htmlOutput("cmpClassCtrlX"),
+                            htmlOutput("test.cmp.class.ctrl1"),
                             width=4),
                           sidebarPanel(
-                            htmlOutput("cmpClassCtrlY"),
+                            htmlOutput("test.cmp.class.ctrl2"),
                             width=4)),
                  tabPanel("Initial context",
                           sidebarPanel(
-                            htmlOutput("ctxAttrCtrl"),
+                            htmlOutput("test.ctx.ctrl"),
                             width=4),
                           sidebarPanel(
-                            htmlOutput("ctxItemCtrl"),
+                            htmlOutput("test.ctx.item.ctrl"),
                             width=8)),
                  tabPanel("Table & test",
                           tableOutput("contTable"),
@@ -136,17 +136,19 @@ shinyUI(pageWithSidebar(
                             tableOutput("initialTest"))),
                  widths=c(3,9))),
       
+      
+
+      #============Contexted data=====================#
+      
+      tabPanel("Contexted Data",
+               tableOutput("ctx.data")),
+      
       #=============================================#
       #============4. Test diagnostics==============#
       #=============================================#
       
       tabPanel("4. Test diagnostics"),
       #not implemented yet, will come back to this
-      
-      #============Test Data2()=====================#
-      
-      tabPanel("TEST Data2()",
-               tableOutput("testData2")),
       
       #=============================================#
       #============5. Context mining================#
