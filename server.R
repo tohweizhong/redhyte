@@ -277,26 +277,24 @@ shinyServer(function(input,output){
 
   #***************REACTIVE**********************#
   
-  #The objectives of Data2() are:
-  # -> subsetting the data based on the user's initial context
-  # -> if Atgt is continuous, include a binary attribute based on
+  # The objectives of Data2() are:
+  #  -> subsetting the data based on the user's initial context
+  #  -> if Atgt is continuous, include a binary attribute based on
   #    mean(Atgt). This is done because it will speed up the
   #    construction of the RF models later. (Regression RF is
   #    apparently slower than classification RF.)
   
-  #Because Data() contains information regarding the attributes,
-  #while Data2() considers starting context formed by specific
-  #classes of Atgt and Acmp, information in Data() can be re-used,
-  #except Data()[[3]].
-  #Data()[[3]] contains the number of classes for each categorical attribute,
-  #which changes for Atgt and Acmp, depending on initial context
-  #030914: will return Data()[[[3]]] as it is anyway for now.
+  # Because Data() contains information regarding the attributes,
+  # while Data2() considers starting context formed by specific
+  # classes of Atgt and Acmp, information in Data() can be re-used, except Data()[[3]].
+  # Data()[[3]] contains the number of classes for each categorical attribute,
+  # which changes for Atgt and Acmp, depending on initial context
+  # 030914: will return Data()[[[3]]] as it is anyway for now.
 
-  #Data2() consists of *FOUR* things at the moment
-  # 1. Data2()[[1]] is the data itself, including the median cutoff attribute
-  # 2. Data2()[[2]] is the type of variable: continuous or categorical
-  # 3. Data2()[[3]] is the number of classes for categorical attributes, NA for cont.
-  # 4. Data2()[[4]] is the ctxFlag, indicating if a starting context is being used
+  # Data2() consists of *THREE* things at the moment
+  #  1. Data2()[[1]] is the data itself, including the median cutoff attribute
+  #  2. Data2()[[2]] is the type of variable: continuous or categorical
+  #  3. Data2()[[3]] is the number of classes for categorical attributes, NA for cont.
   
   Data2<-reactive({
     
@@ -309,8 +307,6 @@ shinyServer(function(input,output){
     grpY.classes<-input$whichcmpclassesY
     ctx.attr    <-input$ctxAttr
     ctx.items   <-input$ctxItems # in the format of Actx = vctx
-    
-    print(ctx.attr)
     
     rowsToUse.cmp<-seq(nrow(dfWithCtx))
     rowsToUse.tgt<-seq(nrow(dfWithCtx))
@@ -329,7 +325,6 @@ shinyServer(function(input,output){
         rowsToUse.tgt,
         which(dfWithCtx[,input$targetAttr] %in% input$whichtgtclassesB == TRUE)) #A U B
     }
-    
     rowsToUse<-intersect(rowsToUse.tgt,rowsToUse.cmp)    
     #now for Actx
     if(!is.null(ctx.attr)){
@@ -349,11 +344,6 @@ shinyServer(function(input,output){
       rowsToUse<-intersect(rowsToUse.cmp,intersect(rowsToUse.tgt,rowsToUse.ctx))
     }
     
-    print(length(rowsToUse))
-    print(length(rowsToUse.tgt))
-    print(length(rowsToUse.cmp))
-    print(length(rowsToUse.ctx))
-    
     #retrieve the data
     dfWithCtx<-dfWithCtx[rowsToUse,]
 
@@ -366,8 +356,8 @@ shinyServer(function(input,output){
       #print(unique(dfWithCtx[,input$targetAttr]))
       dfWithCtx$tgt.class<-sapply(dfWithCtx[,input$targetAttr],
                                   FUN=function(x){
-                                  if(x>=m) return("High")
-                                  else return("Low")})
+                                  if(x>=m) return(paste(input$targetAttr,": High",sep=""))
+                                  else return(paste(input$targetAttr,": Low",sep=""))})
     }
     else{ #Atgt is continuous
       dfWithCtx$tgt.class<-sapply(dfWithCtx[,input$targetAttr],
@@ -392,6 +382,19 @@ shinyServer(function(input,output){
     #081014: context bug resolved
   })
   
+  Groupings<-reactive({
+    if(Data()[[2]][input$targetAttr] == "Cont")
+      return(list(c(paste(input$targetAttr,": High",sep=""),
+                    paste(input$targetAttr,": Low",sep="")),
+                  c(paste(input$whichcmpclassesX,collapse="&"),
+                    paste(input$whichcmpclassesY,collapse="&"))))
+    else if(Data()[[2]][input$targetAttr] == "Cate")
+      return(list(c(paste(input$whichtgtclassesA,collapse="&"),
+                    paste(input$whichtgtclassesB,collapse="&")),
+                  c(paste(input$whichcmpclassesX,collapse="&"),
+                    paste(input$whichcmpclassesY,collapse="&"))))
+  })
+  
   #*********************************************#
   
   #for testing Data2()
@@ -410,8 +413,8 @@ shinyServer(function(input,output){
   #Table() consists of *FOUR* things at the moment
   # 1. Table()[[1]] is the table itself, be it contingency or comparison table
   # 2. Table()[[2]] is the type of table: contingency or comparison
-  # 3. Table()[[3]] is the number of classes for the categorical Acmp
-  # 4. Table()[[4]] is the data with the starting context itself
+  # 3. Table()[[3]] is the data with the starting context itself,
+  #    with 4 columns: Atgt, Acmp, tgt.class, cmp.class
   
   #reactive wrapper for table
   Table<-reactive({
@@ -426,28 +429,20 @@ shinyServer(function(input,output){
         colnames(tab)<-c(paste(input$whichtgtclassesA,collapse="&"),
                          paste(input$whichtgtclassesB,collapse="&"))
         
-        return(list(tab,
-                    "Contingency",
-                    length(unique(df[,"cmp.class"])), # <--- must be 2 now
-                    df))
+        return(list(tab,"Contingency",df))
       }
       
       else{ #target attribute is continuous
-        cl<-unique(df[,input$comparingAttr]) #all classes of comparing attribute
-        means<-NULL
-        for(i in seq(length(cl))){
-          #for a given class of the comparing attribute,
-          #compute the mean value of the target attribute
-          whichones<-which(df[,2] == cl[i]) #2nd column is comparing attribute
-          means<-c(means,mean(df[whichones,1])) #1st column is target atrribute
-        }
-        names(means)<-cl
-        tmp<-data.frame(means)
-        colnames(tmp)<-paste("means of ",input$targetAttr,sep="")
-        return(list(tmp,
-                    "Comparison",
-                    length(cl), # <--- must be 2 now
-                    df))
+        
+        mean1<-mean(df[which(df$cmp.class == "1"),input$targetAttr])
+        mean2<-mean(df[which(df$cmp.class == "2"),input$targetAttr])
+        
+        means.df<-data.frame(c(mean1,mean2))
+        rownames(means.df)<-c(paste(input$whichcmpclassesX,collapse="&"),
+                         paste(input$whichcmpclassesY,collapse="&"))
+        colnames(means.df)<-paste("means of ",input$targetAttr,sep="")
+        
+        return(list(means.df,"Comparison",df))
       }
   })
 
@@ -461,10 +456,11 @@ shinyServer(function(input,output){
   #initial parametric test
   output$initialTest<-renderTable({
     
-    #081014: only t-test and chi-squared tests are used now.
-    #2 groups only
+    # 081014: only t-test and chi-squared tests are used now.
+    # no more ANOVA
+    # 2 groups only
 
-    #check the type of table
+    # check the type of table
     if(Table()[[2]] == "Contingency"){
       test<-chisq.test(Table()[[1]]) #chisq.test() works on the table itself
       stats<-test$statistic
@@ -480,51 +476,35 @@ shinyServer(function(input,output){
       returnMe
     }
     else if(Table()[[2]] == "Comparison"){
-      if(Table()[[3]] == 2){ #t-test
-        test<-t.test(Table()[[1]]) #Table()[[1]] is a data.frame of means
-        stats<-test$statistic
-        pvalue<-test$p.value
-        method<-test$method
-        
-        returnMe<-as.data.frame(c(as.character(method),
-                                  as.character(round(stats,3)),
-                                  as.character(round(pvalue,7))
-        ))
-        rownames(returnMe)<-c("Method","Test statistic","p-value")
-        colnames(returnMe)<-NULL
-        returnMe
-      }
-      else{ #anova
-        
-        test<-aov(data=Table()[[4]],formula=as.formula(paste(input$targetAttr,"~",input$comparingAttr)))
-        stats<-summary(test)[[1]]$"F value"[1]
-        pvalue<-summary(test)[[1]]$"Pr(>F)"[1]
-        method<-"Analysis of variance (AOV)"
-        
-        returnMe<-as.data.frame(c(as.character(method),
-                                  as.character(round(stats,3)),
-                                  as.character(round(pvalue,7))))
-        rownames(returnMe)<-c("Method","Test statistic","p-value")
-        colnames(returnMe)<-NULL
-        returnMe
-      }
+      #t-test
+      test<-t.test(Data2()[[1]][,input$targetAttr]~Data2()[[1]]$cmp.class) #t-test bug resolved
+      stats<-test$statistic
+      pvalue<-test$p.value
+      method<-test$method
+      
+      returnMe<-as.data.frame(c(as.character(method),
+                                as.character(round(stats,3)),
+                                as.character(round(pvalue,7))
+      ))
+      rownames(returnMe)<-c("Method","Test statistic","p-value")
+      colnames(returnMe)<-NULL
+      returnMe
     }
   })
-  #yet to implement non-parametric test yet
+  # yet to implement non-parametric test yet
   
   #=============================================#
   #============4. Test diagnostics==============#
   #=============================================#
 
-  #test diagnostics for t-test and ANOVA only  
-  #not implemented yet
+  # test diagnostics for t-test and ANOVA only  
+  # not implemented yet
   
   #***************REACTIVE**********************#
   
   Test<-reactive({
     if(Table()[[2]] == "Contingency") return("t-test") # <--- WRONG
-    else if(Table()[[3]] == 2) return("chisq-test")
-    else if(Table()[[3]] > 2) return("anova")
+    else return("chisq-test")
   }) #not implemented yet
   
   #*********************************************#
@@ -533,7 +513,7 @@ shinyServer(function(input,output){
   #============5. Context mining================#
   #=============================================#
   
-  #first step: build the two RF models
+  # first step: build the two RF models
   
   #***************REACTIVE**********************#
   
@@ -545,35 +525,29 @@ shinyServer(function(input,output){
     which.are.char<-which(Data2()[[2]] == "Cate")
     df[,which.are.char]<-lapply(df[,which.are.char],factor)
     
-    #formulate the formulae for random forest models
-    #start with Atgt
-    if(!is.null(df$tgt.class)){
-      #df$tgt.class has been defined, meaning Atgt is continuous
-      #find all other context attributes
-      ctx.col.names<-intersect(
-        colnames(df)[which(colnames(df) != input$comparingAttr)],
-        colnames(df)[which(colnames(df) != input$targetAttr)])
-      
-      ctx.col.names<-intersect(ctx.col.names,
-        colnames(df)[which(colnames(df) != "tgt.class")])
-      
-      fm.tgt<-paste(" ",ctx.col.names,sep="",collapse="+")
-      fm.tgt<-as.formula(paste("tgt.class","~",fm.tgt,sep=""))
-    }
-    else{
-      ctx.col.names<-intersect(
-        colnames(df)[which(colnames(df) != input$comparingAttr)],
-        colnames(df)[which(colnames(df) != input$targetAttr)])
-      
-      fm.tgt<-paste(" ",ctx.col.names,sep="",collapse="+")
-      fm.tgt<-as.formula(paste(input$targetAttr,"~",fm.tgt,sep=""))
-    }
+    # formulate the formulae for random forest models
     
-    #now formulate for Acmp
-    fm.cmp<-paste(" ",ctx.col.names,sep="",collapse="+")
-    fm.cmp<-as.formula(paste(input$comparingAttr,"~",fm.cmp,sep=""))
+    # start with Atgt
+    # find all the predictors to be used in models
+    predictors<-colnames(df)[which(colnames(df) != input$comparingAttr)]
     
-    #construct models
+    predictors<-intersect(predictors,
+                          colnames(df)[which(colnames(df) != input$targetAttr)])
+    
+    predictors<-intersect(predictors,
+                          colnames(df)[which(colnames(df) != "tgt.class")])
+    
+    predictors<-intersect(predictors,
+                          colnames(df)[which(colnames(df) != "cmp.class")])
+    
+    fm.tgt<-paste(" ",predictors,sep="",collapse="+")
+    fm.tgt<-as.formula(paste("tgt.class","~",fm.tgt,sep=""))
+    
+    # now formulate for Acmp
+    fm.cmp<-paste(" ",predictors,sep="",collapse="+")
+    fm.cmp<-as.formula(paste("cmp.class","~",fm.cmp,sep=""))
+    
+    # construct models
     mod.tgt<-randomForest(formula=fm.tgt,
                           data=df,
                           importance=TRUE)
@@ -581,27 +555,31 @@ shinyServer(function(input,output){
                           data=df,
                           importance=TRUE)
 
-    #now evaluate whether the models has been accurate
-    #three things to consider:
-    # @ whether Atgt is continous or categorical
-    # @ if Atgt is categorical, whether Atgt is binary or multi-class
-    # @ if Atgt is categorical, whether Atgt has class-imbalance
-    #the only piece of additional guiding input from the user is vtgt
-    #the other problems need to be resolved using class-imbalance learning techniques
+    # now evaluate whether the models has been accurate
+    # three things to consider:
+    #  @ whether Atgt is continous or categorical
+    #  @ if Atgt is categorical, whether Atgt is binary or multi-class
+    #  @ if Atgt is categorical, whether Atgt has class-imbalance
+    # the only piece of additional guiding input from the user is vtgt
+    # the other problems need to be resolved using class-imbalance learning techniques
     
-    #compute accuracies
+    # compute accuracies
     cm.tgt<-mod.tgt$confusion
     cm.cmp<-mod.cmp$confusion
     cm.tgt<-cm.tgt[,-ncol(cm.tgt)]
     cm.cmp<-cm.cmp[,-ncol(cm.cmp)]
 
-    #090914: consider only the diagonal entries of the confusion matrices for now
+    print(cm.tgt)
+    print(cm.cmp)
+    
+    rownames(cm.tgt)<-colnames(cm.tgt)<-Groupings()[[1]]
+    rownames(cm.cmp)<-colnames(cm.cmp)<-Groupings()[[2]]
+    
+    
+    # 090914: consider only the diagonal entries of the confusion matrices for now
     acc.tgt<-sum(diag(cm.tgt))/sum(cm.tgt)
     acc.cmp<-sum(diag(cm.cmp))/sum(cm.cmp)
-    #this is severly affected by class-imbalance and multi-classes
-    
-    print(acc.tgt)
-    print(acc.cmp)
+    # this is severly affected by class-imbalance and multi-classes
     
     #compare the accuracies of the models with the default accuracy threshold
     #defined in related_codes/settings.R
@@ -619,11 +597,11 @@ shinyServer(function(input,output){
       names(mined.attr)<-paste(mined.attr,".cmp",sep="")
     }
     else if(acc.tgt >= acc.rf.default && acc.cmp >= acc.rf.default){
-      #both models are accurate; extract top k attributes
-      #from the intersection of the top attributes in
-      #both models based on variable importance (VI)
+      # both models are accurate; extract top k attributes
+      # from the intersection of the top attributes in
+      # both models based on variable importance (VI)
       
-      #combine the list of MeanDecreaseAccuracy
+      # combine the list of MeanDecreaseAccuracy
       mda.tgt<-mod.tgt$importance[,"MeanDecreaseAccuracy"]
       mda.cmp<-mod.cmp$importance[,"MeanDecreaseAccuracy"]
       
@@ -633,26 +611,20 @@ shinyServer(function(input,output){
       mda.both<-c(mda.tgt,mda.cmp)
       mda.both<-sort(mda.both,decreasing=TRUE)
       
-      #take the first k attributes, consider them shortlisted
+      # take the first k attributes, consider them shortlisted
       mined.attr<-names(mda.both)[seq(5)]
       
-      #print("sl:")
-      #print(sl)
-      
-      #function to remove the tails ".tgt" and ".cmp"
+      # function to remove the tails ".tgt" and ".cmp"
       mined.attr<-sapply(mined.attr,FUN=function(s){
         last.dot<-regexpr("\\.[^\\.]*$", s)
         return(substr(s,1,last.dot-1))
       })
-      
-      #print("sl after remove.tail")
-      #print(sl)
-      
-      #while-loop to remove duplicates in mined.attr and add new ones
+
+      # while-loop to remove duplicates in mined.attr and add new ones
       idx<-k
       while(length(unique(mined.attr)) != length(mined.attr)){
         dup<-which(duplicated(mined.attr) == TRUE)
-        mined.attr<-mined.attr[-dup[1]] #remove one at a time
+        mined.attr<-mined.attr[-dup[1]] # remove one at a time
         original.name<-names(mda.both)[idx+1]
         mined.attr<-c(mined.attr,remove.tail(names(mda.both)[idx+1]))
         names(mined.attr)[(length(mined.attr))]<-original.name

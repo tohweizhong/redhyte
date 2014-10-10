@@ -136,27 +136,28 @@ shinyUI(pageWithSidebar(
                             tableOutput("initialTest"))),
                  widths=c(3,9))),
       
+      #=============================================#
+      #============4. Contexted data================#
+      #=============================================#
       
-
-      #============Contexted data=====================#
-      
-      tabPanel("Contexted Data",
+      tabPanel("4. Contexted Data",
                tableOutput("ctx.data")),
       
       #=============================================#
-      #============4. Test diagnostics==============#
+      #============5. Test diagnostics==============#
       #=============================================#
       
-      tabPanel("4. Test diagnostics"),
+      tabPanel("5. Test diagnostics",
+               tags$h6("Not implemented yet")),
       #not implemented yet, will come back to this
       
       #=============================================#
-      #============5. Context mining================#
+      #============6. Context mining================#
       #=============================================#
       
-      tabPanel("5. Context mining",
+      tabPanel("6. Context mining",
                tags$h6("Redhyte's hypothesis mining implementation works by first constructing two
-                       random forest models, using the context attributes to predict the target and comparing attributes."),
+                       random forest models, using all other attributes in the data to predict the target and comparing attributes."),
                tags$h6("For each of these two models, Redhyte extract the top k attributes that contribute
                        to the classification of target and/or comparing attributes, if the model(s) is accurate."),
                tags$h6("Confusion matrices of the models will be displayed, as well as the list of mined context attributes."),
@@ -172,16 +173,16 @@ shinyUI(pageWithSidebar(
                  widths=c(3,9))),
       
       #=============================================#
-      #===========6. Hypothesis mining==============#
+      #===========7. Hypothesis mining==============#
       #=============================================#
       
-      tabPanel("6. Hypothesis mining"),
+      tabPanel("7. Hypothesis mining"),
       
       #=============================================#
-      #=============7. Session log==================#
+      #=============8. Session log==================#
       #=============================================#
       
-      tabPanel("7. Session log")
+      tabPanel("8. Session log")
       
     )#end tabset panel
   ) #end main panel
