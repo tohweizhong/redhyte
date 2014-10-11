@@ -564,33 +564,28 @@ shinyServer(function(input,output){
     # the other problems need to be resolved using class-imbalance learning techniques
     
     # compute accuracies
-    cm.tgt<-mod.tgt$confusion
-    cm.cmp<-mod.cmp$confusion
-    cm.tgt<-cm.tgt[,-ncol(cm.tgt)]
-    cm.cmp<-cm.cmp[,-ncol(cm.cmp)]
-
-    print(cm.tgt)
-    print(cm.cmp)
-    
-    rownames(cm.tgt)<-colnames(cm.tgt)<-Groupings()[[1]]
-    rownames(cm.cmp)<-colnames(cm.cmp)<-Groupings()[[2]]
-    
+    tmp.cm.tgt<-mod.tgt$confusion
+    tmp.cm.cmp<-mod.cmp$confusion
+    tmp.cm.tgt<-tmp.cm.tgt[,-ncol(tmp.cm.tgt)]
+    tmp.cm.cmp<-tmp.cm.cmp[,-ncol(tmp.cm.cmp)]
+    # these confusion matrices are for computing accuracies only,
+    # will not be returned by this reactive module
     
     # 090914: consider only the diagonal entries of the confusion matrices for now
-    acc.tgt<-sum(diag(cm.tgt))/sum(cm.tgt)
-    acc.cmp<-sum(diag(cm.cmp))/sum(cm.cmp)
+    acc.tgt<-sum(diag(tmp.cm.tgt))/sum(tmp.cm.tgt)
+    acc.cmp<-sum(diag(tmp.cm.cmp))/sum(tmp.cm.cmp)
     # this is severly affected by class-imbalance and multi-classes
     
-    #compare the accuracies of the models with the default accuracy threshold
-    #defined in related_codes/settings.R
-    #3 cases:
+    # compare the accuracies of the models with the default accuracy threshold
+    # defined in related_codes/settings.R
+    # 3 cases:
     # -> acc.tgt >= acc.rf.default && acc.cmp >= acc.rf.default
     # -> acc.tgt >= acc.rf.default && acc.cmp <  acc.rf.default
     # -> acc.tgt <  acc.rf.default && acc.cmp >= acc.rf.default
     
     if(acc.tgt >= acc.rf.default && acc.cmp < acc.rf.default){
       mined.attr<-rownames(mod.tgt$importance)[seq(k)]
-      names(mined.attr)<-paste(mined.attr,".tgt",sep="")
+      names(mined.attr)<-paste(mined.attr,".tgt",sep="") # adding a tail ".tgt" or ".cmp"
     }
     else if(acc.tgt < acc.rf.default && acc.cmp >= acc.rf.default){
       mined.attr<-rownames(mod.cmp$importance)[seq(k)]
@@ -612,7 +607,7 @@ shinyServer(function(input,output){
       mda.both<-sort(mda.both,decreasing=TRUE)
       
       # take the first k attributes, consider them shortlisted
-      mined.attr<-names(mda.both)[seq(5)]
+      mined.attr<-names(mda.both)[seq(k)]
       
       # function to remove the tails ".tgt" and ".cmp"
       mined.attr<-sapply(mined.attr,FUN=function(s){
@@ -620,6 +615,11 @@ shinyServer(function(input,output){
         return(substr(s,1,last.dot-1))
       })
 
+      remove.tail<-function(s){
+        last.dot<-regexpr("\\.[^\\.]*$", s)
+        return(substr(s,1,last.dot-1))
+      }
+      
       # while-loop to remove duplicates in mined.attr and add new ones
       idx<-k
       while(length(unique(mined.attr)) != length(mined.attr)){
@@ -633,7 +633,14 @@ shinyServer(function(input,output){
       }
       print(mined.attr)
     }
-    return(list(mod.tgt$confusion,mod.cmp$confusion,mined.attr))
+    
+    cm.tgt<-mod.tgt$confusion
+    cm.cmp<-mod.cmp$confusion
+    
+    rownames(cm.tgt)<-colnames(cm.tgt)[1:2]<-Groupings()[[1]]
+    rownames(cm.cmp)<-colnames(cm.cmp)[1:2]<-Groupings()[[2]]
+    
+    return(list(cm.tgt,cm.cmp,mined.attr))
   })
   
   #*********************************************#
@@ -659,65 +666,75 @@ shinyServer(function(input,output){
   
   #render the plot for one mined attribute indicated by user
   output$mined.attr.viz<-renderPlot({
-    #this visualization requires at least two, at most three attributes
     tgt.attr<-input$targetAttr
     cmp.attr<-input$comparingAttr
     mined.attr<-input$mined.attr
     
-    #consider Cinitial for Acmp
-    c.initial.cmp<-input$whichcmpclasses #have not considered "Use all classes" yet
-    num.classes.cmp<-length(c.initial.cmp)
-    #will need to consider Atgt as well
+    print(mined.attr)
     
     #grab the relevant data
-    df.to.plot<-Data2()[[1]][,c(tgt.attr,cmp.attr,mined.attr)]
+    df.to.plot<-Data2()[[1]][,c(tgt.attr,cmp.attr,mined.attr,"tgt.class","cmp.class")]
     
+    str(df.to.plot)
+#     #consider Cinitial for Acmp
+#     c.initial.cmp<-input$whichcmpclasses #have not considered "Use all classes" yet
+#     num.classes.cmp<-length(c.initial.cmp)
+#     #will need to consider Atgt as well
+    
+    par(mfrow=c(2,2))
+
     #need to consider whether Atgt is continuous or categorical
     #check this using the Data()[[2]]
-    if(Data()[[2]][tgt.attr]=="Cont"){
-      #Atgt is continuous, simulate a comparison table
-      #plotting only involves two attributes:
-      # -> mined.attr
-      # -> cmp.attr
-      
-      par(mfrow=c(length(num.classes.cmp,1)))
-      
-      for(i in seq(length(num.classes.cmp))){
+    for(i in seq(1,2)){
+      for(j in seq(1,2)){
+        
+        print(i)
+        print(j)
         #grab the subset of data
-        plot.dat<-df.to.plot[which(df.to.plot[,cmp.attr] == c.initial.cmp[i]),mined.attr]
-        if(Data()[[3]][mined.attr] == "Cate") barplot(plot.dat)
-        else if(Data()[[3]][mined.attr == "Cont"]) hist(plot.data)
-      }
-    }
-    else if(Data()[[2]][tgt.attr] == "Cate"){
-      #Atgt is continuous, simulate a contingency table
-      #plotting now involves all three attributes
-      
-      #consider Cinitial defined by Atgt
-      c.initial.tgt<-input$whichtgtclasses
-      num.classes.tgt<-length(c.initial.tgt)
-      
-      par(mfrow=c(num.classes.cmp,num.classes.tgt))
-      print(num.classes.cmp)
-      print(num.classes.tgt)
-      
-      for(i in seq(num.classes.cmp)){
-        for(j in seq(num.classes.tgt)){
-          
-          rowsToPlot<-intersect(which(df.to.plot[,cmp.attr] == c.initial.cmp[i]),
-                                which(df.to.plot[,tgt.attr] == c.initial.tgt[j]))
-          
-          plot.dat<-df.to.plot[rowsToPlot,mined.attr]
-          if(Data()[[2]][mined.attr] == "Cate"){
-            barplot(data.frame(table(plot.dat))[,2],
-                    main=paste(cmp.attr,"=",c.initial.cmp[i],",",
-                               tgt.attr,"=",c.initial.tgt[j],sep=""))
-          }
-          else if(Data()[[2]][mined.attr] == "Cont")
-            hist(plot.dat,main=paste(cmp.attr,"=",c.initial.cmp[i],",",
-                                     tgt.attr,"=",c.initial.tgt[j],sep=""))
+        rows.to.plot<-intersect(
+          which(df.to.plot[,"tgt.class"] == i),
+          which(df.to.plot[,"cmp.class"] == j)
+        )
+        print(rows.to.plot)
+        plot.dat<-df.to.plot[rows.to.plot,mined.attr]
+        str(plot.dat)
+        if(Data()[[2]][mined.attr] == "Cate"){
+          barplot(data.frame(table(plot.dat))[,2],
+                  main=paste(Groupings()[[1]][i], Groupings()[[2]][j], sep="&"))
         }
+        else if(Data()[[2]][mined.attr] == "Cont")
+          hist(plot.dat,main=paste(Groupings()[[1]][i], Groupings()[[2]][j], sep="&"))
       }
     }
+#     else if(Data()[[2]][tgt.attr] == "Cate"){
+#       #Atgt is continuous, simulate a contingency table
+#       #plotting now involves all three attributes
+#       
+#       #consider Cinitial defined by Atgt
+#       c.initial.tgt<-input$whichtgtclasses
+#       num.classes.tgt<-length(c.initial.tgt)
+#       
+#       par(mfrow=c(num.classes.cmp,num.classes.tgt))
+#       print(num.classes.cmp)
+#       print(num.classes.tgt)
+#       
+#       for(i in seq(num.classes.cmp)){
+#         for(j in seq(num.classes.tgt)){
+#           
+#           rowsToPlot<-intersect(which(df.to.plot[,cmp.attr] == c.initial.cmp[i]),
+#                                 which(df.to.plot[,tgt.attr] == c.initial.tgt[j]))
+#           
+#           plot.dat<-df.to.plot[rowsToPlot,mined.attr]
+#           if(Data()[[2]][mined.attr] == "Cate"){
+#             barplot(data.frame(table(plot.dat))[,2],
+#                     main=paste(cmp.attr,"=",c.initial.cmp[i],",",
+#                                tgt.attr,"=",c.initial.tgt[j],sep=""))
+#           }
+#           else if(Data()[[2]][mined.attr] == "Cont")
+#             hist(plot.dat,main=paste(cmp.attr,"=",c.initial.cmp[i],",",
+#                                      tgt.attr,"=",c.initial.tgt[j],sep=""))
+#         }
+#       }
+#     }
   })
 }) #end shinyServer
