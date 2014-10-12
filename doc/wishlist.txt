@@ -5,3 +5,5 @@ WISHLIST
 3. An analysis log like MetaboNexus'
 4. Cleaning of code to make naming of variables, functions, modules more consistent
 5. render text in initial test tab to describe the Hinitial
+6. put all the reactive modules together in the source code? (Data, Data2, Groupings, Table, Test)
+7. might want to print some messages in the console

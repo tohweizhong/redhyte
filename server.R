@@ -274,7 +274,36 @@ shinyServer(function(input,output){
     
   }) #return input$ctxItems
 
+  #***************REACTIVE**********************#
 
+  # Groupings() is a simple reactive module to
+  # -> Keep track of type of Atgt (cont or cate)
+  # -> keep track of tgt.class and cmp.class groupings
+  # mainly for displaying the correct context in the UI
+  
+  # Groupings() consists of *THREE* things at the moment:
+  # 1. Groupings()[[1]] is Atgt type
+  # 2. Groupings()[[2]] is Atgt.names
+  # 3. Groupings()[[3]] is Acmp.names
+  
+  Groupings<-reactive({
+    if(Data()[[2]][input$targetAttr] == "Cont")
+      return(list(Atgt.type="Cont",
+                  Atgt.names=c(paste(input$targetAttr,": High",sep=""),
+                               paste(input$targetAttr,": Low",sep="")),
+                  Acmp.names=c(paste(input$whichcmpclassesX,collapse="&"),
+                               paste(input$whichcmpclassesY,collapse="&"))))
+    
+    else if(Data()[[2]][input$targetAttr] == "Cate")
+      return(list(Atgt.type="Cate",
+                  Atgt.names=c(paste(input$whichtgtclassesA,collapse="&"),
+                               paste(input$whichtgtclassesB,collapse="&")),
+                  Acmp.names=c(paste(input$whichcmpclassesX,collapse="&"),
+                               paste(input$whichcmpclassesY,collapse="&"))))
+  })
+  
+  #*********************************************#
+  
   #***************REACTIVE**********************#
   
   # The objectives of Data2() are:
@@ -349,15 +378,15 @@ shinyServer(function(input,output){
 
     #add class attributes (A,B,X,Y)
     #start with Atgt
-    if(Data()[[2]][input$targetAttr] == "Cont"){
+    if(Groupings()[[1]] == "Cont"){
       m<-mean(dfWithCtx[,input$targetAttr])
       #using mean instead of median,
       #because median cannot handle extremely skewed data
       #print(unique(dfWithCtx[,input$targetAttr]))
       dfWithCtx$tgt.class<-sapply(dfWithCtx[,input$targetAttr],
                                   FUN=function(x){
-                                  if(x>=m) return(paste(input$targetAttr,": High",sep=""))
-                                  else return(paste(input$targetAttr,": Low",sep=""))})
+                                  if(x>=m) return("High")
+                                  else return("Low")})
     }
     else{ #Atgt is continuous
       dfWithCtx$tgt.class<-sapply(dfWithCtx[,input$targetAttr],
@@ -372,32 +401,25 @@ shinyServer(function(input,output){
                                   else if(x %in% grpY.classes) return("2")})
     
     
+    # For the contexted data stored in memory as a data.frame,
+    # tgt.class and cmp.class do not contain the Atgt.names and Acmp.names
+    # as per in Groupings()
+    # they only contain "High"/"Low" or "1"/"2"
+    
     #add the attribute type for the cutoff attribute
     attr.type<-Data()[[2]]
     attr.type<-c(attr.type,"Cate","Cate")
     
-    str(dfWithCtx)
+    #**console**#
+    print(paste("nrow(dfWithCtx): ",nrow(dfWithCtx)))
     
     return(list(dfWithCtx,attr.type,Data()[[3]]))
     #081014: context bug resolved
   })
   
-  Groupings<-reactive({
-    if(Data()[[2]][input$targetAttr] == "Cont")
-      return(list(c(paste(input$targetAttr,": High",sep=""),
-                    paste(input$targetAttr,": Low",sep="")),
-                  c(paste(input$whichcmpclassesX,collapse="&"),
-                    paste(input$whichcmpclassesY,collapse="&"))))
-    else if(Data()[[2]][input$targetAttr] == "Cate")
-      return(list(c(paste(input$whichtgtclassesA,collapse="&"),
-                    paste(input$whichtgtclassesB,collapse="&")),
-                  c(paste(input$whichcmpclassesX,collapse="&"),
-                    paste(input$whichcmpclassesY,collapse="&"))))
-  })
-  
   #*********************************************#
   
-  #for testing Data2()
+  # display contexted data
   output$ctx.data<-renderTable({
     if (is.null(Data2()[1])) return(NULL)
     rowsToDisplay<-10
@@ -405,45 +427,46 @@ shinyServer(function(input,output){
     data.frame(Data2()[[1]][1:rowsToDisplay,])
   },digits=3)
 
-  #generate contingency table if target attribute is cate.
-  #else generate a comparison table
-
   #***************REACTIVE**********************#
 
-  #Table() consists of *FOUR* things at the moment
-  # 1. Table()[[1]] is the table itself, be it contingency or comparison table
-  # 2. Table()[[2]] is the type of table: contingency or comparison
-  # 3. Table()[[3]] is the data with the starting context itself,
-  #    with 4 columns: Atgt, Acmp, tgt.class, cmp.class
+  # Table() consists of *FOUR* things at the moment
+  #  1. Table()[[1]] is the table itself, be it contingency or comparison table
+  #  2. Table()[[2]] is the type of table: contingency or comparison
+  #  3. Table()[[3]] is the data with the starting context itself,
+  #     with 4 columns: Atgt, Acmp, tgt.class, cmp.class
   
-  #reactive wrapper for table
+  # generate contingency table if target attribute is cate.
+  # else generate a comparison table
+  
+  # reactive wrapper for table
   Table<-reactive({
-    #retrieve the relevant data
+    # retrieve the relevant data
     
-     df<-Data2()[[1]][c(input$targetAttr,input$comparingAttr,"tgt.class","cmp.class")]
-      #is the target attribute continuous or categorical?
-      if(Data2()[[2]][input$targetAttr] == "Cate"){
-        tab<-t(table(df[,c("tgt.class","cmp.class")]))
-        rownames(tab)<-c(paste(input$whichcmpclassesX,collapse="&"),
-                         paste(input$whichcmpclassesY,collapse="&"))
-        colnames(tab)<-c(paste(input$whichtgtclassesA,collapse="&"),
-                         paste(input$whichtgtclassesB,collapse="&"))
-        
-        return(list(tab,"Contingency",df))
-      }
+    df<-Data2()[[1]][c(input$targetAttr,input$comparingAttr,"tgt.class","cmp.class")]
+    
+    #is the target attribute continuous or categorical?
+    if(Data2()[[2]][input$targetAttr] == "Cate"){
+      tab<-t(table(df[,c("tgt.class","cmp.class")]))
+      rownames(tab)<-c(paste(input$whichcmpclassesX,collapse="&"),
+                       paste(input$whichcmpclassesY,collapse="&"))
+      colnames(tab)<-c(paste(input$whichtgtclassesA,collapse="&"),
+                       paste(input$whichtgtclassesB,collapse="&"))
       
-      else{ #target attribute is continuous
-        
-        mean1<-mean(df[which(df$cmp.class == "1"),input$targetAttr])
-        mean2<-mean(df[which(df$cmp.class == "2"),input$targetAttr])
-        
-        means.df<-data.frame(c(mean1,mean2))
-        rownames(means.df)<-c(paste(input$whichcmpclassesX,collapse="&"),
-                         paste(input$whichcmpclassesY,collapse="&"))
-        colnames(means.df)<-paste("means of ",input$targetAttr,sep="")
-        
-        return(list(means.df,"Comparison",df))
-      }
+      return(list(tab,"Contingency",df))
+    }
+    
+    else{ #target attribute is continuous
+      
+      mean1<-mean(df[which(df$cmp.class == "1"),input$targetAttr])
+      mean2<-mean(df[which(df$cmp.class == "2"),input$targetAttr])
+      
+      means.df<-data.frame(c(mean1,mean2))
+      rownames(means.df)<-c(paste(input$whichcmpclassesX,collapse="&"),
+                            paste(input$whichcmpclassesY,collapse="&"))
+      colnames(means.df)<-paste("means of ",input$targetAttr,sep="")
+      
+      return(list(means.df,"Comparison",df))
+    }
   })
 
   #*********************************************#
@@ -629,16 +652,16 @@ shinyServer(function(input,output){
         mined.attr<-c(mined.attr,remove.tail(names(mda.both)[idx+1]))
         names(mined.attr)[(length(mined.attr))]<-original.name
         idx<-idx+1
-        print(idx)
       }
-      print(mined.attr)
+      #**console**#
+      print(paste("mined.attr: ",names(mined.attr)))
     }
     
     cm.tgt<-mod.tgt$confusion
     cm.cmp<-mod.cmp$confusion
     
-    rownames(cm.tgt)<-colnames(cm.tgt)[1:2]<-Groupings()[[1]]
-    rownames(cm.cmp)<-colnames(cm.cmp)[1:2]<-Groupings()[[2]]
+    rownames(cm.tgt)<-colnames(cm.tgt)[1:2]<-Groupings()[[2]]
+    rownames(cm.cmp)<-colnames(cm.cmp)[1:2]<-Groupings()[[3]]
     
     return(list(cm.tgt,cm.cmp,mined.attr))
   })
@@ -670,17 +693,12 @@ shinyServer(function(input,output){
     cmp.attr<-input$comparingAttr
     mined.attr<-input$mined.attr
     
-    print(mined.attr)
     
     #grab the relevant data
     df.to.plot<-Data2()[[1]][,c(tgt.attr,cmp.attr,mined.attr,"tgt.class","cmp.class")]
     
-    str(df.to.plot)
-#     #consider Cinitial for Acmp
-#     c.initial.cmp<-input$whichcmpclasses #have not considered "Use all classes" yet
-#     num.classes.cmp<-length(c.initial.cmp)
-#     #will need to consider Atgt as well
-    
+    #**console**#
+    print(paste("ncol(df.to.plot): ",ncol(df.to.plot)))
     par(mfrow=c(2,2))
 
     #need to consider whether Atgt is continuous or categorical
@@ -688,53 +706,19 @@ shinyServer(function(input,output){
     for(i in seq(1,2)){
       for(j in seq(1,2)){
         
-        print(i)
-        print(j)
         #grab the subset of data
         rows.to.plot<-intersect(
           which(df.to.plot[,"tgt.class"] == i),
           which(df.to.plot[,"cmp.class"] == j)
         )
-        print(rows.to.plot)
         plot.dat<-df.to.plot[rows.to.plot,mined.attr]
-        str(plot.dat)
         if(Data()[[2]][mined.attr] == "Cate"){
           barplot(data.frame(table(plot.dat))[,2],
-                  main=paste(Groupings()[[1]][i], Groupings()[[2]][j], sep="&"))
+                  main=paste(Groupings()[[2]][i], Groupings()[[3]][j], sep="&"))
         }
         else if(Data()[[2]][mined.attr] == "Cont")
-          hist(plot.dat,main=paste(Groupings()[[1]][i], Groupings()[[2]][j], sep="&"))
+          hist(plot.dat,main=paste(Groupings()[[2]][i], Groupings()[[3]][j], sep="&"))
       }
     }
-#     else if(Data()[[2]][tgt.attr] == "Cate"){
-#       #Atgt is continuous, simulate a contingency table
-#       #plotting now involves all three attributes
-#       
-#       #consider Cinitial defined by Atgt
-#       c.initial.tgt<-input$whichtgtclasses
-#       num.classes.tgt<-length(c.initial.tgt)
-#       
-#       par(mfrow=c(num.classes.cmp,num.classes.tgt))
-#       print(num.classes.cmp)
-#       print(num.classes.tgt)
-#       
-#       for(i in seq(num.classes.cmp)){
-#         for(j in seq(num.classes.tgt)){
-#           
-#           rowsToPlot<-intersect(which(df.to.plot[,cmp.attr] == c.initial.cmp[i]),
-#                                 which(df.to.plot[,tgt.attr] == c.initial.tgt[j]))
-#           
-#           plot.dat<-df.to.plot[rowsToPlot,mined.attr]
-#           if(Data()[[2]][mined.attr] == "Cate"){
-#             barplot(data.frame(table(plot.dat))[,2],
-#                     main=paste(cmp.attr,"=",c.initial.cmp[i],",",
-#                                tgt.attr,"=",c.initial.tgt[j],sep=""))
-#           }
-#           else if(Data()[[2]][mined.attr] == "Cont")
-#             hist(plot.dat,main=paste(cmp.attr,"=",c.initial.cmp[i],",",
-#                                      tgt.attr,"=",c.initial.tgt[j],sep=""))
-#         }
-#       }
-#     }
   })
 }) #end shinyServer
