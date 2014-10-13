@@ -452,7 +452,9 @@ shinyServer(function(input,output){
       colnames(tab)<-c(paste(input$whichtgtclassesA,collapse="&"),
                        paste(input$whichtgtclassesB,collapse="&"))
       
-      return(list(tab,tab.type="Contingency",tab.df=df))
+      return(list(cont.tab=tab,
+                  tab.type="Contingency",
+                  tab.df=df))
     }
     
     else{ #target attribute is continuous
@@ -477,7 +479,10 @@ shinyServer(function(input,output){
       
       print(tab)
       
-      return(list(means.df,tab,tab.type="Comparison",tab.df=df))
+      return(list(means.df=means.df,
+                  cont.tab=tab,
+                  tab.type="Comparison",
+                  tab.df=df))
     }
   })
 
@@ -538,7 +543,7 @@ shinyServer(function(input,output){
   #***************REACTIVE**********************#
   
   Test<-reactive({
-    if(Table()[[2]] == "Contingency") return("t-test") # <--- WRONG
+    if(Table()[["tab.type"]] == "Contingency") return("t-test") # <--- WRONG
     else return("chisq-test")
   }) #not implemented yet
   
@@ -610,8 +615,8 @@ shinyServer(function(input,output){
     acc.tgt<-sum(diag(tmp.cm.tgt))/sum(tmp.cm.tgt)
     acc.cmp<-sum(diag(tmp.cm.cmp))/sum(tmp.cm.cmp)
     # this is severly affected by class-imbalance and multi-classes
-    print(acc.tgt)
-    print(acc.cmp)
+    print(paste("acc.tgt: ",acc.tgt,sep=""))
+    print(paste("acc.cmp: ",acc.cmp,sep=""))
     
     # compare the accuracies of the models with the default accuracy threshold
     # defined in related_codes/settings.R
@@ -629,17 +634,11 @@ shinyServer(function(input,output){
     else if(acc.tgt < acc.rf.default && acc.cmp >= acc.rf.default){
       mined.attr<-rownames(mod.cmp$importance)[seq(k)]
       names(mined.attr)<-paste(mined.attr,".cmp",sep="")
-      
-      #**console**#
-      print(paste("mined.attr: ",names(mined.attr)))
     }
     else if(acc.tgt >= acc.rf.default && acc.cmp >= acc.rf.default){
       # both models are accurate; extract top k attributes
       # from the intersection of the top attributes in
       # both models based on variable importance (VI)
-      
-      #**console**#
-      print(paste("mined.attr: ",names(mined.attr)))
       
       # combine the list of MeanDecreaseAccuracy
       mda.tgt<-mod.tgt$importance[,"MeanDecreaseAccuracy"]
@@ -673,6 +672,9 @@ shinyServer(function(input,output){
       }
     }
     
+    #**console**#
+    print(paste("mined.attr: ",names(mined.attr)))
+    
     cm.tgt<-mod.tgt$confusion
     cm.cmp<-mod.cmp$confusion
     
@@ -687,6 +689,7 @@ shinyServer(function(input,output){
   #*********************************************#
   
   output$testRF1<-renderTable({
+    Metrics()
     minedAttributes()[[1]]
   })
   output$testRF2<-renderTable({
@@ -758,9 +761,38 @@ shinyServer(function(input,output){
 
   Metrics<-reactive({
     
-    initial.p<-
+    tgt.attr<-input$targetAttr
+    cmp.attr<-input$comparingAttr
+    mined.attr<-minedAttributes()[[3]]
     
-    mined.attr<-minedAttributes[[3]]
+    df<-Data2()[[1]][,c(tgt.attr,cmp.attr,c(mined.attr),"tgt.class","cmp.class")]
+    
+    #introduce mean-discretization for the continuous mined Actx
+    which.are.cont<-mined.attr[which(Data2()[[2]][mined.attr] == "Cont")]
+    
+    #function to add mean discretization for one attribute
+    mean.discre<-function(a.ctx.attr){
+      m<-mean(df[,a.ctx.attr])
+      new.col<-sapply(df[,a.ctx.attr],
+                      FUN=function(x){
+                        if(x>=m) return("High")
+                        else return("Low")})
+      return(new.col)
+    }
+    
+    for(a.ctx.attr in which.are.cont){
+      df<-cbind(df,mean.discre(a.ctx.attr),stringsAsFactors=FALSE)
+      colnames(df)[ncol(df)]<-paste(a.ctx.attr,".class",sep="")
+    }
+    
+    str(df)
+    
+    cont.tab<-Table()[["cont.tab"]]
+    initial.p.cmp1<-cont.tab[1,1]/sum(cont.tab[1,1],cont.tab[1,2])
+    initial.p.cmp2<-cont.tab[2,1]/sum(cont.tab[2,1],cont.tab[2,2])
+    
+    which.are.ctx<-
+    
     for(i in seq(length(mined.attr))){
       cur.attr<-mined.attr[i]
       if(Data2()[[2]][cur.attr] == "Cate"){
@@ -769,11 +801,6 @@ shinyServer(function(input,output){
          
        }
       }
-      
-      
-      
     }
   })
-
-  
 }) #end shinyServer
