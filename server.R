@@ -321,7 +321,7 @@ shinyServer(function(input,output){
   # 030914: will return Data()[[[3]]] as it is anyway for now.
 
   # Data2() consists of *THREE* things at the moment
-  #  1. Data2()[[1]] is the data itself, including the median cutoff attribute
+  #  1. Data2()[[1]] is the data itself, including the median cutoff attribute if Atgt is cont
   #  2. Data2()[[2]] is the type of variable: continuous or categorical
   #  3. Data2()[[3]] is the number of classes for categorical attributes, NA for cont.
   
@@ -452,11 +452,16 @@ shinyServer(function(input,output){
       colnames(tab)<-c(paste(input$whichtgtclassesA,collapse="&"),
                        paste(input$whichtgtclassesB,collapse="&"))
       
-      return(list(tab,"Contingency",df))
+      return(list(tab,tab.type="Contingency",tab.df=df))
     }
     
     else{ #target attribute is continuous
       
+      # want to return both the data.frame of means and
+      # the contingency table based on tgt.class = {"High", "Low"}
+      # 131014: for now only the data.frame of means will be displayed in the UI
+      
+      # first, the data.frame of means
       mean1<-mean(df[which(df$cmp.class == "1"),input$targetAttr])
       mean2<-mean(df[which(df$cmp.class == "2"),input$targetAttr])
       
@@ -465,7 +470,14 @@ shinyServer(function(input,output){
                             paste(input$whichcmpclassesY,collapse="&"))
       colnames(means.df)<-paste("means of ",input$targetAttr,sep="")
       
-      return(list(means.df,"Comparison",df))
+      # next, the contingency table
+      tab<-t(table(df[,c("tgt.class","cmp.class")]))
+      rownames(tab)<-Groupings()[[3]]
+      colnames(tab)<-Groupings()[[2]]
+      
+      print(tab)
+      
+      return(list(means.df,tab,tab.type="Comparison",tab.df=df))
     }
   })
 
@@ -484,7 +496,7 @@ shinyServer(function(input,output){
     # 2 groups only
 
     # check the type of table
-    if(Table()[[2]] == "Contingency"){
+    if(Groupings()[[1]] == "Cate"){
       test<-chisq.test(Table()[[1]]) #chisq.test() works on the table itself
       stats<-test$statistic
       pvalue<-test$p.value
@@ -498,7 +510,7 @@ shinyServer(function(input,output){
       colnames(returnMe)<-NULL
       returnMe
     }
-    else if(Table()[[2]] == "Comparison"){
+    else if(Groupings()[[1]] == "Cont"){
       #t-test
       test<-t.test(Data2()[[1]][,input$targetAttr]~Data2()[[1]]$cmp.class) #t-test bug resolved
       stats<-test$statistic
@@ -598,6 +610,8 @@ shinyServer(function(input,output){
     acc.tgt<-sum(diag(tmp.cm.tgt))/sum(tmp.cm.tgt)
     acc.cmp<-sum(diag(tmp.cm.cmp))/sum(tmp.cm.cmp)
     # this is severly affected by class-imbalance and multi-classes
+    print(acc.tgt)
+    print(acc.cmp)
     
     # compare the accuracies of the models with the default accuracy threshold
     # defined in related_codes/settings.R
@@ -606,6 +620,8 @@ shinyServer(function(input,output){
     # -> acc.tgt >= acc.rf.default && acc.cmp <  acc.rf.default
     # -> acc.tgt <  acc.rf.default && acc.cmp >= acc.rf.default
     
+    mined.attr<-NULL
+    
     if(acc.tgt >= acc.rf.default && acc.cmp < acc.rf.default){
       mined.attr<-rownames(mod.tgt$importance)[seq(k)]
       names(mined.attr)<-paste(mined.attr,".tgt",sep="") # adding a tail ".tgt" or ".cmp"
@@ -613,11 +629,17 @@ shinyServer(function(input,output){
     else if(acc.tgt < acc.rf.default && acc.cmp >= acc.rf.default){
       mined.attr<-rownames(mod.cmp$importance)[seq(k)]
       names(mined.attr)<-paste(mined.attr,".cmp",sep="")
+      
+      #**console**#
+      print(paste("mined.attr: ",names(mined.attr)))
     }
     else if(acc.tgt >= acc.rf.default && acc.cmp >= acc.rf.default){
       # both models are accurate; extract top k attributes
       # from the intersection of the top attributes in
       # both models based on variable importance (VI)
+      
+      #**console**#
+      print(paste("mined.attr: ",names(mined.attr)))
       
       # combine the list of MeanDecreaseAccuracy
       mda.tgt<-mod.tgt$importance[,"MeanDecreaseAccuracy"]
@@ -633,15 +655,11 @@ shinyServer(function(input,output){
       mined.attr<-names(mda.both)[seq(k)]
       
       # function to remove the tails ".tgt" and ".cmp"
-      mined.attr<-sapply(mined.attr,FUN=function(s){
-        last.dot<-regexpr("\\.[^\\.]*$", s)
-        return(substr(s,1,last.dot-1))
-      })
-
       remove.tail<-function(s){
         last.dot<-regexpr("\\.[^\\.]*$", s)
         return(substr(s,1,last.dot-1))
       }
+      mined.attr<-sapply(mined.attr,FUN=remove.tail)
       
       # while-loop to remove duplicates in mined.attr and add new ones
       idx<-k
@@ -653,8 +671,6 @@ shinyServer(function(input,output){
         names(mined.attr)[(length(mined.attr))]<-original.name
         idx<-idx+1
       }
-      #**console**#
-      print(paste("mined.attr: ",names(mined.attr)))
     }
     
     cm.tgt<-mod.tgt$confusion
@@ -663,7 +679,9 @@ shinyServer(function(input,output){
     rownames(cm.tgt)<-colnames(cm.tgt)[1:2]<-Groupings()[[2]]
     rownames(cm.cmp)<-colnames(cm.cmp)[1:2]<-Groupings()[[3]]
     
-    return(list(cm.tgt,cm.cmp,mined.attr))
+    if(!is.null(mined.attr)) return(list(cm.tgt,cm.cmp,mined.attr))
+    #both mod.tgt and mod.cmp are inaccurate, therefore no mined attributes
+    else return(list(cm.tgt,cm.cmp,NULL))
   })
   
   #*********************************************#
@@ -675,6 +693,11 @@ shinyServer(function(input,output){
     minedAttributes()[[2]]
   })
   output$testRF3<-renderTable({
+    if(is.null(minedAttributes()[[3]])){
+      tmp<-data.frame("No significant context attributes were found")
+      colnames(tmp)<-""
+      return(tmp)
+    }
     df<-data.frame(minedAttributes()[[3]])
     colnames(df)<-"Mined context attributes"
     df
@@ -689,6 +712,7 @@ shinyServer(function(input,output){
   
   #render the plot for one mined attribute indicated by user
   output$mined.attr.viz<-renderPlot({
+    if(is.null(minedAttributes()[[3]])) return(NULL)
     tgt.attr<-input$targetAttr
     cmp.attr<-input$comparingAttr
     mined.attr<-input$mined.attr
@@ -721,4 +745,35 @@ shinyServer(function(input,output){
       }
     }
   })
+  
+  #***************REACTIVE**********************#
+  
+#   Data3<-reactive(){
+#     df<-Data2()[[1]]
+#     type<-Data2()[[2]]
+#     numclass<-Data2()[[3]]
+#   }
+
+  #***************REACTIVE**********************#
+
+  Metrics<-reactive({
+    
+    initial.p<-
+    
+    mined.attr<-minedAttributes[[3]]
+    for(i in seq(length(mined.attr))){
+      cur.attr<-mined.attr[i]
+      if(Data2()[[2]][cur.attr] == "Cate"){
+       cur.attr.classes<-unique(Data2()[[1]][,cur.attr])
+       for(j in seq(length(cur.attr.classes))){
+         
+       }
+      }
+      
+      
+      
+    }
+  })
+
+  
 }) #end shinyServer
