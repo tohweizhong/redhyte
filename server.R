@@ -765,7 +765,7 @@ shinyServer(function(input,output){
     cmp.attr<-input$comparingAttr
     mined.attr<-minedAttributes()[[3]]
     
-    df<-Data2()[[1]][,c(tgt.attr,cmp.attr,c(mined.attr),"tgt.class","cmp.class")]
+    df<-Data2()[[1]][,c(tgt.attr,cmp.attr,"tgt.class","cmp.class",c(mined.attr))]
     
     #introduce mean-discretization for the continuous mined Actx
     which.are.cont<-mined.attr[which(Data2()[[2]][mined.attr] == "Cont")]
@@ -780,27 +780,82 @@ shinyServer(function(input,output){
       return(new.col)
     }
     
-    for(a.ctx.attr in which.are.cont){
-      df<-cbind(df,mean.discre(a.ctx.attr),stringsAsFactors=FALSE)
-      colnames(df)[ncol(df)]<-paste(a.ctx.attr,".class",sep="")
-    }
-    
+    for(a.ctx.attr in which.are.cont)
+      df[,a.ctx.attr]<-mean.discre(a.ctx.attr)
+      
     str(df)
     
-    cont.tab<-Table()[["cont.tab"]]
-    initial.p.cmp1<-cont.tab[1,1]/sum(cont.tab[1,1],cont.tab[1,2])
-    initial.p.cmp2<-cont.tab[2,1]/sum(cont.tab[2,1],cont.tab[2,2])
-    
-    which.are.ctx<-
-    
-    for(i in seq(length(mined.attr))){
-      cur.attr<-mined.attr[i]
-      if(Data2()[[2]][cur.attr] == "Cate"){
-       cur.attr.classes<-unique(Data2()[[1]][,cur.attr])
-       for(j in seq(length(cur.attr.classes))){
-         
-       }
-      }
+    #function to compute proportions
+    compute.prop<-function(tab){
+      p1<-tab[1,1]/sum(tab[1,1],tab[1,2])
+      p2<-tab[2,1]/sum(tab[2,1],tab[2,2])
+      return(c(p1,p2))
     }
+    
+    #compute initial proportions
+    cont.tab<-Table()[["cont.tab"]]
+    initial.prop.cmp1<-compute.prop(cont.tab)[1]
+    initial.prop.cmp2<-compute.prop(cont.tab)[2]
+    
+    #create a data.frame that has the proportions
+    prop.df.names<-NULL
+    for(a.ctx.attr in mined.attr){
+      classes<-unique(df[,a.ctx.attr])
+      for(an.item in classes)
+        prop.df.names<-c(prop.df.names,paste(a.ctx.attr,an.item,sep="="))
+    }
+    
+    prop.df<-data.frame(cbind(rep(NA,length(prop.df.names)),
+                              rep(NA,length(prop.df.names))),
+                     row.names=prop.df.names)
+    colnames(prop.df)<-c("p1prime","p2prime")
+    
+    i<-1
+    for(an.item in rownames(prop.df)){
+      Actx<-unlist(strsplit(an.item,"="))[1]
+      vctx<-unlist(strsplit(an.item,"="))[2]
+      
+      rows.to.prop<-which(df[,Actx] == vctx)
+      df.to.prop<-df[rows.to.prop,c("tgt.class","cmp.class")]
+      tab.to.prop<-t(table(df.to.prop))
+      
+      print(an.item)
+      print(tab.to.prop)
+      
+      prop.df$Actx[i]<-Actx
+      prop.df$vctx[i]<-vctx
+      
+      if(nrow(tab.to.prop)*ncol(tab.to.prop) == 4){ # 2x2 contingency table
+        prop.df[i,c("p1prime","p2prime")]<-compute.prop(tab.to.prop)
+        
+        prop.df$c11[i]<-tab.to.prop[1,1]
+        prop.df$c12[i]<-tab.to.prop[1,2]
+        prop.df$c21[i]<-tab.to.prop[2,1]
+        prop.df$c22[i]<-tab.to.prop[2,2]
+      }
+      i<-i+1
+    }
+    
+    print(prop.df)
+    
+    # function to compute difflift
+    compute.dl<-function(prop.vec){
+      return(prop.vec[1]-prop.vec[2])/(initial.prop.cmp1-initial.prop.cmp2)
+    }
+    
+    # function to compute contribution
+    compute.contri<-function(prop.vec){
+      return(1) # not implemented yet
+    }
+    
+    prop.df$difflift<-apply(prop.df[,c("p1prime","p2prime")],
+                            MARGIN=1,
+                            FUN=compute.dl)
+    prop.df$contri<-apply(prop.df[,c("p1prime","p2prime")],
+                          MARGIN=1,
+                          FUN=compute.contri)
+    
+    str(prop.df)
+
   })
 }) #end shinyServer
