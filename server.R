@@ -689,7 +689,6 @@ shinyServer(function(input,output){
   #*********************************************#
   
   output$testRF1<-renderTable({
-    Metrics()
     minedAttributes()[[1]]
   })
   output$testRF2<-renderTable({
@@ -792,12 +791,32 @@ shinyServer(function(input,output){
       return(c(p1,p2))
     }
     
-    #compute initial proportions
-    cont.tab<-Table()[["cont.tab"]]
-    initial.prop.cmp1<-compute.prop(cont.tab)[1]
-    initial.prop.cmp2<-compute.prop(cont.tab)[2]
+    # function to compute support
+    compute.sup<-function(tab){
+      c11<-tab[1,1]
+      c12<-tab[1,2]
+      c21<-tab[2,1]
+      c22<-tab[2,2]
+      n1<-c11+c12
+      n2<-c21+c22
+      return(c(c11=c11,c12=c12,c21=c21,c22=c22,n1=n1,n2=n2))
+    }
     
-    #create a data.frame that has the proportions
+    # compute initial proportions
+    cont.tab<-Table()[["cont.tab"]]
+    initial.p1<-compute.prop(cont.tab)[1]
+    initial.p2<-compute.prop(cont.tab)[2]
+    # compute initial n
+    initial.n1<-compute.sup(cont.tab)["n1"]
+    initial.n2<-compute.sup(cont.tab)["n2"]
+    
+    # create the master data.frame that has all of the following columns:
+    # $ rownames: ctx items
+    # $ Actx, vctx
+    # $ p1prime, p2prime
+    # $ c11, c12, c21, c22
+    # $ n1prime, n2prime,
+    # $ difflift, contri
     prop.df.names<-NULL
     for(a.ctx.attr in mined.attr){
       classes<-unique(df[,a.ctx.attr])
@@ -828,34 +847,63 @@ shinyServer(function(input,output){
       if(nrow(tab.to.prop)*ncol(tab.to.prop) == 4){ # 2x2 contingency table
         prop.df[i,c("p1prime","p2prime")]<-compute.prop(tab.to.prop)
         
-        prop.df$c11[i]<-tab.to.prop[1,1]
-        prop.df$c12[i]<-tab.to.prop[1,2]
-        prop.df$c21[i]<-tab.to.prop[2,1]
-        prop.df$c22[i]<-tab.to.prop[2,2]
+        tmp.sup<-compute.sup(tab.to.prop)
+        
+        prop.df$c11[i]<-tmp.sup["c11"]
+        prop.df$c12[i]<-tmp.sup["c12"]
+        prop.df$c21[i]<-tmp.sup["c21"]
+        prop.df$c22[i]<-tmp.sup["c22"]
+        
+        prop.df$n1prime[i]<-tmp.sup["n1"]
+        prop.df$n2prime[i]<-tmp.sup["n2"]
       }
       i<-i+1
     }
     
-    print(prop.df)
-    
     # function to compute difflift
     compute.dl<-function(prop.vec){
-      return(prop.vec[1]-prop.vec[2])/(initial.prop.cmp1-initial.prop.cmp2)
+      return(prop.vec[1]-prop.vec[2])/(initial.p1-initial.p2)
     }
     
     # function to compute contribution
     compute.contri<-function(prop.vec){
-      return(1) # not implemented yet
+      
+      p1prime<-prop.vec[1]
+      p2prime<-prop.vec[2]
+      n1prime<-prop.vec[3]
+      n2prime<-prop.vec[4]
+
+      numer<-(n1prime/initial.n1)*(p1prime-initial.p1) - 
+        (n2prime/initial.n2)*(p2prime-initial.p2)
+      denom<-initial.p1-initial.p2
+      
+      return(numer/denom)
     }
     
     prop.df$difflift<-apply(prop.df[,c("p1prime","p2prime")],
                             MARGIN=1,
                             FUN=compute.dl)
-    prop.df$contri<-apply(prop.df[,c("p1prime","p2prime")],
+    prop.df$contri<-apply(prop.df[,c("p1prime","p2prime","n1prime","n2prime")],
                           MARGIN=1,
                           FUN=compute.contri)
     
-    str(prop.df)
-
+    prop.df$SP<-sapply(prop.df[,"difflift"],
+                      FUN=function(x){
+                        if(is.na(x)) return(FALSE)
+                        else if(x<0) return(TRUE)
+                        else if(x>=0) return(FALSE)
+                      })
+    
+    #prop.df<-prop.df[order(prop.df$difflift,prop.df$contri),]
+    prop.df<-prop.df[with(prop.df,order(difflift,contri)),]
+    
+    return(prop.df)
   })
+  
+  output$metrics<-renderTable({
+    tmp.df<-Metrics()
+    tmp.df<-subset(tmp.df,select=c(n1prime,n2prime,difflift,contri,SP))
+    tmp.df
+  },digits=3)
+
 }) #end shinyServer

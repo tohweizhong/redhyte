@@ -10,3 +10,4 @@ WISHLIST
 8. deploy gist online
 9. transfer part of the initialTest code into the reactive Test() module
 10. update comments for Table()
+11. $ for listing in comments for non-reactive stuff, @ for reactive
