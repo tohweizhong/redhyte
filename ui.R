@@ -183,7 +183,8 @@ shinyUI(pageWithSidebar(
       #===========8. Hypothesis mining==============#
       #=============================================#
       
-      tabPanel("8. Hypothesis mining"),
+      tabPanel("8. Hypothesis mining",
+               tableOutput("hypotheses")),
       
       #=============================================#
       #=============9. Session log==================#

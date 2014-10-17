@@ -818,6 +818,7 @@ shinyServer(function(input,output){
     # $ n1prime, n2prime,
     # $ difflift, contri
     prop.df.names<-NULL
+    
     for(a.ctx.attr in mined.attr){
       classes<-unique(df[,a.ctx.attr])
       for(an.item in classes)
@@ -837,9 +838,6 @@ shinyServer(function(input,output){
       rows.to.prop<-which(df[,Actx] == vctx)
       df.to.prop<-df[rows.to.prop,c("tgt.class","cmp.class")]
       tab.to.prop<-t(table(df.to.prop))
-      
-      print(an.item)
-      print(tab.to.prop)
       
       prop.df$Actx[i]<-Actx
       prop.df$vctx[i]<-vctx
@@ -893,17 +891,50 @@ shinyServer(function(input,output){
                         else if(x<0) return(TRUE)
                         else if(x>=0) return(FALSE)
                       })
-    
-    #prop.df<-prop.df[order(prop.df$difflift,prop.df$contri),]
     prop.df<-prop.df[with(prop.df,order(difflift,contri)),]
     
     return(prop.df)
   })
   
   output$metrics<-renderTable({
-    tmp.df<-Metrics()
-    tmp.df<-subset(tmp.df,select=c(n1prime,n2prime,difflift,contri,SP))
-    tmp.df
+    #subset(Metrics(),select=c(n1prime,n2prime,difflift,contri,SP))
+    Metrics()
   },digits=3)
 
+  Hypotheses<-reactive({
+    prop.df<-Metrics()
+    df<-Data2()[[1]]
+    
+    # want to append to the master data.frame the following:
+    # $ chi-squared test stats
+    # $ p-values
+    for(i in seq(nrow(prop.df))){
+      
+      if(!is.na(prop.df$difflift[i])){
+        Actx<-prop.df$Actx[i]
+        vctx<-prop.df$vctx[i]
+        
+        # extract the subset of data
+        rows<-which(df[,Actx] == vctx)
+        tmp.df<-df[rows,c("tgt.class","cmp.class")]
+        
+        str(tmp.df)
+        
+        tmp.tab<-t(table(tmp.df))
+        
+        print(tmp.tab)
+        
+        test<-chisq.test(tmp.tab)
+        
+        prop.df$stats<-test$statistic
+        prop.df$pvalue<-test$p.value
+      }
+    }
+    prop.df<-prop.df[with(prop.df,order(difflift,contri,pvalue)),]
+    return(prop.df)
+  })
+
+  output$hypotheses<-renderTable({
+    subset(Hypotheses(),select=c(n1prime,n2prime,difflift,contri,SP,stats,pvalue))
+  },digits=3)
 }) #end shinyServer
