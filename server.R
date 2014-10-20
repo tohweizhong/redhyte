@@ -477,8 +477,6 @@ shinyServer(function(input,output){
       rownames(tab)<-Groupings()[[3]]
       colnames(tab)<-Groupings()[[2]]
       
-      print(tab)
-      
       return(list(means.df=means.df,
                   cont.tab=tab,
                   tab.type="Comparison",
@@ -490,7 +488,6 @@ shinyServer(function(input,output){
   
   #render the comparison or contingency table
   output$contTable<-renderTable({
-    Data3()
     Table()[[1]]
   })
 
@@ -533,6 +530,61 @@ shinyServer(function(input,output){
     }
   })
   # yet to implement non-parametric test yet
+  
+  output$hypothesis.statement<-renderText({
+    
+    if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
+    
+    tgt.attr<-input$targetAttr
+    cmp.attr<-input$comparingAttr
+    
+    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is cont
+    tgt.class2<-input$whichtgtclassesB # <--- could be NULL
+    cmp.class1<-input$whichcmpclassesX
+    cmp.class2<-input$whichcmpclassesY
+    
+    ctx.attr    <-input$ctxAttr
+    ctx.items   <-input$ctxItems # in the format of Actx = vctx
+    
+    ctx.items.text<-paste(ctx.items, collapse=" & ")
+    tgt.class1.text<-paste(tgt.class1,collapse=" & ")
+    tgt.class2.text<-paste(tgt.class2,collapse=" & ")
+    cmp.class1.text<-paste(cmp.class1,collapse=" & ")
+    cmp.class2.text<-paste(cmp.class2,collapse=" & ")
+    
+    if(Groupings()[[1]] == "Cate")
+      statement<-paste("In the context of {",
+                       ctx.items.text,
+                       "}, there is a difference in ",
+                       tgt.attr,
+                       " between {",
+                       tgt.class1.text,
+                       "} vs. {",
+                       tgt.class2.text,
+                       "} when comparing the samples on ",
+                       cmp.attr,
+                       " between {",
+                       cmp.class1.text,
+                       "} vs. {",
+                       cmp.class2.text,
+                       "}",
+                       sep="")
+    else if(Groupings()[[1]] == "Cont")
+      statement<-paste("In the context of {",
+                       ctx.items.text,
+                       "} there is a difference in ",
+                       tgt.attr,
+                       " when comparing the samples on ",
+                       cmp.attr,
+                       " between {",
+                       cmp.class1.text,
+                       "} vs. {",
+                       cmp.class2.text,
+                       "}",
+                       sep="")
+    return(statement)
+    
+  })
   
   #=============================================#
   #============4. Test diagnostics==============#

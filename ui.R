@@ -95,10 +95,8 @@ shinyUI(pageWithSidebar(
       #=============================================#
       
       tabPanel("3. Initial test",
-               tags$h5("Example hypothesis:"),
-               tags$h5("In the context of <smoking=true, lung.cancer.hist=true>, 
-                       there is a difference in incidence of <tgt1:lung.cancer=adenocarcinoma or squamous-cell> vs. <tgt2:lung.cancer=small-cell>
-                       in the populations of <cmp1:gender=male vs. cmp2:gender=female>"),
+               tags$h5("Your hypothesis:"),
+               verbatimTextOutput("hypothesis.statement"),
                navlistPanel(
                  tabPanel("Target attribute",
                           sidebarPanel(
@@ -161,6 +159,7 @@ shinyUI(pageWithSidebar(
                tags$h6("For each of these two models, Redhyte extract the top k attributes that contribute
                        to the classification of target and/or comparing attributes, if the model(s) is accurate."),
                tags$h6("Confusion matrices of the models will be displayed, as well as the list of mined context attributes."),
+               verbatimTextOutput("hypothesis.statement"),
                navlistPanel(
                  tabPanel("Mined context attributes",
                           tableOutput("testRF1"),
