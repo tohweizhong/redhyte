@@ -490,6 +490,7 @@ shinyServer(function(input,output){
   
   #render the comparison or contingency table
   output$contTable<-renderTable({
+    Data3()
     Table()[[1]]
   })
 
@@ -549,6 +550,34 @@ shinyServer(function(input,output){
   
   #*********************************************#
   
+  #***************REACTIVE**********************#
+  
+  Data3<-reactive({
+    df<-Data2()[[1]]
+    attr.type<-Data2()[[2]]
+    
+    #change all continuous attributes to categorical before hypothesis mining
+    mean.discre<-function(an.attr){
+      m<-mean(df[,an.attr])
+      new.col<-sapply(df[,an.attr],
+                      FUN=function(x){
+                        if(x>=m) return("High")
+                        else return("Low")})
+      return(new.col)
+    }
+    
+    which.are.cont<-which(attr.type == "Cont")
+    for(an.attr in which.are.cont)
+      df[,an.attr]<-mean.discre(an.attr)
+    
+    str(df)
+    
+    attr.type<-rep("Cate",length(attr.type))
+    
+    return(list(df,attr.type,Data2()[[3]]))
+  })
+  
+  
   #=============================================#
   #============5. Context mining================#
   #=============================================#
@@ -558,11 +587,11 @@ shinyServer(function(input,output){
   #***************REACTIVE**********************#
   
   minedAttributes<-reactive({
-    df<-Data2()[[1]]
+    df<-Data3()[[1]]
     
     #need to convert the character attributes to factors first before building models
     #initial data input options use stringsAsFactors=FALSE (see doc.txt)
-    which.are.char<-which(Data2()[[2]] == "Cate")
+    which.are.char<-which(Data3()[[2]] == "Cate") # all are categorical
     df[,which.are.char]<-lapply(df[,which.are.char],factor)
     
     # formulate the formulae for random forest models
@@ -749,40 +778,14 @@ shinyServer(function(input,output){
   })
   
   #***************REACTIVE**********************#
-  
-#   Data3<-reactive(){
-#     df<-Data2()[[1]]
-#     type<-Data2()[[2]]
-#     numclass<-Data2()[[3]]
-#   }
 
-  #***************REACTIVE**********************#
-
-  Metrics<-reactive({
+  Hypotheses<-reactive({
     
     tgt.attr<-input$targetAttr
     cmp.attr<-input$comparingAttr
     mined.attr<-minedAttributes()[[3]]
     
-    df<-Data2()[[1]][,c(tgt.attr,cmp.attr,"tgt.class","cmp.class",c(mined.attr))]
-    
-    #introduce mean-discretization for the continuous mined Actx
-    which.are.cont<-mined.attr[which(Data2()[[2]][mined.attr] == "Cont")]
-    
-    #function to add mean discretization for one attribute
-    mean.discre<-function(a.ctx.attr){
-      m<-mean(df[,a.ctx.attr])
-      new.col<-sapply(df[,a.ctx.attr],
-                      FUN=function(x){
-                        if(x>=m) return("High")
-                        else return("Low")})
-      return(new.col)
-    }
-    
-    for(a.ctx.attr in which.are.cont)
-      df[,a.ctx.attr]<-mean.discre(a.ctx.attr)
-      
-    str(df)
+    df<-Data3()[[1]][,c(tgt.attr,cmp.attr,"tgt.class","cmp.class",c(mined.attr))]
     
     #function to compute proportions
     compute.prop<-function(tab){
@@ -893,21 +896,8 @@ shinyServer(function(input,output){
                       })
     prop.df<-prop.df[with(prop.df,order(difflift,contri)),]
     
-    return(prop.df)
-  })
-  
-  output$metrics<-renderTable({
-    #subset(Metrics(),select=c(n1prime,n2prime,difflift,contri,SP))
-    Metrics()
-  },digits=3)
-
-  Hypotheses<-reactive({
-    prop.df<-Metrics()
-    df<-Data2()[[1]]
+    # now, append the chi-squared test stats and p-values
     
-    # want to append to the master data.frame the following:
-    # $ chi-squared test stats
-    # $ p-values
     for(i in seq(nrow(prop.df))){
       
       if(!is.na(prop.df$difflift[i])){
@@ -918,23 +908,21 @@ shinyServer(function(input,output){
         rows<-which(df[,Actx] == vctx)
         tmp.df<-df[rows,c("tgt.class","cmp.class")]
         
-        str(tmp.df)
-        
+        # run chisq.test on the contingency table
         tmp.tab<-t(table(tmp.df))
-        
-        print(tmp.tab)
-        
         test<-chisq.test(tmp.tab)
         
-        prop.df$stats<-test$statistic
-        prop.df$pvalue<-test$p.value
+        # extract test stats and p-value and append to master data.frame
+        prop.df$stats[i]<-test$statistic
+        prop.df$pvalue[i]<-test$p.value
       }
     }
     prop.df<-prop.df[with(prop.df,order(difflift,contri,pvalue)),]
     return(prop.df)
   })
-
+  
   output$hypotheses<-renderTable({
-    subset(Hypotheses(),select=c(n1prime,n2prime,difflift,contri,SP,stats,pvalue))
+    #subset(Metrics(),select=c(n1prime,n2prime,difflift,contri,SP))
+    Hypotheses()
   },digits=3)
 }) #end shinyServer

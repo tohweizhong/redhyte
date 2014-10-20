@@ -173,24 +173,17 @@ shinyUI(pageWithSidebar(
                  widths=c(3,9))),
       
       #=============================================#
-      #===========7. DiffLift & Contri==============#
+      #===========7. Hypothesis mining==============#
       #=============================================#
       
-      tabPanel("7. DiffLift & Contribution",
-               tableOutput("metrics")),
-      
-      #=============================================#
-      #===========8. Hypothesis mining==============#
-      #=============================================#
-      
-      tabPanel("8. Hypothesis mining",
+      tabPanel("7. Hypothesis mining",
                tableOutput("hypotheses")),
       
       #=============================================#
-      #=============9. Session log==================#
+      #=============8. Session log==================#
       #=============================================#
       
-      tabPanel("9. Session log")
+      tabPanel("8. Session log")
       
     )#end tabset panel
   ) #end main panel

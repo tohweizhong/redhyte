@@ -175,3 +175,28 @@ df.to.tab<-Data2()[[1]][c(i)]
 #     
 #     return(list(dfWithCtx,attr.type,Data()[[3]],ctxFlag))
     #Data2()[[3]] is incorrect for now. refer to comments above
+
+
+
+
+
+
+line 788 Metrics()
+    
+    #introduce mean-discretization for the continuous mined Actx
+    which.are.cont<-mined.attr[which(Data2()[[2]][mined.attr] == "Cont")]
+    
+    #function to add mean discretization for one attribute
+    mean.discre<-function(a.ctx.attr){
+      m<-mean(df[,a.ctx.attr])
+      new.col<-sapply(df[,a.ctx.attr],
+                      FUN=function(x){
+                        if(x>=m) return("High")
+                        else return("Low")})
+      return(new.col)
+    }
+    
+    for(a.ctx.attr in which.are.cont)
+      df[,a.ctx.attr]<-mean.discre(a.ctx.attr)
+      
+    str(df)
