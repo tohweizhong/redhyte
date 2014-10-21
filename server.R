@@ -189,9 +189,11 @@ shinyServer(function(input,output){
                    colnames(Data()[[1]]))
   }) #return: input$targetAttr
   output$test.cmp.ctrl<-renderUI({
+    which.are.cate<-which(Data()[[2]] == "Cate")
+    
     selectizeInput("comparingAttr",
                    "Indicate comparing attribute (Must be categorical)",
-                   colnames(Data()[[1]]))
+                   colnames(Data()[[1]])[which.are.cate])
   }) #return: input$comparingAttr
   
   #display type of attribute: continuous or categorical
@@ -701,6 +703,10 @@ shinyServer(function(input,output){
     
     # start with Atgt
     # find all the predictors to be used in models
+    # attributes to exclude
+    # -> Atgt
+    # -> Acmp
+    # -> all Actx from Cinitial
     predictors<-colnames(df)[which(colnames(df) != input$comparingAttr)]
     
     predictors<-intersect(predictors,
@@ -711,6 +717,9 @@ shinyServer(function(input,output){
     
     predictors<-intersect(predictors,
                           colnames(df)[which(colnames(df) != "cmp.class")])
+    
+    predictors<-intersect(predictors,
+                          colnames(df)[which(colnames(df) %in% input$ctxAttr == FALSE)])
     
     fm.tgt<-paste(" ",predictors,sep="",collapse="+")
     fm.tgt<-as.formula(paste("tgt.class","~",fm.tgt,sep=""))

@@ -8,5 +8,5 @@ WISHLIST
 -> deploy gist online
 -> transfer part of the initialTest code into the reactive Test() module
 -> update comments for Table()
--> $ for listing in comments for non-reactive stuff, @ for reactive
+-> -> for listing in comments for non-reactive stuff, @ for reactive
 -> allow for removal of attributes for context mining
