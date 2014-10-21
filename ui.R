@@ -162,6 +162,8 @@ shinyUI(pageWithSidebar(
                tags$h6("Initial hypothesis: "),
                verbatimTextOutput("hypothesis.statement.cm"),
                navlistPanel(
+                 tabPanel("Attributes to exclude",
+                          htmlOutput("attr.to.exclude")),
                  tabPanel("Mined context attributes",
                           tableOutput("testRF1"),
                           tableOutput("testRF2"),

@@ -210,33 +210,69 @@ shinyServer(function(input,output){
     type
   })
   
+#   Data1.1<-reactive({
+#   })
+  
   #target and comparing control
   output$test.tgt.class.ctrl1<-renderUI({
     if(Data()[[2]][input$targetAttr] == "Cate"){
+      .choices<-unique(Data()[[1]][,input$targetAttr])
+      .names<-NULL
+      for(c in .choices){
+        sup<-length(which(Data()[[1]][,input$targetAttr] == c))
+        .names<-c(.names,paste(c," (",sup,")",sep=""))
+      }
+      names(.choices)<-.names
+      
       checkboxGroupInput("whichtgtclassesA",
                          "Indicate which target attribute classes to form group A",
-                         choices=c(unique(Data()[[1]][,input$targetAttr])))
+                         choices=c(.choices))
     }
   }) #return: input$whichtgtclassesA
   output$test.tgt.class.ctrl2<-renderUI({
     if(Data()[[2]][input$targetAttr] == "Cate"){
+      
+      .choices<-unique(Data()[[1]][,input$targetAttr])
+      .names<-NULL
+      for(c in .choices){
+        sup<-length(which(Data()[[1]][,input$targetAttr] == c))
+        .names<-c(.names,paste(c," (",sup,")",sep=""))
+      }
+      names(.choices)<-.names
+      
       checkboxGroupInput("whichtgtclassesB",
                          "Indicate which target attribute classes to form group B",
-                         choices=c(unique(Data()[[1]][,input$targetAttr])))
+                         choices=c(.choices))
     }
   }) #return: input$whichtgtclassesB
   output$test.cmp.class.ctrl1<-renderUI({
     if(Data()[[2]][input$comparingAttr] == "Cate"){ #this must be true
+      .choices<-unique(Data()[[1]][,input$comparingAttr])
+      .names<-NULL
+      for(c in .choices){
+        sup<-length(which(Data()[[1]][,input$comparingAttr] == c))
+        .names<-c(.names,paste(c," (",sup,")",sep=""))
+      }
+      names(.choices)<-.names
+      
       checkboxGroupInput("whichcmpclassesX",
                          "Indicate which comparing attribute class to form group X",
-                         choices=c(unique(Data()[[1]][,input$comparingAttr])))
+                         choices=c(.choices))
     }
   }) #return: input$whichcmpclassesX
   output$test.cmp.class.ctrl2<-renderUI({
     if(Data()[[2]][input$comparingAttr] == "Cate"){ #this must be true
+      .choices<-unique(Data()[[1]][,input$comparingAttr])
+      .names<-NULL
+      for(c in .choices){
+        sup<-length(which(Data()[[1]][,input$comparingAttr] == c))
+        .names<-c(.names,paste(c," (",sup,")",sep=""))
+      }
+      names(.choices)<-.names
+      
       checkboxGroupInput("whichcmpclassesY",
                          "Indicate which comparing attribute classes to form group Y",
-                         choices=c(unique(Data()[[1]][,input$comparingAttr])))
+                         choices=c(.choices))
     }
   }) #return: input$whichcmpclassesY
 
@@ -274,8 +310,37 @@ shinyServer(function(input,output){
                        "Indicate which items to form initial context",
                        choices=.choices)
     
-  }) #return input$ctxItems
+  }) #return: input$ctxItems
 
+  #***************REACTIVE**********************#
+  
+#   Cinitial<-reactive({
+#     # retrieve attributes
+#     tgt.attr<-input$targetAttr
+#     cmp.attr<-input$comparingAttr
+#     ctx.attr<-input$ctxAttr
+#     
+#     # retrieve items
+#     tgt.class1<-input$whichtgtclassesA
+#     tgt.class2<-input$whichtgtclassesB
+#     cmp.class1<-input$whichcmpclassesX
+#     cmp.class2<-input$whichcmpclassesY
+#     ctx.items <-input$ctxItems
+#     
+#     # remove support at end of string
+#     remove.sup<-function(s){return(unlist(strsplit(s," [()]"))[1])}
+#     tgt.class1<-sapply(tgt.class1,FUN=remove.sup)
+#     tgt.class2<-sapply(tgt.class2,FUN=remove.sup)
+#     cmp.class1<-sapply(cmp.class1,FUN=remove.sup)
+#     cmp.class2<-sapply(cmp.class2,FUN=remove.sup)
+#     ctx.items <-sapply(ctx.items, FUN=remove.sup)
+#     
+#     return(list(tgt.attr=tgt.attr,cmp.attr=cmp.attr,ctx.attr=ctx.attr,
+#                 tgt.class1=tgt.class1,tgt.class2=tgt.class2,
+#                 cmp.class1=cmp.class1,cmp.class2=cmp.class2,
+#                 ctx.items=ctx.items))
+#   })
+  
   #***************REACTIVE**********************#
 
   # Groupings() is a simple reactive module to
@@ -535,6 +600,8 @@ shinyServer(function(input,output){
   
   output$hypothesis.statement.it<-renderText({
     
+    print(input$whichtgtclassesA)
+    
     if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
     
     tgt.attr<-input$targetAttr
@@ -687,7 +754,18 @@ shinyServer(function(input,output){
   #============5. Context mining================#
   #=============================================#
   
-  # first step: build the two RF models
+  output$attr.to.exclude<-renderUI({
+    cinitial.attr<-c(input$targetAttr,
+                     input$comparingAttr,
+                     input$ctxAttr)
+    
+    to.mine.from<-colnames(Data3()[[1]])[which(colnames(Data3()[[1]]) %in% cinitial.attr == FALSE)]
+    
+    checkboxGroupInput("exclude.attr",
+                       "Which attribute to exclude from context mining?",
+                       choices=to.mine.from)
+  }) #return: input$exclude.attr
+  
   
   #***************REACTIVE**********************#
   
@@ -707,6 +785,7 @@ shinyServer(function(input,output){
     # -> Atgt
     # -> Acmp
     # -> all Actx from Cinitial
+    # -> input$exclude.attr
     predictors<-colnames(df)[which(colnames(df) != input$comparingAttr)]
     
     predictors<-intersect(predictors,
@@ -720,6 +799,9 @@ shinyServer(function(input,output){
     
     predictors<-intersect(predictors,
                           colnames(df)[which(colnames(df) %in% input$ctxAttr == FALSE)])
+    
+    predictors<-intersect(predictors,
+                          colnames(df)[which(colnames(df) %in% input$exclude.attr == FALSE)])
     
     fm.tgt<-paste(" ",predictors,sep="",collapse="+")
     fm.tgt<-as.formula(paste("tgt.class","~",fm.tgt,sep=""))
