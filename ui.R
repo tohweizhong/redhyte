@@ -96,7 +96,7 @@ shinyUI(pageWithSidebar(
       
       tabPanel("3. Initial test",
                tags$h5("Your hypothesis:"),
-               verbatimTextOutput("hypothesis.statement"),
+               verbatimTextOutput("hypothesis.statement.it"),
                navlistPanel(
                  tabPanel("Target attribute",
                           sidebarPanel(
@@ -159,7 +159,8 @@ shinyUI(pageWithSidebar(
                tags$h6("For each of these two models, Redhyte extract the top k attributes that contribute
                        to the classification of target and/or comparing attributes, if the model(s) is accurate."),
                tags$h6("Confusion matrices of the models will be displayed, as well as the list of mined context attributes."),
-               verbatimTextOutput("hypothesis.statement"),
+               tags$h6("Initial hypothesis: "),
+               verbatimTextOutput("hypothesis.statement.cm"),
                navlistPanel(
                  tabPanel("Mined context attributes",
                           tableOutput("testRF1"),

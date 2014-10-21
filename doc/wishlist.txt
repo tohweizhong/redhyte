@@ -4,7 +4,6 @@ WISHLIST
 -> display proportions p in the initial test tab
 -> An analysis log like MetaboNexus'
 -> Cleaning of code to make naming of variables, functions, modules more consistent
--> render text in initial test tab to describe the Hinitial
 -> might want to print some messages in the console
 -> deploy gist online
 -> transfer part of the initialTest code into the reactive Test() module

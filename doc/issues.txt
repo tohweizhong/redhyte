@@ -1,4 +1,3 @@
 issues
 
--> class-imbalance
 -> viz.scatterplot for one continuous, one categorical attribute

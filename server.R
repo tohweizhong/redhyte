@@ -531,7 +531,7 @@ shinyServer(function(input,output){
   })
   # yet to implement non-parametric test yet
   
-  output$hypothesis.statement<-renderText({
+  output$hypothesis.statement.it<-renderText({
     
     if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
     
@@ -556,13 +556,13 @@ shinyServer(function(input,output){
       statement<-paste("In the context of {",
                        ctx.items.text,
                        "}, there is a difference in ",
-                       tgt.attr,
+                       toupper(tgt.attr),
                        " between {",
                        tgt.class1.text,
                        "} vs. {",
                        tgt.class2.text,
                        "} when comparing the samples on ",
-                       cmp.attr,
+                       toupper(cmp.attr),
                        " between {",
                        cmp.class1.text,
                        "} vs. {",
@@ -573,9 +573,9 @@ shinyServer(function(input,output){
       statement<-paste("In the context of {",
                        ctx.items.text,
                        "} there is a difference in ",
-                       tgt.attr,
+                       toupper(tgt.attr),
                        " when comparing the samples on ",
-                       cmp.attr,
+                       toupper(cmp.attr),
                        " between {",
                        cmp.class1.text,
                        "} vs. {",
@@ -583,7 +583,60 @@ shinyServer(function(input,output){
                        "}",
                        sep="")
     return(statement)
+  })
+  
+  output$hypothesis.statement.cm<-renderText({
     
+    if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
+    
+    tgt.attr<-input$targetAttr
+    cmp.attr<-input$comparingAttr
+    
+    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is cont
+    tgt.class2<-input$whichtgtclassesB # <--- could be NULL
+    cmp.class1<-input$whichcmpclassesX
+    cmp.class2<-input$whichcmpclassesY
+    
+    ctx.attr    <-input$ctxAttr
+    ctx.items   <-input$ctxItems # in the format of Actx = vctx
+    
+    ctx.items.text<-paste(ctx.items, collapse=" & ")
+    tgt.class1.text<-paste(tgt.class1,collapse=" & ")
+    tgt.class2.text<-paste(tgt.class2,collapse=" & ")
+    cmp.class1.text<-paste(cmp.class1,collapse=" & ")
+    cmp.class2.text<-paste(cmp.class2,collapse=" & ")
+    
+    if(Groupings()[[1]] == "Cate")
+      statement<-paste("In the context of {",
+                       ctx.items.text,
+                       "}, there is a difference in ",
+                       toupper(tgt.attr),
+                       " between {",
+                       tgt.class1.text,
+                       "} vs. {",
+                       tgt.class2.text,
+                       "} when comparing the samples on ",
+                       toupper(cmp.attr),
+                       " between {",
+                       cmp.class1.text,
+                       "} vs. {",
+                       cmp.class2.text,
+                       "}",
+                       sep="")
+    else if(Groupings()[[1]] == "Cont")
+      statement<-paste("In the context of {",
+                       ctx.items.text,
+                       "} there is a difference in ",
+                       toupper(tgt.attr),
+                       " when comparing the samples on ",
+                       toupper(cmp.attr),
+                       " between {",
+                       cmp.class1.text,
+                       "} vs. {",
+                       cmp.class2.text,
+                       "}",
+                       sep="")
+    return(statement)
   })
   
   #=============================================#
@@ -621,8 +674,6 @@ shinyServer(function(input,output){
     which.are.cont<-which(attr.type == "Cont")
     for(an.attr in which.are.cont)
       df[,an.attr]<-mean.discre(an.attr)
-    
-    str(df)
     
     attr.type<-rep("Cate",length(attr.type))
     
@@ -696,6 +747,58 @@ shinyServer(function(input,output){
     acc.tgt<-sum(diag(tmp.cm.tgt))/sum(tmp.cm.tgt)
     acc.cmp<-sum(diag(tmp.cm.cmp))/sum(tmp.cm.cmp)
     # this is severly affected by class-imbalance and multi-classes
+    
+    # 211014: using adjusted geometric mean as a start
+    # need to first figure out which class is less
+    # arbitrarily consider 5:1 as class-imbalance
+    # AGm = (Gm+SP*Nn)/(1+Nn),
+    # where SP refers to the specificity, which is the sensitivity for the negative class
+    # Nn refers to proportion of the data that belongs to the more abundant class
+    
+    # mod.tgt first
+    sup.tgt1<-tmp.cm.tgt[1,1]+tmp.cm.tgt[1,2]
+    sup.tgt2<-tmp.cm.tgt[2,1]+tmp.cm.tgt[2,2]
+    if(sup.tgt1/sup.tgt2 >= class.ratio){ # class.ratio defined in settings.R
+      # tgt1 is more abundant => tgt1 is -ve
+      # tgt2 is less abundant => tgt2 is +ve
+      se<-tmp.cm.tgt[2,2]/(tmp.cm.tgt[2,2]+tmp.cm.tgt[2,1])
+      sp<-tmp.cm.tgt[1,1]/(tmp.cm.tgt[1,1]+tmp.cm.tgt[1,2])
+      gm<-sqrt(se*sp)
+      nn<-sup.tgt1/(sup.tgt1+sup.tgt2)
+      acc.tgt<-(gm+sp*nn)/(1+nn)
+    }
+    else if(sup.tgt2/sup.tgt1 >= class.ratio){
+      # tgt2 is more abundant => tgt2 is -ve
+      # tgt1 is less abundant => tgt1 is +ve
+      sp<-tmp.cm.tgt[2,2]/(tmp.cm.tgt[2,2]+tmp.cm.tgt[2,1])
+      se<-tmp.cm.tgt[1,1]/(tmp.cm.tgt[1,1]+tmp.cm.tgt[1,2])
+      gm<-sqrt(se*sp)
+      nn<-sup.tgt2/(sup.tgt1+sup.tgt2)
+      acc.tgt<-(gm+sp*nn)/(1+nn)
+    }
+    
+    # now for mod.cmp
+    sup.cmp1<-tmp.cm.cmp[1,1]+tmp.cm.cmp[1,2]
+    sup.cmp2<-tmp.cm.cmp[2,1]+tmp.cm.cmp[2,2]
+    if(sup.cmp1/sup.cmp2 >= class.ratio){ # class.ratio defined in settings.R
+      # cmp1 is more abundant => cmp1 is -ve
+      # cmp2 is less abundant => cmp2 is +ve
+      se<-tmp.cm.cmp[2,2]/(tmp.cm.cmp[2,2]+tmp.cm.cmp[2,1])
+      sp<-tmp.cm.cmp[1,1]/(tmp.cm.cmp[1,1]+tmp.cm.cmp[1,2])
+      gm<-sqrt(se*sp)
+      nn<-sup.cmp1/(sup.cmp1+sup.cmp2)
+      acc.cmp<-(gm+sp*nn)/(1+nn)
+    }
+    else if(sup.cmp2/sup.cmp1 >= class.ratio){
+      # cmp2 is more abundant => cmp2 is -ve
+      # cmp1 is less abundant => cmp1 is +ve
+      sp<-tmp.cm.cmp[2,2]/(tmp.cm.cmp[2,2]+tmp.cm.cmp[2,1])
+      se<-tmp.cm.cmp[1,1]/(tmp.cm.cmp[1,1]+tmp.cm.cmp[1,2])
+      gm<-sqrt(se*sp)
+      nn<-sup.cmp2/(sup.cmp1+sup.cmp2)
+      acc.cmp<-(gm+sp*nn)/(1+nn)
+    }
+    
     print(paste("acc.tgt: ",acc.tgt,sep=""))
     print(paste("acc.cmp: ",acc.cmp,sep=""))
     
