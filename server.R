@@ -146,7 +146,10 @@ shinyServer(function(input,output){
     else{
       tb<-data.frame(table(Data()[[1]][,input$viz.which.attr1]))
       colnames(tb)<-c(input$viz.whichAttr1,"Frequency")
-      barplot(tb$Frequency)
+      barplot(tb$Frequency,
+              names.arg=tb[,1],
+              las=2,
+              cex.names=0.9)
     }
       
   })
@@ -156,7 +159,10 @@ shinyServer(function(input,output){
     else{
       tb<-data.frame(table(Data()[[1]][,input$viz.which.attr2]))
       colnames(tb)<-c(input$viz.which.attr2,"Frequency")
-      barplot(tb$Frequency)
+      barplot(tb$Frequency,
+              names.arg=tb[,1],
+              las=2,
+              cex.names=0.9)
     }
   })
   
@@ -211,6 +217,42 @@ shinyServer(function(input,output){
   })
   
 #   Data1.1<-reactive({
+#     
+#     cur.df<-Data()[[1]]
+#     
+#     rows.tgt<-NULL
+#     print(input$targetAttr)
+#     if(!is.null(input$targetAttr)){
+#       if(!is.null(input$whichtgtclassesA))
+#         rows.tgt<-c(rows.tgt,which(cur.df[,input$targetAttr] %in% input$whichtgtclassesA))
+#       if(!is.null(input$whichtgtclassesB))
+#         rows.tgt<-c(rows.tgt,which(cur.df[,input$targetAttr] %in% input$whichtgtclassesB))
+#     }
+#     rows.cmp<-NULL
+#     if(!is.null(input$comparingAttr)){
+#       if(!is.null(input$whichcmpclassesX))
+#         rows.cmp<-c(rows.cmp,which(cur.df[,input$comparingAttr] %in% input$whichcmpclassesX))
+#       if(!is.null(input$whichcmpclassesY))
+#         rows.cmp<-c(rows.cmp,which(cur.df[,input$comparingAttr] %in% input$whichcmpclassesY))
+#     }
+#     rows.ctx<-NULL
+#     if(!is.null(input$ctxItems)){
+#       for(an.item in input$ctxItems){
+#         
+#         Actx<-unlist(strsplit(an.item,"="))[1]
+#         vctx<-unlist(strsplit(an.item,"="))[2]
+#         rows.ctx<-c(rows.ctx,which(cur.df[,Actx] %in% vctx))
+#       }
+#     }
+#     rows<-unique(c(rows.tgt,rows.cmp,rows.ctx))
+#     
+#     str(rows.tgt)
+#     str(rows.cmp)
+#     str(rows.ctx)
+#     str(rows)
+#     
+#     if(is.null(rows)) return(cur.df)
+#     else if(!is.null(rows)) return(cur.df[rows,])
 #   })
   
   #target and comparing control
@@ -599,9 +641,6 @@ shinyServer(function(input,output){
   # yet to implement non-parametric test yet
   
   output$hypothesis.statement.it<-renderText({
-    
-    print(input$whichtgtclassesA)
-    
     if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
     
     tgt.attr<-input$targetAttr
@@ -998,6 +1037,8 @@ shinyServer(function(input,output){
     #grab the relevant data
     df.to.plot<-Data2()[[1]][,c(tgt.attr,cmp.attr,mined.attr,"tgt.class","cmp.class")]
     
+    str(df.to.plot)
+    
     #**console**#
     print(paste("ncol(df.to.plot): ",ncol(df.to.plot)))
     par(mfrow=c(2,2))
@@ -1013,8 +1054,16 @@ shinyServer(function(input,output){
           which(df.to.plot[,"cmp.class"] == j)
         )
         plot.dat<-df.to.plot[rows.to.plot,mined.attr]
+        str(plot.dat)
+          
         if(Data()[[2]][mined.attr] == "Cate"){
+          
+          str(data.frame(table(plot.dat)))
+          
           barplot(data.frame(table(plot.dat))[,2],
+                  names.arg=data.frame(table(plot.dat))[,1],
+                  las=2,
+                  cex.names=0.9,
                   main=paste(Groupings()[[2]][i], Groupings()[[3]][j], sep="&"))
         }
         else if(Data()[[2]][mined.attr] == "Cont")
@@ -1163,12 +1212,15 @@ shinyServer(function(input,output){
         prop.df$pvalue[i]<-test$p.value
       }
     }
-    prop.df<-prop.df[with(prop.df,order(difflift,contri,pvalue)),]
+    
+    #correct for multiple testing using Bonferroni correction
+    prop.df$pvalue.adj<-p.adjust(prop.df$pvalue, method = "fdr")
+    
+    prop.df<-prop.df[with(prop.df,order(difflift,contri,pvalue.adj)),]
     return(prop.df)
   })
   
   output$hypotheses<-renderTable({
-    #subset(Metrics(),select=c(n1prime,n2prime,difflift,contri,SP))
     Hypotheses()
   },digits=3)
 }) #end shinyServer

@@ -72,23 +72,20 @@ shinyUI(pageWithSidebar(
       
       tabPanel("2. Data visualization",
                tags$h4("Simple exploratory data analysis"),
-               sidebarPanel(
-                htmlOutput("viz.ctrl1"),
-                verbatimTextOutput("viz.type1"),
-                tableOutput("viz.tukeyfive1"),
-                plotOutput("viz.hist1"),
-                plotOutput("viz.boxplot1"),
-                width=3),
-               sidebarPanel(
-                 htmlOutput("viz.ctrl2"),
-                 verbatimTextOutput("viz.type2"),
-                 tableOutput("viz.tukeyfive2"),
-                 plotOutput("viz.hist2"),
-                 plotOutput("viz.boxplot2"),
-                 width=3),
-               sidebarPanel(
-                 plotOutput("viz.scatterplot"),
-                 width=5)),
+               navlistPanel(
+                 tabPanel("Select attributes",
+                          htmlOutput("viz.ctrl1"),
+                          verbatimTextOutput("viz.type1"),
+                          htmlOutput("viz.ctrl2"),
+                          verbatimTextOutput("viz.type2")),
+                 tabPanel("Visualizations",
+                          tableOutput("viz.tukeyfive1"),
+                          plotOutput("viz.hist1"),
+                          plotOutput("viz.boxplot1"),
+                          tableOutput("viz.tukeyfive2"),
+                          plotOutput("viz.hist2"),
+                          plotOutput("viz.boxplot2"),
+                          plotOutput("viz.scatterplot")))),
       
       #=============================================#
       #==============3. Initial test================#
