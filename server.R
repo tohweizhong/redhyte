@@ -115,7 +115,7 @@ shinyServer(function(input,output){
     if(Data()[[2]][input$viz.which.attr1]=="Cont"){
       qt<-as.data.frame(fivenum(Data()[[1]][,input$viz.which.attr1]))
       rownames(qt)<-c("Min","25%","Median","75%","Max")
-      colnames(qt)<-NULL
+      colnames(qt)<-input$viz.which.attr1
       qt
     }
     else{
@@ -129,7 +129,7 @@ shinyServer(function(input,output){
     if(Data()[[2]][input$viz.which.attr2]=="Cont"){
       qt<-as.data.frame(fivenum(Data()[[1]][,input$viz.which.attr2]))
       rownames(qt)<-c("Min","25%","Median","75%","Max")
-      colnames(qt)<-NULL
+      colnames(qt)<-input$viz.which.attr2
       qt
     }
     else{
@@ -142,46 +142,71 @@ shinyServer(function(input,output){
   #plotting histograms or barcharts
   output$viz.hist1<-renderPlot({
     if(Data()[[2]][input$viz.which.attr1]=="Cont")
-      hist(Data()[[1]][,input$viz.which.attr1],main="",xlab="")
+      hist(Data()[[1]][,input$viz.which.attr1],main=input$viz.which.attr1,xlab="")
     else{
       tb<-data.frame(table(Data()[[1]][,input$viz.which.attr1]))
-      colnames(tb)<-c(input$viz.whichAttr1,"Frequency")
+      colnames(tb)<-c(input$viz.which.attr1,"Frequency")
       barplot(tb$Frequency,
               names.arg=tb[,1],
               las=2,
-              cex.names=0.9)
+              cex.names=0.9,
+              main=input$viz.which.attr1)
     }
       
   })
   output$viz.hist2<-renderPlot({
     if(Data()[[2]][input$viz.which.attr2]=="Cont")
-      hist(Data()[[1]][,input$viz.which.attr2],main="",xlab="")
+      hist(Data()[[1]][,input$viz.which.attr2],main=input$viz.which.attr2,xlab="")
     else{
       tb<-data.frame(table(Data()[[1]][,input$viz.which.attr2]))
       colnames(tb)<-c(input$viz.which.attr2,"Frequency")
       barplot(tb$Frequency,
               names.arg=tb[,1],
               las=2,
-              cex.names=0.9)
+              cex.names=0.9,
+              main=input$viz.which.attr2)
     }
   })
   
-  #plotting boxplots
+  # plotting boxplots
   output$viz.boxplot1<-renderPlot({
     if(Data()[[2]][input$viz.which.attr1]=="Cont")
       boxplot(Data()[[1]][,input$viz.which.attr1])
-  })
+  }) # not used
   output$viz.boxplot2<-renderPlot({
     if(Data()[[2]][input$viz.which.attr2]=="Cont")
       boxplot(Data()[[1]][,input$viz.which.attr2])
-  })
+  }) # not used
   
-  #plotting scatterplot
+  # plotting scatterplot, boxplot, or spineplot
   output$viz.scatterplot<-renderPlot({
+    type1<-Data()[[2]][input$viz.which.attr1]
+    type2<-Data()[[2]][input$viz.which.attr2]
+    
+    if(type1 == "Cont" && type2 == "Cont")
     plot(Data()[[1]][,input$viz.which.attr2]~
            Data()[[1]][,input$viz.which.attr1],
          xlab=input$viz.which.attr1,
          ylab=input$viz.which.attr2)
+    else if(type1 == "Cont" && type2 =="Cate")
+      boxplot(Data()[[1]][,input$viz.which.attr1]~
+                Data()[[1]][,input$viz.which.attr2],
+              las=2,
+              xlab=input$viz.which.attr2,
+              ylab=input$viz.which.attr1)
+    else if(type1 == "Cate" && type2 == "Cont")
+      boxplot(Data()[[1]][,input$viz.which.attr2]~
+                Data()[[1]][,input$viz.which.attr1],
+              las=2,
+              xlab=input$viz.which.attr1,
+              ylab=input$viz.which.attr2)
+    else{
+      par(las=1)
+      spineplot(as.factor(Data()[[1]][,input$viz.which.attr1])~
+                  as.factor(Data()[[1]][,input$viz.which.attr2]),
+                xlab=input$viz.which.attr2,
+                ylab=input$viz.which.attr1)
+    }
   })
   
   #=============================================#
@@ -692,7 +717,6 @@ shinyServer(function(input,output){
                        sep="")
     return(statement)
   })
-  
   output$hypothesis.statement.cm<-renderText({
     
     if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
@@ -787,7 +811,6 @@ shinyServer(function(input,output){
     
     return(list(df,attr.type,Data2()[[3]]))
   })
-  
   
   #=============================================#
   #============5. Context mining================#
@@ -1189,8 +1212,6 @@ shinyServer(function(input,output){
                         else if(x<0) return(TRUE)
                         else if(x>=0) return(FALSE)
                       })
-    prop.df<-prop.df[with(prop.df,order(difflift,contri)),]
-    
     # now, append the chi-squared test stats and p-values
     
     for(i in seq(nrow(prop.df))){

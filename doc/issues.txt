@@ -1,4 +1,3 @@
 issues
 
--> viz.scatterplot for one continuous, one categorical attribute
 -> Data2()[[3]] and Data3()[[3]]

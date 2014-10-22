@@ -74,18 +74,24 @@ shinyUI(pageWithSidebar(
                tags$h4("Simple exploratory data analysis"),
                navlistPanel(
                  tabPanel("Select attributes",
-                          htmlOutput("viz.ctrl1"),
-                          verbatimTextOutput("viz.type1"),
-                          htmlOutput("viz.ctrl2"),
-                          verbatimTextOutput("viz.type2")),
-                 tabPanel("Visualizations",
+                          sidebarPanel(
+                            htmlOutput("viz.ctrl1"),
+                            verbatimTextOutput("viz.type1"),
+                            htmlOutput("viz.ctrl2"),
+                            verbatimTextOutput("viz.type2")),
+                          width=4),
+                 tabPanel("Univariate",
                           tableOutput("viz.tukeyfive1"),
                           plotOutput("viz.hist1"),
-                          plotOutput("viz.boxplot1"),
+                          #plotOutput("viz.boxplot1"),
                           tableOutput("viz.tukeyfive2"),
-                          plotOutput("viz.hist2"),
-                          plotOutput("viz.boxplot2"),
-                          plotOutput("viz.scatterplot")))),
+                          plotOutput("viz.hist2")),
+                          #plotOutput("viz.boxplot2")),
+                 tabPanel("Bivariate",
+                          plotOutput("viz.scatterplot")),
+                 tabPanel("Multivariate",
+                          tags$h6("PCA score plot?")),
+                 widths=c(2,10))),
       
       #=============================================#
       #==============3. Initial test================#
@@ -143,7 +149,10 @@ shinyUI(pageWithSidebar(
       #=============================================#
       
       tabPanel("5. Test diagnostics",
-               tags$h6("Not implemented yet")),
+               tags$h6("Not implemented yet"),
+               tags$h6("Objective:"),
+               tags$h6("if Tinitial is t-test, check parametric assumptions"),
+               tags$h6("if Tinitial is collapsed chi-squared test, find top contributor")),
       #not implemented yet, will come back to this
       
       #=============================================#
