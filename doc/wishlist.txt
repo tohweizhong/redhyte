@@ -1,11 +1,36 @@
 WISHLIST
 
--> using googleVis or similiar API/packages to do interactive graphics
 -> display proportions p in the initial test tab
+
+-> test diagnostics (t-test to MW, collapsed chi-squared Acmp top contributor OR SP)
+
+-> Hypothesis analysis (user choose a test from mdf, analyse)
+
+-> consider all pairwise context items combinations
+
+-> display support (implemented but no reactive yet)
+
+-> min_sup for cij = 10
+
+-> user i/p discretization
+
 -> An analysis log like MetaboNexus'
--> Cleaning of code to make naming of variables, functions, modules more consistent
--> might want to print some messages in the console
--> deploy gist online
--> transfer part of the initialTest code into the reactive Test() module
--> update comments for Table()
--> -> for listing in comments for non-reactive stuff, @ for reactive
+
+-> find classic use-cases and examples datasets
+
+-> one unified example for SP, hypo analysis, difflift and contri
+
+-> test speeds on the classic datasets
+
+-> using googleVis or similiar API/packages to do interactive graphics
+
+-> clean code
+  $ make naming of variables, functions, modules more consistent
+  $ @ for listing in comments for reactive stuff
+  $ for non-reactive, update comments for Table()
+  $ transfer part of the initialTest code into the reactive Test() module,
+  $ might want to print some messages in the console
+
+-> flowchart/UML
+
+-> ship/deploy (gist, shinyapps.io, package)
