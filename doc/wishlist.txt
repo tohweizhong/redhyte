@@ -1,7 +1,5 @@
 WISHLIST
 
--> display proportions p in the initial test tab
-
 -> test diagnostics (t-test to MW, collapsed chi-squared Acmp top contributor OR SP)
 
 -> Hypothesis analysis (user choose a test from mdf, analyse)

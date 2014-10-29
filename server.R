@@ -622,7 +622,33 @@ shinyServer(function(input,output){
   
   #render the comparison or contingency table
   output$contTable<-renderTable({
-    Table()[[1]]
+    tab<-Table()[[1]]
+    
+    
+    if(Table()[["tab.type"]] == "Contingency"){
+      append.col<-c((tab[1,1]+tab[1,2])/sum(tab),
+                    (tab[2,1]+tab[2,2])/sum(tab))
+      append.row<-c((tab[1,1]+tab[2,1])/sum(tab),
+                    (tab[1,2]+tab[2,2])/sum(tab),
+                    sum(tab))
+      tab<-cbind(tab,append.col)
+      tab<-rbind(tab,append.row)
+      
+      colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Proportions"
+      
+      return(tab)
+    }
+    else if(Table()[["tab.type"]] == "Comparison"){
+      
+      cont.tab<-Table()[["cont.tab"]]
+      append.col<-c((cont.tab[1,1]+cont.tab[1,2])/sum(cont.tab),
+                    (cont.tab[2,1]+cont.tab[2,2])/sum(cont.tab))
+      tab<-cbind(tab,append.col)
+      
+      colnames(tab)[ncol(tab)]<-"Proportions"
+      
+      return(tab)
+    }
   })
 
   #initial parametric test
@@ -781,12 +807,34 @@ shinyServer(function(input,output){
   #***************REACTIVE**********************#
   
   Test<-reactive({
-    if(Table()[["tab.type"]] == "Contingency") return("t-test") # <--- WRONG
-    else return("chisq-test")
-  }) #not implemented yet
+    if(Table()[["tab.type"]] == "Comparison")
+      test.type<-"t.test"
+    else if(Table()[["tab.type"]] == "Contingency"){
+      if(input$whichcmpclassesX > 1 || input$whichcmpclassesX > 1)
+        test.type<-"collapsed.chi.sq"
+      else
+        test.type<-"chi.sq"
+    }
+    return(test.type)
+  })
   
   #*********************************************#
   
+  output$test.diag<-renderTable({
+    
+    if(Test() == "collapsed.chi.sq"){
+      
+      
+      
+      
+      
+    }
+    
+    
+  })
+
+
+
   #***************REACTIVE**********************#
   
   Data3<-reactive({

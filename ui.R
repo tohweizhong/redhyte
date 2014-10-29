@@ -152,9 +152,7 @@ shinyUI(pageWithSidebar(
                tags$h6("Not implemented yet"),
                tags$h6("Objectives:"),
                tags$h6("-> if Tinitial is t-test, check parametric assumptions"),
-               tags$h6("-> if Tinitial is collapsed chi-squared test,"),
-               tags$h6("   $ find top contributor"),
-               tags$h("    $ find in the Acmp classes")),
+               tags$h6("-> if Tinitial is collapsed chi-squared test, find top contributor in the Acmp classes")),
       #not implemented yet, will come back to this
       
       #=============================================#
