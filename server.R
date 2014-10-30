@@ -72,7 +72,7 @@ shinyServer(function(input,output){
   
   #displaying a preview of the data, 10 rows, all columns
   output$data.preview<-renderTable({
-    if (is.null(Data()[1])) return(NULL)
+    if(is.null(Data()[1])) return(NULL)
     data.frame(Data()[[1]][1:input$previewRows,])
   },digits=3)
   
@@ -555,10 +555,7 @@ shinyServer(function(input,output){
   
   # display contexted data
   output$ctx.data<-renderTable({
-    if (is.null(Data2()[1])) return(NULL)
-    rowsToDisplay<-10
-    if(rowsToDisplay > 0.5*nrow(Data2()[[1]])) rowsToDisplay<-0.5*nrow(Data2()[[1]])
-    data.frame(Data2()[[1]][1:rowsToDisplay,])
+    data.frame(Data()[[1]][1:input$ctxRows,])
   },digits=3)
 
   #***************REACTIVE**********************#
@@ -691,6 +688,59 @@ shinyServer(function(input,output){
   })
   # yet to implement non-parametric test yet
   
+  output$hypothesis.statement.td<-renderText({
+    if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
+    
+    tgt.attr<-input$targetAttr
+    cmp.attr<-input$comparingAttr
+    
+    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is cont
+    tgt.class2<-input$whichtgtclassesB # <--- could be NULL
+    cmp.class1<-input$whichcmpclassesX
+    cmp.class2<-input$whichcmpclassesY
+    
+    ctx.attr    <-input$ctxAttr
+    ctx.items   <-input$ctxItems # in the format of Actx = vctx
+    
+    ctx.items.text<-paste(ctx.items, collapse=" & ")
+    tgt.class1.text<-paste(tgt.class1,collapse=" & ")
+    tgt.class2.text<-paste(tgt.class2,collapse=" & ")
+    cmp.class1.text<-paste(cmp.class1,collapse=" & ")
+    cmp.class2.text<-paste(cmp.class2,collapse=" & ")
+    
+    if(Groupings()[[1]] == "Cate")
+      statement<-paste("In the context of {",
+                       ctx.items.text,
+                       "}, there is a difference in ",
+                       toupper(tgt.attr),
+                       " between {",
+                       tgt.class1.text,
+                       "} vs. {",
+                       tgt.class2.text,
+                       "} when comparing the samples on ",
+                       toupper(cmp.attr),
+                       " between {",
+                       cmp.class1.text,
+                       "} vs. {",
+                       cmp.class2.text,
+                       "}",
+                       sep="")
+    else if(Groupings()[[1]] == "Cont")
+      statement<-paste("In the context of {",
+                       ctx.items.text,
+                       "} there is a difference in ",
+                       toupper(tgt.attr),
+                       " when comparing the samples on ",
+                       toupper(cmp.attr),
+                       " between {",
+                       cmp.class1.text,
+                       "} vs. {",
+                       cmp.class2.text,
+                       "}",
+                       sep="")
+    return(statement)
+  })
+
   output$hypothesis.statement.it<-renderText({
     if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
     
@@ -807,33 +857,75 @@ shinyServer(function(input,output){
   #***************REACTIVE**********************#
   
   Test<-reactive({
-    if(Table()[["tab.type"]] == "Comparison")
+    if(Table()[["tab.type"]] == "Comparison"){
       test.type<-"t.test"
+      test<-t.test(Data2()[[1]][,input$targetAttr]~Data2()[[1]]$cmp.class)
+    }
     else if(Table()[["tab.type"]] == "Contingency"){
-      if(input$whichcmpclassesX > 1 || input$whichcmpclassesX > 1)
+      test<-chisq.test(Table()[[1]])
+      if(length(input$whichcmpclassesX) > 1 || length(input$whichcmpclassesY) > 1){
         test.type<-"collapsed.chi.sq"
+      }
       else
         test.type<-"chi.sq"
     }
-    return(test.type)
+    return(list(test=test,test.type=test.type))
   })
   
   #*********************************************#
-  
-  output$test.diag<-renderTable({
-    
-    if(Test() == "collapsed.chi.sq"){
+
+  output$flat.table<-renderTable({
+    if(Test()[["test.type"]] == "collapsed.chi.sq"){
+      tab.df<-Table()[["tab.df"]][,c(2:3)] # ony Acmp and tgt.class
+      tab<-table(tab.df)
       
-      
-      
-      
-      
+      colnames(tab)<-Groupings()[["Atgt.names"]]
+      return(tab)
     }
-    
-    
   })
 
+  output$flat.chi.sq<-renderTable({
+    
+    if(Test()[["test.type"]] == "collapsed.chi.sq"){
+      
+      tab.df<-Table()[["tab.df"]][,c(2:3)] # ony Acmp and tgt.class
+      tab<-table(tab.df)
+      test<-chisq.test(tab)
+      stats<-test$statistic
+      pvalue<-test$p.value
+      method<-test$method
+      
+      returnMe<-as.data.frame(c(as.character(method),
+                                as.character(round(stats,3)),
+                                as.character(round(pvalue,7))
+      ))
+      rownames(returnMe)<-c("Method","Test statistic","p-value")
+      colnames(returnMe)<-NULL
+      returnMe
+    }
+  })
 
+  output$chi.sq.top<-renderTable({
+    
+    if(Test()[["test.type"]] == "collapsed.chi.sq"){
+      tab.df<-Table()[["tab.df"]][,c(2:3)] # only Acmp and tgt.class
+      # not using Atgt cmp.class
+      tab<-table(tab.df)
+      test<-chisq.test(tab)
+      o<-test$observed
+      e<-test$expected
+      vtgt<-colnames(o)[which(colnames(o) == "1")] # vtgt is tgt.class == 1
+      cmp.classes<-rownames(e) # <--- want to compute top contributor for Acmp,
+      # for vtgt only
+      chisq.contri<-cbind(o[,1],
+                          e[,1],
+                          (((o-e)^2)/e)[,1])
+      colnames(chisq.contri)<-c("Observed",
+                                "Expected",
+                                "Chi-squared contribution")
+      return(data.frame(chisq.contri))
+    }
+  },digits=3)
 
   #***************REACTIVE**********************#
   

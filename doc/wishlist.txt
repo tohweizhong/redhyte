@@ -1,10 +1,10 @@
 WISHLIST
 
--> test diagnostics (t-test to MW, collapsed chi-squared Acmp top contributor OR SP)
+-> test diagnostics (t-test to MW, collapsed chi-squared SP?)
 
 -> Hypothesis analysis (user choose a test from mdf, analyse)
 
--> consider all pairwise context items combinations
+-> consider all pairwise context items combinations (put in a matrix)
 
 -> display support (implemented but no reactive yet)
 

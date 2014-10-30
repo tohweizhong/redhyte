@@ -63,7 +63,7 @@ shinyUI(pageWithSidebar(
       tabPanel("1. Data preview",
                tags$h4("Displaying a preview of your data"),
                sliderInput("previewRows","Number of rows to display",
-                           min=1,max=20,value=1,step=1,animate=TRUE),
+                           min=1,max=20,value=1,step=1,animate=FALSE),
                tableOutput("data.preview")),
       
       #=============================================#
@@ -142,6 +142,9 @@ shinyUI(pageWithSidebar(
       #=============================================#
       
       tabPanel("4. Contexted Data",
+               tags$h4("Displaying a preview of the contexted data"),
+               sliderInput("ctxRows","Number of rows to display",
+                           min=1,max=20,value=1,step=1,animate=FALSE),
                tableOutput("ctx.data")),
       
       #=============================================#
@@ -149,10 +152,14 @@ shinyUI(pageWithSidebar(
       #=============================================#
       
       tabPanel("5. Test diagnostics",
-               tags$h6("Not implemented yet"),
+               tags$h5("Your hypothesis:"),
+               verbatimTextOutput("hypothesis.statement.td"),
                tags$h6("Objectives:"),
                tags$h6("-> if Tinitial is t-test, check parametric assumptions"),
-               tags$h6("-> if Tinitial is collapsed chi-squared test, find top contributor in the Acmp classes")),
+               tags$h6("-> if Tinitial is collapsed chi-squared test, find top contributor in the Acmp classes"),
+               tableOutput("flat.table"),
+               tableOutput("flat.chi.sq"),
+               tableOutput("chi.sq.top")),
       #not implemented yet, will come back to this
       
       #=============================================#
