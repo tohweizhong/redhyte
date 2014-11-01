@@ -63,7 +63,7 @@ shinyUI(pageWithSidebar(
       tabPanel("1. Data preview",
                tags$h4("Displaying a preview of your data"),
                sliderInput("previewRows","Number of rows to display",
-                           min=1,max=20,value=1,step=1,animate=FALSE),
+                           min=1,max=20,value=10,step=1,animate=FALSE),
                tableOutput("data.preview")),
       
       #=============================================#
@@ -91,7 +91,7 @@ shinyUI(pageWithSidebar(
                           plotOutput("viz.scatterplot")),
                  tabPanel("Multivariate",
                           tags$h6("PCA score plot?")),
-                 widths=c(2,10))),
+                 widths=c(3,9))),
       
       #=============================================#
       #==============3. Initial test================#
@@ -132,9 +132,7 @@ shinyUI(pageWithSidebar(
                             width=8)),
                  tabPanel("Table & test",
                           tableOutput("contTable"),
-                          sidebarPanel(
-                            tags$h6("Initial test"),
-                            tableOutput("initialTest"))),
+                          tableOutput("initialTest")),
                  widths=c(3,9))),
       
       #=============================================#
@@ -144,7 +142,7 @@ shinyUI(pageWithSidebar(
       tabPanel("4. Contexted Data",
                tags$h4("Displaying a preview of the contexted data"),
                sliderInput("ctxRows","Number of rows to display",
-                           min=1,max=20,value=1,step=1,animate=FALSE),
+                           min=1,max=20,value=10,step=1,animate=FALSE),
                tableOutput("ctx.data")),
       
       #=============================================#
@@ -160,7 +158,7 @@ shinyUI(pageWithSidebar(
                tableOutput("flat.table"),
                tableOutput("flat.chi.sq"),
                tableOutput("chi.sq.top")),
-      #not implemented yet, will come back to this
+      #half implemented, will come back to this
       
       #=============================================#
       #============6. Context mining================#
@@ -168,10 +166,10 @@ shinyUI(pageWithSidebar(
       
       tabPanel("6. Context mining",
                tags$h6("Redhyte's hypothesis mining implementation works by first constructing two
-                       random forest models, using all other attributes in the data to predict the target and comparing attributes."),
-               tags$h6("For each of these two models, Redhyte extract the top k attributes that contribute
-                       to the classification of target and/or comparing attributes, if the model(s) is accurate."),
-               tags$h6("Confusion matrices of the models will be displayed, as well as the list of mined context attributes."),
+                       random forest models, using all other attributes in the data to predict the target and comparing attributes.
+                       For each of these two models, Redhyte extract the top k attributes that contribute
+                       to the classification of target and/or comparing attributes, if the model(s) is accurate.
+                       Confusion matrices of the models will be displayed, as well as the list of mined context attributes."),
                tags$h6("Initial hypothesis: "),
                verbatimTextOutput("hypothesis.statement.cm"),
                navlistPanel(
@@ -182,6 +180,7 @@ shinyUI(pageWithSidebar(
                           tableOutput("testRF2"),
                           tableOutput("testRF3")),
                  tabPanel("Visualization",
+                          tableOutput("contTable.ctx"),
                           sidebarPanel(
                             htmlOutput("minedAttrCtrl")),
                           plotOutput("mined.attr.viz")),
@@ -195,10 +194,16 @@ shinyUI(pageWithSidebar(
                tableOutput("hypotheses")),
       
       #=============================================#
-      #=============8. Session log==================#
+      #===========8. Hypothesis analysis============#
       #=============================================#
       
-      tabPanel("8. Session log")
+      tabPanel("8. Hypothesis analysis"),
+      
+      #=============================================#
+      #=============9. Session log==================#
+      #=============================================#
+      
+      tabPanel("9. Session log")
       
     )#end tabset panel
   ) #end main panel

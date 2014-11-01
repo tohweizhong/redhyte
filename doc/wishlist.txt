@@ -22,6 +22,8 @@ WISHLIST
 
 -> using googleVis or similiar API/packages to do interactive graphics
 
+-> export contexted data
+
 -> clean code
   $ make naming of variables, functions, modules more consistent
   $ @ for listing in comments for reactive stuff

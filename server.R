@@ -667,7 +667,7 @@ shinyServer(function(input,output){
                                  as.character(round(pvalue,7))
                                  ))
       rownames(returnMe)<-c("Method","Test statistic","p-value")
-      colnames(returnMe)<-NULL
+      colnames(returnMe)<-"Initial test"
       returnMe
     }
     else if(Groupings()[[1]] == "Cont"){
@@ -682,7 +682,7 @@ shinyServer(function(input,output){
                                 as.character(round(pvalue,7))
       ))
       rownames(returnMe)<-c("Method","Test statistic","p-value")
-      colnames(returnMe)<-NULL
+      colnames(returnMe)<-"Initial test"
       returnMe
     }
   })
@@ -740,7 +740,6 @@ shinyServer(function(input,output){
                        sep="")
     return(statement)
   })
-
   output$hypothesis.statement.it<-renderText({
     if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
     
@@ -883,7 +882,6 @@ shinyServer(function(input,output){
       return(tab)
     }
   })
-
   output$flat.chi.sq<-renderTable({
     
     if(Test()[["test.type"]] == "collapsed.chi.sq"){
@@ -904,7 +902,6 @@ shinyServer(function(input,output){
       returnMe
     }
   })
-
   output$chi.sq.top<-renderTable({
     
     if(Test()[["test.type"]] == "collapsed.chi.sq"){
@@ -929,6 +926,8 @@ shinyServer(function(input,output){
 
   #***************REACTIVE**********************#
   
+  # Objective of Data3(): discretize all attributes for ctx mining
+
   Data3<-reactive({
     df<-Data2()[[1]]
     attr.type<-Data2()[[2]]
@@ -959,7 +958,9 @@ shinyServer(function(input,output){
   output$attr.to.exclude<-renderUI({
     cinitial.attr<-c(input$targetAttr,
                      input$comparingAttr,
-                     input$ctxAttr)
+                     input$ctxAttr,
+                     "tgt.class",
+                     "cmp.class")
     
     to.mine.from<-colnames(Data3()[[1]])[which(colnames(Data3()[[1]]) %in% cinitial.attr == FALSE)]
     
@@ -1181,13 +1182,44 @@ shinyServer(function(input,output){
     colnames(df)<-"Mined context attributes"
     df
   })
-  
+
   #visualization of the mined context attrtibutes
   output$minedAttrCtrl<-renderUI({
     selectizeInput("mined.attr",
                    "Which mined attribute?",
                    minedAttributes()[[3]])
   }) #return: input$mined.attr
+
+  output$contTable.ctx<-renderTable({
+    tab<-Table()[[1]]
+    
+    
+    if(Table()[["tab.type"]] == "Contingency"){
+      append.col<-c((tab[1,1]+tab[1,2])/sum(tab),
+                    (tab[2,1]+tab[2,2])/sum(tab))
+      append.row<-c((tab[1,1]+tab[2,1])/sum(tab),
+                    (tab[1,2]+tab[2,2])/sum(tab),
+                    sum(tab))
+      tab<-cbind(tab,append.col)
+      tab<-rbind(tab,append.row)
+      
+      colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Proportions"
+      
+      return(tab)
+    }
+    else if(Table()[["tab.type"]] == "Comparison"){
+      
+      cont.tab<-Table()[["cont.tab"]]
+      append.col<-c((cont.tab[1,1]+cont.tab[1,2])/sum(cont.tab),
+                    (cont.tab[2,1]+cont.tab[2,2])/sum(cont.tab))
+      tab<-cbind(tab,append.col)
+      
+      colnames(tab)[ncol(tab)]<-"Proportions"
+      
+      return(tab)
+    }
+  })
+
   
   #render the plot for one mined attribute indicated by user
   output$mined.attr.viz<-renderPlot({
@@ -1235,6 +1267,10 @@ shinyServer(function(input,output){
     }
   })
   
+  #=============================================#
+  #============5. Hypothesis mining=============#
+  #=============================================#
+
   #***************REACTIVE**********************#
 
   Hypotheses<-reactive({
@@ -1384,4 +1420,17 @@ shinyServer(function(input,output){
   output$hypotheses<-renderTable({
     Hypotheses()
   },digits=3)
+
+
+  #=============================================#
+  #============5. Hypothesis analysis===========#
+  #=============================================#
+
+  output$hypothesis.analysis<-renderTable({
+    
+  })
+
+
+
+
 }) #end shinyServer
