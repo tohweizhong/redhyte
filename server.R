@@ -898,7 +898,7 @@ shinyServer(function(input,output){
                                 as.character(round(pvalue,7))
       ))
       rownames(returnMe)<-c("Method","Test statistic","p-value")
-      colnames(returnMe)<-NULL
+      colnames(returnMe)<-"Flat chi-squared test"
       returnMe
     }
   })
@@ -920,7 +920,7 @@ shinyServer(function(input,output){
       colnames(chisq.contri)<-c("Observed",
                                 "Expected",
                                 "Chi-squared contribution")
-      return(data.frame(chisq.contri))
+      return(chisq.contri)
     }
   },digits=3)
 
@@ -933,6 +933,7 @@ shinyServer(function(input,output){
     attr.type<-Data2()[[2]]
     
     #change all continuous attributes to categorical before hypothesis mining
+    #discretise by the mean
     mean.discre<-function(an.attr){
       m<-mean(df[,an.attr])
       new.col<-sapply(df[,an.attr],
@@ -1281,14 +1282,14 @@ shinyServer(function(input,output){
     
     df<-Data3()[[1]][,c(tgt.attr,cmp.attr,"tgt.class","cmp.class",c(mined.attr))]
     
-    #function to compute proportions
+    #function to compute proportions, given a 2x2 table
     compute.prop<-function(tab){
       p1<-tab[1,1]/sum(tab[1,1],tab[1,2])
       p2<-tab[2,1]/sum(tab[2,1],tab[2,2])
       return(c(p1,p2))
     }
     
-    # function to compute support
+    # function to compute support, given a 2x2 table
     compute.sup<-function(tab){
       c11<-tab[1,1]
       c12<-tab[1,2]
@@ -1322,6 +1323,15 @@ shinyServer(function(input,output){
         prop.df.names<-c(prop.df.names,paste(a.ctx.attr,an.item,sep="="))
     }
     
+    # implemented this to facilitate the implementation of
+    # considering hyptheses for pairwise context items
+    # might be too many, ask prof wong first
+    foo<-outer(prop.df.names,
+               prop.df.names,
+               paste,sep=" & ")
+    foo<-foo[lower.tri(foo)]
+    #print(foo)
+    
     prop.df<-data.frame(cbind(rep(NA,length(prop.df.names)),
                               rep(NA,length(prop.df.names))),
                      row.names=prop.df.names)
@@ -1335,6 +1345,8 @@ shinyServer(function(input,output){
       rows.to.prop<-which(df[,Actx] == vctx)
       df.to.prop<-df[rows.to.prop,c("tgt.class","cmp.class")]
       tab.to.prop<-t(table(df.to.prop))
+      
+
       
       prop.df$Actx[i]<-Actx
       prop.df$vctx[i]<-vctx
@@ -1351,6 +1363,12 @@ shinyServer(function(input,output){
         
         prop.df$n1prime[i]<-tmp.sup["n1"]
         prop.df$n2prime[i]<-tmp.sup["n2"]
+      }
+      
+      else{
+        prop.df$c11[i]<-prop.df$c12[i]<-NA
+        prop.df$c21[i]<-prop.df$c22[i]<-NA
+        prop.df$n1prime[i]<-prop.df$n2prime[i]<-NA
       }
       i<-i+1
     }
@@ -1408,12 +1426,26 @@ shinyServer(function(input,output){
         prop.df$stats[i]<-test$statistic
         prop.df$pvalue[i]<-test$p.value
       }
+      else{
+        prop.df$stats[i]<-NA
+        prop.df$pvalue[i]<-NA
+      }
+    }
+    
+    #consider minimum support 
+    for(i in seq(nrow(prop.df))){
+      sup<-prop.df[i,c("c11","c12","c21","c22")]
+      
+      if(any(sup < min.sup.cij) == TRUE ||
+           any(is.na(sup)) == TRUE)
+        prop.df$sufficient[i]<-FALSE
+      else prop.df$sufficient[i]<-TRUE
     }
     
     #correct for multiple testing using Bonferroni correction
     prop.df$pvalue.adj<-p.adjust(prop.df$pvalue, method = "fdr")
-    
-    prop.df<-prop.df[with(prop.df,order(difflift,contri,pvalue.adj)),]
+    # sort
+    prop.df<-prop.df[with(prop.df,order(-sufficient,difflift,contri,pvalue.adj)),]
     return(prop.df)
   })
   
@@ -1427,10 +1459,65 @@ shinyServer(function(input,output){
   #=============================================#
 
   output$hypothesis.analysis<-renderTable({
-    
+    prop.df<-subset(Hypotheses(),select=c(sufficient,SP,difflift,contri,pvalue,pvalue.adj))
+    prop.df<-prop.df[with(prop.df,order(-sufficient,difflift,contri,pvalue.adj)),]
+    return(prop.df)
   })
 
+  output$analyse.ctrl<-renderUI({
+    selectizeInput("analyse.which.item","Select context item",rownames(Hypotheses()))
+  })
 
+  output$analyse.cont.tab<-renderTable({
+    
+    print(input$analyse.which.item)
+    
+    item<-input$analyse.which.item
+    Actx<-unlist(strsplit(item,"="))[1]
+    vctx<-unlist(strsplit(item,"="))[2]
+    
+    df<-Data3()[[1]][,c("tgt.class","cmp.class",Actx)]
+    
+    rows.to.prop<-which(df[,Actx] == vctx)
+    df.to.prop<-df[rows.to.prop,c("tgt.class","cmp.class")]
+    tab<-t(table(df.to.prop))
+    
+    rownames(tab)<-Groupings()[[3]]
+    colnames(tab)<-Groupings()[[2]]
+    
+    append.col<-c((tab[1,1]+tab[1,2])/sum(tab),
+                  (tab[2,1]+tab[2,2])/sum(tab))
+    append.row<-c((tab[1,1]+tab[2,1])/sum(tab),
+                  (tab[1,2]+tab[2,2])/sum(tab),
+                  sum(tab))
+    tab<-cbind(tab,append.col)
+    tab<-rbind(tab,append.row)
+    colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Proportions"
+    return(tab)
+  })
 
-
+  output$analyse.test<-renderTable({
+    item<-input$analyse.which.item
+    Actx<-unlist(strsplit(item,"="))[1]
+    vctx<-unlist(strsplit(item,"="))[2]
+    
+    df<-Data3()[[1]][,c("tgt.class","cmp.class",Actx)]
+    
+    rows.to.prop<-which(df[,Actx] == vctx)
+    df.to.prop<-df[rows.to.prop,c("tgt.class","cmp.class")]
+    tab<-t(table(df.to.prop))
+    
+    test<-chisq.test(tab)
+    stats<-test$statistic
+    pvalue<-test$p.value
+    method<-test$method
+    
+    returnMe<-as.data.frame(c(as.character(method),
+                              as.character(round(stats,3)),
+                              as.character(round(pvalue,7))))
+    
+    rownames(returnMe)<-c("Method","Test statistic","p-value")
+    colnames(returnMe)<-paste("Mined hypothesis: ",item,sep="")
+    return(returnMe)
+  })
 }) #end shinyServer

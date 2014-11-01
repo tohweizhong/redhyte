@@ -1,4 +1,7 @@
 issues
 
 -> Data2()[[3]] and Data3()[[3]]
+
 -> total number of attributes in the dataset is < k
+
+-> t(table()) vs. table()

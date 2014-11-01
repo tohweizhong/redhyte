@@ -98,6 +98,7 @@ shinyUI(pageWithSidebar(
       #=============================================#
       
       tabPanel("3. Initial test",
+               tags$h4("Initial test"),
                tags$h5("Your hypothesis:"),
                verbatimTextOutput("hypothesis.statement.it"),
                navlistPanel(
@@ -150,11 +151,12 @@ shinyUI(pageWithSidebar(
       #=============================================#
       
       tabPanel("5. Test diagnostics",
-               tags$h5("Your hypothesis:"),
-               verbatimTextOutput("hypothesis.statement.td"),
+               tags$h4("Test diagnostics"),
                tags$h6("Objectives:"),
                tags$h6("-> if Tinitial is t-test, check parametric assumptions"),
                tags$h6("-> if Tinitial is collapsed chi-squared test, find top contributor in the Acmp classes"),
+               tags$h5("Your hypothesis:"),
+               verbatimTextOutput("hypothesis.statement.td"),
                tableOutput("flat.table"),
                tableOutput("flat.chi.sq"),
                tableOutput("chi.sq.top")),
@@ -165,12 +167,13 @@ shinyUI(pageWithSidebar(
       #=============================================#
       
       tabPanel("6. Context mining",
+               tags$h4("Context mining"),
                tags$h6("Redhyte's hypothesis mining implementation works by first constructing two
                        random forest models, using all other attributes in the data to predict the target and comparing attributes.
                        For each of these two models, Redhyte extract the top k attributes that contribute
                        to the classification of target and/or comparing attributes, if the model(s) is accurate.
                        Confusion matrices of the models will be displayed, as well as the list of mined context attributes."),
-               tags$h6("Initial hypothesis: "),
+               tags$h5("Initial hypothesis: "),
                verbatimTextOutput("hypothesis.statement.cm"),
                navlistPanel(
                  tabPanel("Attributes to exclude",
@@ -191,13 +194,25 @@ shinyUI(pageWithSidebar(
       #=============================================#
       
       tabPanel("7. Hypothesis mining",
+               tags$h4("Hypothesis mining"),
                tableOutput("hypotheses")),
       
       #=============================================#
       #===========8. Hypothesis analysis============#
       #=============================================#
       
-      tabPanel("8. Hypothesis analysis"),
+      tabPanel("8. Hypothesis analysis",
+               tags$h4("Hypothesis analysis"),
+               navlistPanel(
+                 tabPanel("Select context item",
+                          sidebarPanel(
+                            htmlOutput("analyse.ctrl"),
+                            width=4),
+                          tableOutput("hypothesis.analysis")),
+                 tabPanel("Analysis",
+                          tableOutput("analyse.cont.tab"),
+                          tableOutput("analyse.test")),
+               widths=c(3,9))),
       
       #=============================================#
       #=============9. Session log==================#
