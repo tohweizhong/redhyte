@@ -1,5 +1,8 @@
 # settings
 
+#  for test diagnostics
+p.significant<-0.05
+
 # for context mining
 acc.rf.default<-.75
 k<-5

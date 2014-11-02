@@ -1,8 +1,16 @@
 WISHLIST
 
--> test diagnostics (t-test to Mann-Whitney)
+-> test diagnostics (t-test to Mann-Whitney, use homoskedasticity and normality tests)
+
+-> display RF VIP
+
+-> difflift and contribution of the attributes as a whole, OR test
+
+-> min.sup for Tinitial
 
 -> consider all pairwise context items combinations (put dl, pvalues in a matrix)
+
+-> top contributor for mined hypothesis analysis
 
 -> display support (implemented but no reactive yet)
 

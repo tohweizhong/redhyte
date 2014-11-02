@@ -52,8 +52,10 @@ shinyServer(function(input,output){
     numCl<-NULL
     for(i in seq(ncol(df))){
       if(is.numeric(df[,i])){ # <--- POSSIBLE SOURCE OF BUG, BECAUSE THIS IS A LITTLE HARD-CODING HERE
-        typ<-c(typ,"Cont")
-        numCl<-c(numCl,NA)
+        if(length(unique(df[,i]))>5){
+          typ<-c(typ,"Cont")
+          numCl<-c(numCl,NA)
+        }
       }
       else{
         typ<-c(typ,"Cate")
@@ -522,7 +524,7 @@ shinyServer(function(input,output){
                                   if(x>=m) return("High")
                                   else return("Low")})
     }
-    else{ #Atgt is continuous
+    else if(Groupings()[[1]] == "Cate"){
       dfWithCtx$tgt.class<-sapply(dfWithCtx[,input$targetAttr],
                                   FUN=function(x){
                                     if(x %in% grpA.classes) return("1")
@@ -688,60 +690,59 @@ shinyServer(function(input,output){
     }
   })
   # yet to implement non-parametric test yet
-  
-  output$hypothesis.statement.td<-renderText({
-    if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
-    
-    tgt.attr<-input$targetAttr
-    cmp.attr<-input$comparingAttr
-    
-    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is cont
-    tgt.class2<-input$whichtgtclassesB # <--- could be NULL
-    cmp.class1<-input$whichcmpclassesX
-    cmp.class2<-input$whichcmpclassesY
-    
-    ctx.attr    <-input$ctxAttr
-    ctx.items   <-input$ctxItems # in the format of Actx = vctx
-    
-    ctx.items.text<-paste(ctx.items, collapse=" & ")
-    tgt.class1.text<-paste(tgt.class1,collapse=" & ")
-    tgt.class2.text<-paste(tgt.class2,collapse=" & ")
-    cmp.class1.text<-paste(cmp.class1,collapse=" & ")
-    cmp.class2.text<-paste(cmp.class2,collapse=" & ")
-    
-    if(Groupings()[[1]] == "Cate")
-      statement<-paste("In the context of {",
-                       ctx.items.text,
-                       "}, there is a difference in ",
-                       toupper(tgt.attr),
-                       " between {",
-                       tgt.class1.text,
-                       "} vs. {",
-                       tgt.class2.text,
-                       "} when comparing the samples on ",
-                       toupper(cmp.attr),
-                       " between {",
-                       cmp.class1.text,
-                       "} vs. {",
-                       cmp.class2.text,
-                       "}",
-                       sep="")
-    else if(Groupings()[[1]] == "Cont")
-      statement<-paste("In the context of {",
-                       ctx.items.text,
-                       "} there is a difference in ",
-                       toupper(tgt.attr),
-                       " when comparing the samples on ",
-                       toupper(cmp.attr),
-                       " between {",
-                       cmp.class1.text,
-                       "} vs. {",
-                       cmp.class2.text,
-                       "}",
-                       sep="")
-    return(statement)
-  })
   output$hypothesis.statement.it<-renderText({
+  if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
+  
+  tgt.attr<-input$targetAttr
+  cmp.attr<-input$comparingAttr
+  
+  tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is cont
+  tgt.class2<-input$whichtgtclassesB # <--- could be NULL
+  cmp.class1<-input$whichcmpclassesX
+  cmp.class2<-input$whichcmpclassesY
+  
+  ctx.attr    <-input$ctxAttr
+  ctx.items   <-input$ctxItems # in the format of Actx = vctx
+  
+  ctx.items.text<-paste(ctx.items, collapse=" & ")
+  tgt.class1.text<-paste(tgt.class1,collapse=" & ")
+  tgt.class2.text<-paste(tgt.class2,collapse=" & ")
+  cmp.class1.text<-paste(cmp.class1,collapse=" & ")
+  cmp.class2.text<-paste(cmp.class2,collapse=" & ")
+  
+  if(Groupings()[[1]] == "Cate")
+    statement<-paste("In the context of {",
+                     ctx.items.text,
+                     "}, there is a difference in ",
+                     toupper(tgt.attr),
+                     " between {",
+                     tgt.class1.text,
+                     "} vs. {",
+                     tgt.class2.text,
+                     "} when comparing the samples on ",
+                     toupper(cmp.attr),
+                     " between {",
+                     cmp.class1.text,
+                     "} vs. {",
+                     cmp.class2.text,
+                     "}",
+                     sep="")
+  else if(Groupings()[[1]] == "Cont")
+    statement<-paste("In the context of {",
+                     ctx.items.text,
+                     "} there is a difference in ",
+                     toupper(tgt.attr),
+                     " when comparing the samples on ",
+                     toupper(cmp.attr),
+                     " between {",
+                     cmp.class1.text,
+                     "} vs. {",
+                     cmp.class2.text,
+                     "}",
+                     sep="")
+  return(statement)
+})
+  output$hypothesis.statement.td<-renderText({
     if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
     
     tgt.attr<-input$targetAttr
@@ -836,6 +837,7 @@ shinyServer(function(input,output){
                        ctx.items.text,
                        "} there is a difference in ",
                        toupper(tgt.attr),
+                       #" between {High} vs. {Low}",
                        " when comparing the samples on ",
                        toupper(cmp.attr),
                        " between {",
@@ -883,9 +885,27 @@ shinyServer(function(input,output){
       return(tab)
     }
   })
+
   output$flat.chi.sq<-renderTable({
-    
-    if(Test()[["test.type"]] == "collapsed.chi.sq"){
+    if(Test()[["test.type"]] == "t.test"){
+      df<-Data2()[[1]][,c(input$targetAttr,"cmp.class")]
+      
+      test<-var.test(df[which(df$cmp.class == "1"),input$targetAttr],
+                     df[which(df$cmp.class == "2"),input$targetAttr])
+      
+      stats<-test$statistic
+      pvalue<-test$p.value
+      method<-test$method
+      
+      returnMe<-as.data.frame(c(as.character(method),
+                                as.character(round(stats,3)),
+                                as.character(round(pvalue,7))
+      ))
+      rownames(returnMe)<-c("Method","Test statistic","p-value")
+      colnames(returnMe)<-"F-test for equal variances"
+      returnMe
+    }
+    else if(Test()[["test.type"]] == "collapsed.chi.sq"){
       
       tab.df<-Table()[["tab.df"]][,c(2:3)] # ony Acmp and tgt.class
       tab<-table(tab.df)
@@ -905,9 +925,33 @@ shinyServer(function(input,output){
   })
   output$chi.sq.top<-renderTable({
     
-    if(Test()[["test.type"]] == "collapsed.chi.sq"){
+    if(Test()[["test.type"]] == "t.test"){
+    
+      df<-Data2()[[1]][,c(input$targetAttr,"cmp.class")]
+      
+      if(var.test(df[which(df$cmp.class == "1"),input$targetAttr],
+                  df[which(df$cmp.class == "2"),input$targetAttr])$p.value <= p.significant){
+        
+        test<-wilcox.test(df[which(df$cmp.class == "1"),input$targetAttr],
+                          df[which(df$cmp.class == "2"),input$targetAttr])
+        
+        stats<-test$statistic
+        pvalue<-test$p.value
+        method<-test$method
+        
+        returnMe<-as.data.frame(c(as.character(method),
+                                  as.character(round(stats,3)),
+                                  as.character(round(pvalue,7))
+        ))
+        rownames(returnMe)<-c("Method","Test statistic","p-value")
+        colnames(returnMe)<-"Non-parametric test"
+        returnMe
+      }
+    }
+    
+    else if(Test()[["test.type"]] == "collapsed.chi.sq"){
       tab.df<-Table()[["tab.df"]][,c(2:3)] # only Acmp and tgt.class
-      # not using Atgt cmp.class
+      # not using Atgt,cmp.class
       tab<-table(tab.df)
       test<-chisq.test(tab)
       o<-test$observed
@@ -923,7 +967,7 @@ shinyServer(function(input,output){
                                 "Chi-squared contribution")
       return(chisq.contri)
     }
-  },digits=3)
+  })
 
   #***************REACTIVE**********************#
   
@@ -1222,14 +1266,12 @@ shinyServer(function(input,output){
     }
   })
 
-  
   #render the plot for one mined attribute indicated by user
   output$mined.attr.viz<-renderPlot({
     if(is.null(minedAttributes()[[3]])) return(NULL)
     tgt.attr<-input$targetAttr
     cmp.attr<-input$comparingAttr
     mined.attr<-input$mined.attr
-    
     
     #grab the relevant data
     df.to.plot<-Data2()[[1]][,c(tgt.attr,cmp.attr,mined.attr,"tgt.class","cmp.class")]
@@ -1242,7 +1284,13 @@ shinyServer(function(input,output){
 
     #need to consider whether Atgt is continuous or categorical
     #check this using the Data()[[2]]
-    for(i in seq(1,2)){
+    
+    if(Data2()[[2]][tgt.attr] == "Cate")
+      search.tgt.class.from<-seq(1,2)
+    else if(Data2()[[2]][[tgt.attr]] == "Cont")
+      search.tgt.class.from<-c("High","Low")
+      
+    for(i in search.tgt.class.from){
       for(j in seq(1,2)){
         
         #grab the subset of data
@@ -1252,7 +1300,7 @@ shinyServer(function(input,output){
         )
         plot.dat<-df.to.plot[rows.to.plot,mined.attr]
         str(plot.dat)
-          
+        
         if(Data()[[2]][mined.attr] == "Cate"){
           
           str(data.frame(table(plot.dat)))
@@ -1456,18 +1504,16 @@ shinyServer(function(input,output){
   #============5. Hypothesis analysis===========#
   #=============================================#
 
-  output$hypothesis.analysis<-renderTable({
+  output$analyse.ctrl<-renderUI({
+    selectizeInput("analyse.which.item","Select context item",rownames(Hypotheses()))
+  })
+  output$analyse.hypothesis<-renderTable({
     prop.df<-subset(Hypotheses(),select=c(sufficient,SP,difflift,contri,pvalue,pvalue.adj))
     prop.df<-prop.df[with(prop.df,order(-sufficient,difflift,contri,pvalue.adj)),]
     return(prop.df)
   })
-
-  output$analyse.ctrl<-renderUI({
-    selectizeInput("analyse.which.item","Select context item",rownames(Hypotheses()))
-  })
-
   output$analyse.cont.tab<-renderTable({
-    
+        
     print(input$analyse.which.item)
     
     item<-input$analyse.which.item
@@ -1493,7 +1539,6 @@ shinyServer(function(input,output){
     colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Proportions"
     return(tab)
   })
-
   output$analyse.test<-renderTable({
     item<-input$analyse.which.item
     Actx<-unlist(strsplit(item,"="))[1]
@@ -1518,7 +1563,6 @@ shinyServer(function(input,output){
     colnames(returnMe)<-paste("Mined hypothesis: ",item,sep="")
     return(returnMe)
   })
-
   output$analyse.hypothesis.statement<-renderText({
     if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
   
