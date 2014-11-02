@@ -1,14 +1,10 @@
 WISHLIST
 
--> test diagnostics (t-test to MW, collapsed chi-squared SP?)
+-> test diagnostics (t-test to Mann-Whitney)
 
--> Hypothesis analysis (user choose a test from mdf, analyse)
-
--> consider all pairwise context items combinations (put in a matrix)
+-> consider all pairwise context items combinations (put dl, pvalues in a matrix)
 
 -> display support (implemented but no reactive yet)
-
--> min_sup for cij = 10
 
 -> user i/p discretization
 

@@ -210,6 +210,8 @@ shinyUI(pageWithSidebar(
                             width=4),
                           tableOutput("hypothesis.analysis")),
                  tabPanel("Analysis",
+                          tags$h5("Mined hypothesis:"),
+                          verbatimTextOutput("analyse.hypothesis.statement"),
                           tableOutput("analyse.cont.tab"),
                           tableOutput("analyse.test")),
                widths=c(3,9))),

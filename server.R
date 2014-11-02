@@ -577,7 +577,8 @@ shinyServer(function(input,output){
     
     #is the target attribute continuous or categorical?
     if(Data2()[[2]][input$targetAttr] == "Cate"){
-      tab<-t(table(df[,c("tgt.class","cmp.class")]))
+      tab<-table(df[,c("cmp.class","tgt.class")])
+      # cmp.class is rows, tgt.class is columns
       rownames(tab)<-c(paste(input$whichcmpclassesX,collapse="&"),
                        paste(input$whichcmpclassesY,collapse="&"))
       colnames(tab)<-c(paste(input$whichtgtclassesA,collapse="&"),
@@ -604,7 +605,7 @@ shinyServer(function(input,output){
       colnames(means.df)<-paste("means of ",input$targetAttr,sep="")
       
       # next, the contingency table
-      tab<-t(table(df[,c("tgt.class","cmp.class")]))
+      tab<-table(df[,c("cmp.class","tgt.class")])
       rownames(tab)<-Groupings()[[3]]
       colnames(tab)<-Groupings()[[2]]
       
@@ -1280,7 +1281,7 @@ shinyServer(function(input,output){
     cmp.attr<-input$comparingAttr
     mined.attr<-minedAttributes()[[3]]
     
-    df<-Data3()[[1]][,c(tgt.attr,cmp.attr,"tgt.class","cmp.class",c(mined.attr))]
+    df<-Data3()[[1]][,c(tgt.attr,cmp.attr,"cmp.class","tgt.class",c(mined.attr))]
     
     #function to compute proportions, given a 2x2 table
     compute.prop<-function(tab){
@@ -1343,10 +1344,8 @@ shinyServer(function(input,output){
       vctx<-unlist(strsplit(an.item,"="))[2]
       
       rows.to.prop<-which(df[,Actx] == vctx)
-      df.to.prop<-df[rows.to.prop,c("tgt.class","cmp.class")]
-      tab.to.prop<-t(table(df.to.prop))
-      
-
+      df.to.prop<-df[rows.to.prop,c("cmp.class","tgt.class")]
+      tab.to.prop<-table(df.to.prop)
       
       prop.df$Actx[i]<-Actx
       prop.df$vctx[i]<-vctx
@@ -1375,12 +1374,11 @@ shinyServer(function(input,output){
     
     # function to compute difflift
     compute.dl<-function(prop.vec){
-      return(prop.vec[1]-prop.vec[2])/(initial.p1-initial.p2)
+      return((prop.vec[1]-prop.vec[2])/(initial.p1-initial.p2))
     }
     
     # function to compute contribution
     compute.contri<-function(prop.vec){
-      
       p1prime<-prop.vec[1]
       p2prime<-prop.vec[2]
       n1prime<-prop.vec[3]
@@ -1416,10 +1414,10 @@ shinyServer(function(input,output){
         
         # extract the subset of data
         rows<-which(df[,Actx] == vctx)
-        tmp.df<-df[rows,c("tgt.class","cmp.class")]
+        tmp.df<-df[rows,c("cmp.class","tgt.class")]
         
         # run chisq.test on the contingency table
-        tmp.tab<-t(table(tmp.df))
+        tmp.tab<-table(tmp.df)
         test<-chisq.test(tmp.tab)
         
         # extract test stats and p-value and append to master data.frame
@@ -1479,8 +1477,8 @@ shinyServer(function(input,output){
     df<-Data3()[[1]][,c("tgt.class","cmp.class",Actx)]
     
     rows.to.prop<-which(df[,Actx] == vctx)
-    df.to.prop<-df[rows.to.prop,c("tgt.class","cmp.class")]
-    tab<-t(table(df.to.prop))
+    df.to.prop<-df[rows.to.prop,c("cmp.class","tgt.class")]
+    tab<-table(df.to.prop)
     
     rownames(tab)<-Groupings()[[3]]
     colnames(tab)<-Groupings()[[2]]
@@ -1504,8 +1502,8 @@ shinyServer(function(input,output){
     df<-Data3()[[1]][,c("tgt.class","cmp.class",Actx)]
     
     rows.to.prop<-which(df[,Actx] == vctx)
-    df.to.prop<-df[rows.to.prop,c("tgt.class","cmp.class")]
-    tab<-t(table(df.to.prop))
+    df.to.prop<-df[rows.to.prop,c("cmp.class","tgt.class")]
+    tab<-table(df.to.prop)
     
     test<-chisq.test(tab)
     stats<-test$statistic
@@ -1520,4 +1518,62 @@ shinyServer(function(input,output){
     colnames(returnMe)<-paste("Mined hypothesis: ",item,sep="")
     return(returnMe)
   })
+
+  output$analyse.hypothesis.statement<-renderText({
+    if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
+  
+    tgt.attr<-input$targetAttr
+    cmp.attr<-input$comparingAttr
+  
+    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is cont
+    tgt.class2<-input$whichtgtclassesB # <--- could be NULL
+    cmp.class1<-input$whichcmpclassesX
+    cmp.class2<-input$whichcmpclassesY
+  
+    ctx.attr    <-input$ctxAttr
+    ctx.items   <-input$ctxItems # in the format of Actx = vctx
+  
+    ctx.items.text<-paste(ctx.items, collapse=" & ")
+    tgt.class1.text<-paste(tgt.class1,collapse=" & ")
+    tgt.class2.text<-paste(tgt.class2,collapse=" & ")
+    cmp.class1.text<-paste(cmp.class1,collapse=" & ")
+    cmp.class2.text<-paste(cmp.class2,collapse=" & ")
+    
+    # add in the ctx item to analyse
+    ctx.items.text<-paste(ctx.items.text,input$analyse.which.item, sep=" & ")
+    
+    if(Groupings()[[1]] == "Cate")
+      statement<-paste("In the context of {",
+                       ctx.items.text,
+                       "}, there is a difference in ",
+                       toupper(tgt.attr),
+                       " between {",
+                       tgt.class1.text,
+                       "} vs. {",
+                       tgt.class2.text,
+                       "} when comparing the samples on ",
+                       toupper(cmp.attr),
+                       " between {",
+                       cmp.class1.text,
+                       "} vs. {",
+                       cmp.class2.text,
+                       "}",
+                       sep="")
+    else if(Groupings()[[1]] == "Cont")
+      statement<-paste("In the context of {",
+                       ctx.items.text,
+                       "} there is a difference in ",
+                       toupper(tgt.attr),
+                       " when comparing the samples on ",
+                       toupper(cmp.attr),
+                       " between {",
+                       cmp.class1.text,
+                       "} vs. {",
+                       cmp.class2.text,
+                       "}",
+                       sep="")
+    return(statement)
+})
+
+
 }) #end shinyServer
