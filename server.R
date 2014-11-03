@@ -432,7 +432,6 @@ shinyServer(function(input,output){
                                paste(input$targetAttr,": Low",sep="")),
                   Acmp.names=c(paste(input$whichcmpclassesX,collapse="&"),
                                paste(input$whichcmpclassesY,collapse="&"))))
-    
     else if(Data()[[2]][input$targetAttr] == "Cate")
       return(list(Atgt.type="Cate",
                   Atgt.names=c(paste(input$whichtgtclassesA,collapse="&"),
@@ -448,9 +447,9 @@ shinyServer(function(input,output){
   # The objectives of Data2() are:
   #  -> subsetting the data based on the user's initial context
   #  -> if Atgt is continuous, include a binary attribute based on
-  #    mean(Atgt). This is done because it will speed up the
-  #    construction of the RF models later. (Regression RF is
-  #    apparently slower than classification RF.)
+  #     mean(Atgt). This is done because it will speed up the
+  #     construction of the RF models later. (Regression RF is
+  #     apparently slower than classification RF.)
   
   # Because Data() contains information regarding the attributes,
   # while Data2() considers starting context formed by specific
@@ -539,7 +538,6 @@ shinyServer(function(input,output){
                                   if(x %in% grpX.classes) return("1")
                                   else if(x %in% grpY.classes) return("2")})
     
-    
     # For the contexted data stored in memory as a data.frame,
     # tgt.class and cmp.class do not contain the Atgt.names and Acmp.names
     # as per in Groupings()
@@ -556,7 +554,7 @@ shinyServer(function(input,output){
     #081014: context bug resolved
   })
   
-  #*********************************************#
+  #***************END REACTIVE*******************#
   
   # display contexted data
   output$ctx.data<-renderTable({
@@ -565,14 +563,14 @@ shinyServer(function(input,output){
 
   #***************REACTIVE**********************#
 
-  # Table() consists of *FOUR* things at the moment
-  #  1. Table()[[1]] is the table itself, be it contingency or comparison table
-  #  2. Table()[[2]] is the type of table: contingency or comparison
-  #  3. Table()[[3]] is the data with the starting context itself,
-  #     with 4 columns: Atgt, Acmp, tgt.class, cmp.class
+  # Table() consists of *THREE OR FOUR* things at the moment
+  #  1. Table()[["means.df"]] is the comparison table for cont Atgt
+  #  2. Table()[["cont.tab"]]] is the contingency table, for both cont or cate Atgt
+  #  3. Table()[["tab.type"]] is the type of (primary) table
+  #  4. Table()[["tab.df"]] is the data.frame that was tabulated with 4 columns: Atgt, Acmp, tgt.class, cmp.class
   
   # generate contingency table if target attribute is cate.
-  # else generate a comparison table
+  # else generate a comparison table and a contingency table
   
   # reactive wrapper for table
   Table<-reactive({
@@ -621,12 +619,11 @@ shinyServer(function(input,output){
     }
   })
 
-  #*********************************************#
+  #***************END REACTIVE*******************#
   
   #render the comparison or contingency table
   output$contTable<-renderTable({
     tab<-Table()[[1]]
-    
     
     if(Table()[["tab.type"]] == "Contingency"){
       append.col<-c((tab[1,1]+tab[1,2])/sum(tab),
@@ -636,9 +633,7 @@ shinyServer(function(input,output){
                     sum(tab))
       tab<-cbind(tab,append.col)
       tab<-rbind(tab,append.row)
-      
       colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Proportions"
-      
       return(tab)
     }
     else if(Table()[["tab.type"]] == "Comparison"){
@@ -649,17 +644,14 @@ shinyServer(function(input,output){
       tab<-cbind(tab,
                  c(cont.tab[1,1]+cont.tab[1,2],cont.tab[2,1]+cont.tab[2,2]),
                  append.col)
-      
       colnames(tab)[ncol(tab)-1]<-"Support"
       colnames(tab)[ncol(tab)]<-"Proportions"
-      
       return(tab)
     }
   })
 
   #initial parametric test
   output$initialTest<-renderTable({
-    
     # 081014: only t-test and chi-squared tests are used now.
     # no more ANOVA
     # 2 groups only
@@ -695,60 +687,8 @@ shinyServer(function(input,output){
       returnMe
     }
   })
-  # yet to implement non-parametric test yet
+
   output$hypothesis.statement.it<-renderText({
-  if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
-  
-  tgt.attr<-input$targetAttr
-  cmp.attr<-input$comparingAttr
-  
-  tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is cont
-  tgt.class2<-input$whichtgtclassesB # <--- could be NULL
-  cmp.class1<-input$whichcmpclassesX
-  cmp.class2<-input$whichcmpclassesY
-  
-  ctx.attr    <-input$ctxAttr
-  ctx.items   <-input$ctxItems # in the format of Actx = vctx
-  
-  ctx.items.text<-paste(ctx.items, collapse=" & ")
-  tgt.class1.text<-paste(tgt.class1,collapse=" & ")
-  tgt.class2.text<-paste(tgt.class2,collapse=" & ")
-  cmp.class1.text<-paste(cmp.class1,collapse=" & ")
-  cmp.class2.text<-paste(cmp.class2,collapse=" & ")
-  
-  if(Groupings()[[1]] == "Cate")
-    statement<-paste("In the context of {",
-                     ctx.items.text,
-                     "}, there is a difference in ",
-                     toupper(tgt.attr),
-                     " between {",
-                     tgt.class1.text,
-                     "} vs. {",
-                     tgt.class2.text,
-                     "} when comparing the samples on ",
-                     toupper(cmp.attr),
-                     " between {",
-                     cmp.class1.text,
-                     "} vs. {",
-                     cmp.class2.text,
-                     "}",
-                     sep="")
-  else if(Groupings()[[1]] == "Cont")
-    statement<-paste("In the context of {",
-                     ctx.items.text,
-                     "} there is a difference in ",
-                     toupper(tgt.attr),
-                     " when comparing the samples on ",
-                     toupper(cmp.attr),
-                     " between {",
-                     cmp.class1.text,
-                     "} vs. {",
-                     cmp.class2.text,
-                     "}",
-                     sep="")
-  return(statement)
-})
-  output$hypothesis.statement.td<-renderText({
     if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
     
     tgt.attr<-input$targetAttr
@@ -768,6 +708,58 @@ shinyServer(function(input,output){
     cmp.class1.text<-paste(cmp.class1,collapse=" & ")
     cmp.class2.text<-paste(cmp.class2,collapse=" & ")
     
+    if(Groupings()[[1]] == "Cate")
+      statement<-paste("In the context of {",
+                       ctx.items.text,
+                       "}, there is a difference in ",
+                       toupper(tgt.attr),
+                       " between {",
+                       tgt.class1.text,
+                       "} vs. {",
+                       tgt.class2.text,
+                       "} when comparing the samples on ",
+                       toupper(cmp.attr),
+                       " between {",
+                       cmp.class1.text,
+                       "} vs. {",
+                       cmp.class2.text,
+                       "}",
+                       sep="")
+    else if(Groupings()[[1]] == "Cont")
+      statement<-paste("In the context of {",
+                       ctx.items.text,
+                       "} there is a difference in ",
+                       toupper(tgt.attr),
+                       " when comparing the samples on ",
+                       toupper(cmp.attr),
+                       " between {",
+                       cmp.class1.text,
+                       "} vs. {",
+                       cmp.class2.text,
+                       "}",
+                       sep="")
+    return(statement)
+  })
+  output$hypothesis.statement.td<-renderText({
+    if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
+    
+    tgt.attr<-input$targetAttr
+    cmp.attr<-input$comparingAttr
+    
+    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is cont
+    tgt.class2<-input$whichtgtclassesB # <--- could be NULL
+    cmp.class1<-input$whichcmpclassesX
+    cmp.class2<-input$whichcmpclassesY
+      
+    ctx.attr    <-input$ctxAttr
+    ctx.items   <-input$ctxItems # in the format of Actx = vctx
+    
+    ctx.items.text<-paste(ctx.items, collapse=" & ")
+    tgt.class1.text<-paste(tgt.class1,collapse=" & ")
+    tgt.class2.text<-paste(tgt.class2,collapse=" & ")
+    cmp.class1.text<-paste(cmp.class1,collapse=" & ")
+    cmp.class2.text<-paste(cmp.class2,collapse=" & ")
+      
     if(Groupings()[[1]] == "Cate")
       statement<-paste("In the context of {",
                        ctx.items.text,
@@ -880,10 +872,30 @@ shinyServer(function(input,output){
     return(list(test=test,test.type=test.type))
   })
   
-  #*********************************************#
+  #***************END REACTIVE*******************#
 
   output$flat.table<-renderTable({
-    if(Test()[["test.type"]] == "collapsed.chi.sq"){
+    
+    if(Test()[["test.type"]] == "t.test"){
+      df<-Data2()[[1]][,c(input$targetAttr,"cmp.class")]
+      
+      test<-ks.test(df[which(df$cmp.class == "1"),input$targetAttr],
+                    df[which(df$cmp.class == "2"),input$targetAttr])
+      
+      stats<-test$statistic
+      pvalue<-test$p.value
+      method<-test$method
+      
+      returnMe<-as.data.frame(c(as.character(method),
+                                as.character(round(stats,3)),
+                                as.character(round(pvalue,7))
+      ))
+      rownames(returnMe)<-c("Method","Test statistic","p-value")
+      colnames(returnMe)<-"Kolmogorov-Smirnov test for normality"
+      returnMe
+    }
+    
+    else if(Test()[["test.type"]] == "collapsed.chi.sq"){
       tab.df<-Table()[["tab.df"]][,c(2:3)] # ony Acmp and tgt.class
       tab<-table(tab.df)
       
@@ -891,7 +903,6 @@ shinyServer(function(input,output){
       return(tab)
     }
   })
-
   output$flat.chi.sq<-renderTable({
     if(Test()[["test.type"]] == "t.test"){
       df<-Data2()[[1]][,c(input$targetAttr,"cmp.class")]
@@ -936,7 +947,9 @@ shinyServer(function(input,output){
       df<-Data2()[[1]][,c(input$targetAttr,"cmp.class")]
       
       if(var.test(df[which(df$cmp.class == "1"),input$targetAttr],
-                  df[which(df$cmp.class == "2"),input$targetAttr])$p.value <= p.significant){
+                  df[which(df$cmp.class == "2"),input$targetAttr])$p.value <= p.significant ||
+           ks.test(df[which(df$cmp.class == "1"),input$targetAttr],
+                   df[which(df$cmp.class == "2"),input$targetAttr])$p.value <= p.significant){
         
         test<-wilcox.test(df[which(df$cmp.class == "1"),input$targetAttr],
                           df[which(df$cmp.class == "2"),input$targetAttr])
@@ -1634,6 +1647,5 @@ shinyServer(function(input,output){
                        sep="")
     return(statement)
 })
-
 
 }) #end shinyServer

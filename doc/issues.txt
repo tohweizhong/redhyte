@@ -3,5 +3,3 @@ issues
 -> vtgt for cont. Atgt, High always?
 
 -> Data2()[[3]] and Data3()[[3]]
-
--> total number of attributes in the dataset is < k
