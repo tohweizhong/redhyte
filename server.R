@@ -48,6 +48,9 @@ shinyServer(function(input,output){
 
     #checking the variable type of the attributes: continuous or categorical
     #and number of classes for cate. attr.
+    
+    if(input$datTranspose == TRUE) df<-t(df)
+    
     typ<-NULL
     numCl<-NULL
     for(i in seq(ncol(df))){
@@ -643,8 +646,11 @@ shinyServer(function(input,output){
       cont.tab<-Table()[["cont.tab"]]
       append.col<-c((cont.tab[1,1]+cont.tab[1,2])/sum(cont.tab),
                     (cont.tab[2,1]+cont.tab[2,2])/sum(cont.tab))
-      tab<-cbind(tab,append.col)
+      tab<-cbind(tab,
+                 c(cont.tab[1,1]+cont.tab[1,2],cont.tab[2,1]+cont.tab[2,2]),
+                 append.col)
       
+      colnames(tab)[ncol(tab)-1]<-"Support"
       colnames(tab)[ncol(tab)]<-"Proportions"
       
       return(tab)
@@ -1059,6 +1065,12 @@ shinyServer(function(input,output){
     fm.cmp<-paste(" ",predictors,sep="",collapse="+")
     fm.cmp<-as.formula(paste("cmp.class","~",fm.cmp,sep=""))
     
+    # take the first k attributes, consider them shortlisted
+    if(length(predictors) < top.k)
+      k<-length(predictors)
+    else
+      k<-top.k
+    
     # construct models
     mod.tgt<-randomForest(formula=fm.tgt,
                           data=df,
@@ -1152,6 +1164,9 @@ shinyServer(function(input,output){
     mined.attr<-NULL
     
     if(acc.tgt >= acc.rf.default && acc.cmp < acc.rf.default){
+      
+      print(mod.tgt$importance)
+      
       mined.attr<-rownames(mod.tgt$importance)[seq(k)]
       names(mined.attr)<-paste(mined.attr,".tgt",sep="") # adding a tail ".tgt" or ".cmp"
     }
@@ -1174,7 +1189,6 @@ shinyServer(function(input,output){
       mda.both<-c(mda.tgt,mda.cmp)
       mda.both<-sort(mda.both,decreasing=TRUE)
       
-      # take the first k attributes, consider them shortlisted
       mined.attr<-names(mda.both)[seq(k)]
       
       # function to remove the tails ".tgt" and ".cmp"
@@ -1284,20 +1298,22 @@ shinyServer(function(input,output){
 
     #need to consider whether Atgt is continuous or categorical
     #check this using the Data()[[2]]
-    
-    if(Data2()[[2]][tgt.attr] == "Cate")
-      search.tgt.class.from<-seq(1,2)
-    else if(Data2()[[2]][[tgt.attr]] == "Cont")
-      search.tgt.class.from<-c("High","Low")
-      
-    for(i in search.tgt.class.from){
-      for(j in seq(1,2)){
+    for(j in seq(1:2)){
+      for(i in seq(1,2)){
         
-        #grab the subset of data
-        rows.to.plot<-intersect(
-          which(df.to.plot[,"tgt.class"] == i),
-          which(df.to.plot[,"cmp.class"] == j)
-        )
+        tgt.classes<-c("High","Low")
+        
+        if(Data2()[[2]][tgt.attr] == "Cate"){
+          #grab the subset of data
+          rows.to.plot<-intersect(
+            which(df.to.plot[,"tgt.class"] == i),
+            which(df.to.plot[,"cmp.class"] == j))
+        }
+        else if(Data2()[[2]][[tgt.attr]] == "Cont"){
+          rows.to.plot<-intersect(
+            which(df.to.plot[,"tgt.class"] == tgt.classes[i]),
+            which(df.to.plot[,"cmp.class"] == j))
+        }
         plot.dat<-df.to.plot[rows.to.plot,mined.attr]
         str(plot.dat)
         

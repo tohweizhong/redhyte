@@ -1,12 +1,12 @@
 # settings
 
 #  for test diagnostics
-p.significant<-0.05
+p.significant<-0.05 # homoskedasticity test
 
 # for context mining
-acc.rf.default<-.75
-k<-5
-min.sup.cij<-10
-class.ratio<-5
+acc.rf.default<-.7
+top.k<-5
+class.ratio<-5 # class-imbalance learning
 
 # for hypothesis mining
+min.sup.cij<-10

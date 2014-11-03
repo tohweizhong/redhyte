@@ -1,11 +1,7 @@
 issues
 
--> search.tgt.class.from
-
 -> vtgt for cont. Atgt, High always?
 
 -> Data2()[[3]] and Data3()[[3]]
 
 -> total number of attributes in the dataset is < k
-
--> hypothesis statements for cont. Atgt, before and after ctx mining
