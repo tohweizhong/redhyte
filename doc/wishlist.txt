@@ -1,5 +1,15 @@
 WISHLIST
 
+-> Initial test: render contingency table for cont. Atgt, with chi squared test
+
+-> Test diagnostics: navPanel(), t-test and chi-squared test as above
+
+-> alternative way to visualise SP in hypothesis analysis tab?
+
+-> alternative models for context mining (stepwise regression, NBC)?
+
+-> exclude Acmp as predictor for context mining?
+
 -> display RF VIP
 
 -> difflift and contribution of the attributes as a whole, OR test
@@ -12,7 +22,7 @@ WISHLIST
 
 -> display support (implemented but no reactive yet)
 
--> user i/p discretization
+-> user i/p discretization and discretization algorithm
 
 -> An analysis log like MetaboNexus'
 

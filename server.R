@@ -428,8 +428,8 @@ shinyServer(function(input,output){
   Groupings<-reactive({
     if(Data()[[2]][input$targetAttr] == "Cont")
       return(list(Atgt.type="Cont",
-                  Atgt.names=c(paste(input$targetAttr,": High",sep=""),
-                               paste(input$targetAttr,": Low",sep="")),
+                  Atgt.names=c(paste(input$targetAttr,": >= mean",sep=""),
+                               paste(input$targetAttr,": < mean",sep="")),
                   Acmp.names=c(paste(input$whichcmpclassesX,collapse="&"),
                                paste(input$whichcmpclassesY,collapse="&"))))
     else if(Data()[[2]][input$targetAttr] == "Cate")
@@ -459,7 +459,7 @@ shinyServer(function(input,output){
   # 030914: will return Data()[[[3]]] as it is anyway for now.
 
   # Data2() consists of *THREE* things at the moment
-  #  1. Data2()[[1]] is the data itself, including the median cutoff attribute if Atgt is cont
+  #  1. Data2()[[1]] is the data itself, including the mean cutoff attribute if Atgt is cont
   #  2. Data2()[[2]] is the type of variable: continuous or categorical
   #  3. Data2()[[3]] is the number of classes for categorical attributes, NA for cont.
   
@@ -523,8 +523,8 @@ shinyServer(function(input,output){
       #print(unique(dfWithCtx[,input$targetAttr]))
       dfWithCtx$tgt.class<-sapply(dfWithCtx[,input$targetAttr],
                                   FUN=function(x){
-                                  if(x>=m) return("High")
-                                  else return("Low")})
+                                  if(x>=m) return(">= mean")
+                                  else return("< mean")})
     }
     else if(Groupings()[[1]] == "Cate"){
       dfWithCtx$tgt.class<-sapply(dfWithCtx[,input$targetAttr],
@@ -541,7 +541,7 @@ shinyServer(function(input,output){
     # For the contexted data stored in memory as a data.frame,
     # tgt.class and cmp.class do not contain the Atgt.names and Acmp.names
     # as per in Groupings()
-    # they only contain "High"/"Low" or "1"/"2"
+    # they only contain ">= mean"/"< mean" or "1"/"2"
     
     #add the attribute type for the cutoff attribute
     attr.type<-Data()[[2]]
@@ -595,7 +595,7 @@ shinyServer(function(input,output){
     else{ #target attribute is continuous
       
       # want to return both the data.frame of means and
-      # the contingency table based on tgt.class = {"High", "Low"}
+      # the contingency table based on tgt.class = {">= mean", "< mean"}
       # 131014: for now only the data.frame of means will be displayed in the UI
       
       # first, the data.frame of means
@@ -665,8 +665,7 @@ shinyServer(function(input,output){
       
       returnMe<-as.data.frame(c(as.character(method),
                                  as.character(round(stats,3)),
-                                 as.character(round(pvalue,7))
-                                 ))
+                                 as.character(pvalue)))
       rownames(returnMe)<-c("Method","Test statistic","p-value")
       colnames(returnMe)<-"Initial test"
       returnMe
@@ -680,8 +679,7 @@ shinyServer(function(input,output){
       
       returnMe<-as.data.frame(c(as.character(method),
                                 as.character(round(stats,3)),
-                                as.character(round(pvalue,7))
-      ))
+                                as.character(pvalue)))
       rownames(returnMe)<-c("Method","Test statistic","p-value")
       colnames(returnMe)<-"Initial test"
       returnMe
@@ -835,7 +833,7 @@ shinyServer(function(input,output){
                        ctx.items.text,
                        "} there is a difference in ",
                        toupper(tgt.attr),
-                       #" between {High} vs. {Low}",
+                       #" between {>= mean} vs. {< mean}",
                        " when comparing the samples on ",
                        toupper(cmp.attr),
                        " between {",
@@ -874,8 +872,7 @@ shinyServer(function(input,output){
   
   #***************END REACTIVE*******************#
 
-  output$flat.table<-renderTable({
-    
+  output$KStest<-renderTable({
     if(Test()[["test.type"]] == "t.test"){
       df<-Data2()[[1]][,c(input$targetAttr,"cmp.class")]
       
@@ -888,22 +885,13 @@ shinyServer(function(input,output){
       
       returnMe<-as.data.frame(c(as.character(method),
                                 as.character(round(stats,3)),
-                                as.character(round(pvalue,7))
-      ))
+                                as.character(pvalue)))
       rownames(returnMe)<-c("Method","Test statistic","p-value")
       colnames(returnMe)<-"Kolmogorov-Smirnov test for normality"
       returnMe
     }
-    
-    else if(Test()[["test.type"]] == "collapsed.chi.sq"){
-      tab.df<-Table()[["tab.df"]][,c(2:3)] # ony Acmp and tgt.class
-      tab<-table(tab.df)
-      
-      colnames(tab)<-Groupings()[["Atgt.names"]]
-      return(tab)
-    }
   })
-  output$flat.chi.sq<-renderTable({
+  output$Ftest<-renderTable({
     if(Test()[["test.type"]] == "t.test"){
       df<-Data2()[[1]][,c(input$targetAttr,"cmp.class")]
       
@@ -916,34 +904,15 @@ shinyServer(function(input,output){
       
       returnMe<-as.data.frame(c(as.character(method),
                                 as.character(round(stats,3)),
-                                as.character(round(pvalue,7))
-      ))
+                                as.character(pvalue)))
       rownames(returnMe)<-c("Method","Test statistic","p-value")
       colnames(returnMe)<-"F-test for equal variances"
       returnMe
     }
-    else if(Test()[["test.type"]] == "collapsed.chi.sq"){
-      
-      tab.df<-Table()[["tab.df"]][,c(2:3)] # ony Acmp and tgt.class
-      tab<-table(tab.df)
-      test<-chisq.test(tab)
-      stats<-test$statistic
-      pvalue<-test$p.value
-      method<-test$method
-      
-      returnMe<-as.data.frame(c(as.character(method),
-                                as.character(round(stats,3)),
-                                as.character(round(pvalue,7))
-      ))
-      rownames(returnMe)<-c("Method","Test statistic","p-value")
-      colnames(returnMe)<-"Flat chi-squared test"
-      returnMe
-    }
   })
-  output$chi.sq.top<-renderTable({
-    
+  output$MWtest<-renderTable({
     if(Test()[["test.type"]] == "t.test"){
-    
+      
       df<-Data2()[[1]][,c(input$targetAttr,"cmp.class")]
       
       if(var.test(df[which(df$cmp.class == "1"),input$targetAttr],
@@ -960,15 +929,43 @@ shinyServer(function(input,output){
         
         returnMe<-as.data.frame(c(as.character(method),
                                   as.character(round(stats,3)),
-                                  as.character(round(pvalue,7))
-        ))
+                                  as.character(pvalue)))
         rownames(returnMe)<-c("Method","Test statistic","p-value")
         colnames(returnMe)<-"Non-parametric test"
         returnMe
       }
     }
-    
-    else if(Test()[["test.type"]] == "collapsed.chi.sq"){
+  })  
+
+  output$flat.table<-renderTable({
+    if(Test()[["test.type"]] == "collapsed.chi.sq"){
+      tab.df<-Table()[["tab.df"]][,c(2:3)] # ony Acmp and tgt.class
+      tab<-table(tab.df)
+      
+      colnames(tab)<-Groupings()[["Atgt.names"]]
+      return(tab)
+    }
+  })
+  output$flat.chi.sq<-renderTable({
+    if(Test()[["test.type"]] == "collapsed.chi.sq"){
+      
+      tab.df<-Table()[["tab.df"]][,c(2:3)] # ony Acmp and tgt.class
+      tab<-table(tab.df)
+      test<-chisq.test(tab)
+      stats<-test$statistic
+      pvalue<-test$p.value
+      method<-test$method
+      
+      returnMe<-as.data.frame(c(as.character(method),
+                                as.character(round(stats,3)),
+                                as.character(pvalue)))
+      rownames(returnMe)<-c("Method","Test statistic","p-value")
+      colnames(returnMe)<-"Flat chi-squared test"
+      returnMe
+    }
+  })
+  output$chi.sq.top<-renderTable({
+    if(Test()[["test.type"]] == "collapsed.chi.sq"){
       tab.df<-Table()[["tab.df"]][,c(2:3)] # only Acmp and tgt.class
       # not using Atgt,cmp.class
       tab<-table(tab.df)
@@ -1002,8 +999,8 @@ shinyServer(function(input,output){
       m<-mean(df[,an.attr])
       new.col<-sapply(df[,an.attr],
                       FUN=function(x){
-                        if(x>=m) return("High")
-                        else return("Low")})
+                        if(x>=m) return(">= mean")
+                        else return("< mean")})
       return(new.col)
     }
     
@@ -1314,7 +1311,7 @@ shinyServer(function(input,output){
     for(j in seq(1:2)){
       for(i in seq(1,2)){
         
-        tgt.classes<-c("High","Low")
+        tgt.classes<-c(">= mean","< mean")
         
         if(Data2()[[2]][tgt.attr] == "Cate"){
           #grab the subset of data
@@ -1586,7 +1583,7 @@ shinyServer(function(input,output){
     
     returnMe<-as.data.frame(c(as.character(method),
                               as.character(round(stats,3)),
-                              as.character(round(pvalue,7))))
+                              as.character(pvalue)))
     
     rownames(returnMe)<-c("Method","Test statistic","p-value")
     colnames(returnMe)<-paste("Mined hypothesis: ",item,sep="")

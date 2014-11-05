@@ -1,5 +1,9 @@
 issues
 
+-> vertical class labels for spineplot
+
+-> "&" in the hypothesis statement for hypothesis analysis
+
 -> vtgt for cont. Atgt, High always?
 
 -> Data2()[[3]] and Data3()[[3]]

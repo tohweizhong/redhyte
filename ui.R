@@ -3,35 +3,26 @@ shinyUI(pageWithSidebar(
   titlePanel(imageOutput("logoPNG",width="180px",height="50px"),
              tags$head(tags$link(rel="icon",type="image/png",href="browserlogo.png",sizes="64x64"),
                        tags$title("Redhyte"))),
-  
   #sidebar panel
   sidebarPanel(
     imageOutput("titlePNG",
                 height="70px"),
-    
     tags$hr(),
-    
     #data input
     fileInput('datFile',
               tags$h5(tags$strong('Choose .csv or .txt file to upload local file')),
               accept=c('text/csv', 'text/comma-separated-values,text/plain')),
-    
     tags$hr(),
-    
     #checkbox to indicate header == true or false
     checkboxInput('datHeader','Header contains attribute names', TRUE),
-    
     tags$hr(),
-    
     #file type
     radioButtons('datSep',
                  tags$h5(tags$strong("Separator")),
                  c("Comma(.csv)"=',',
                    "Tab(.txt/.tsv)"='\t'),
                   ','),
-    
     tags$hr(),
-    
     #quotation used in data file
     radioButtons('datQuote',
                  tags$h5(tags$strong('Quotes used in data file')),
@@ -39,9 +30,7 @@ shinyUI(pageWithSidebar(
                    'Double Quotes'='"',
                    'Single Quotes'="'"),
                  '"'),
-    
     tags$hr(),
-    
     #transpose data
     checkboxInput('datTranspose','Transpose data?',FALSE),
     width=3), #end sidebar panel
@@ -157,9 +146,15 @@ shinyUI(pageWithSidebar(
                tags$h6("-> if Tinitial is collapsed chi-squared test, find top contributor in the Acmp classes"),
                tags$h5("Your hypothesis:"),
                verbatimTextOutput("hypothesis.statement.td"),
-               tableOutput("flat.table"),
-               tableOutput("flat.chi.sq"),
-               tableOutput("chi.sq.top")),
+               navlistPanel(
+                 tabPanel("t-test",
+                          tableOutput("KStest"),
+                          tableOutput("Ftest"),
+                          tableOutput("MWtest")),
+                 tabPanel("Chi-squared test",
+                          tableOutput("flat.table"),
+                          tableOutput("flat.chi.sq"),
+                          tableOutput("chi.sq.top")))),
       #half implemented, will come back to this
       
       #=============================================#
