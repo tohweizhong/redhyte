@@ -1,8 +1,8 @@
 WISHLIST
 
--> Initial test: render contingency table for cont. Atgt, with chi squared test
+-> Test diagnostics: navPanel(), Tinitial = t-test => both t-test and chi. else chi only
 
--> Test diagnostics: navPanel(), t-test and chi-squared test as above
+-> context mining: show contTab2
 
 -> alternative way to visualise SP in hypothesis analysis tab?
 

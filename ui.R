@@ -120,9 +120,11 @@ shinyUI(pageWithSidebar(
                           sidebarPanel(
                             htmlOutput("test.ctx.item.ctrl"),
                             width=8)),
-                 tabPanel("Table & test",
+                 tabPanel("Table(s) & test",
                           tableOutput("contTable"),
-                          tableOutput("initialTest")),
+                          tableOutput("initialTest"),
+                          tableOutput("contTable2"),
+                          tableOutput("initialTest2")),
                  widths=c(3,9))),
       
       #=============================================#

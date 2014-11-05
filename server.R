@@ -428,8 +428,8 @@ shinyServer(function(input,output){
   Groupings<-reactive({
     if(Data()[[2]][input$targetAttr] == "Cont")
       return(list(Atgt.type="Cont",
-                  Atgt.names=c(paste(input$targetAttr,": >= mean",sep=""),
-                               paste(input$targetAttr,": < mean",sep="")),
+                  Atgt.names=c(paste(input$targetAttr," above/equal mean",sep=""), # <----
+                               paste(input$targetAttr," below mean",sep="")),
                   Acmp.names=c(paste(input$whichcmpclassesX,collapse="&"),
                                paste(input$whichcmpclassesY,collapse="&"))))
     else if(Data()[[2]][input$targetAttr] == "Cate")
@@ -465,6 +465,11 @@ shinyServer(function(input,output){
   
   Data2<-reactive({
     
+    # three steps:
+    # 1. if Atgt is cont, add the tgt.class attribute based on mean first
+    # 2. subset the data to include the required rows, based on tgt, cmp and ctx items
+    # 3. finally, add tgt.class for cate Atgt and cmp.class based on tgt and cmp items
+    
     dfWithCtx<-Data()[[1]]
     
     #retrieve all elements of initial context first
@@ -479,13 +484,26 @@ shinyServer(function(input,output){
     rowsToUse.tgt<-seq(nrow(dfWithCtx))
     rowsToUse.ctx<-NULL
     
-    #start with Acmp
+    # step one: if Atgt is cont, add the tgt.class attribute based on mean first
+    if(Groupings()[[1]] == "Cont"){
+      m<-mean(dfWithCtx[,input$targetAttr])
+      #using mean instead of median,
+      #because median cannot handle extremely skewed data
+      #print(unique(dfWithCtx[,input$targetAttr]))
+      dfWithCtx$tgt.class<-sapply(dfWithCtx[,input$targetAttr],
+                                  FUN=function(x){
+                                    if(x>=m) return("above/equal mean")
+                                    else return("below mean")})
+    }
+    
+    # step two: subset the data to include the required rows, based on tgt, cmp and ctx items
+    # start with Acmp
     rowsToUse.cmp<-which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclassesX == TRUE) #only X
     rowsToUse.cmp<-union(
       rowsToUse.cmp,
       which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclassesY == TRUE)) #X U Y
     
-    #now with Atgt
+    # now with Atgt
     if(Data()[[2]][input$targetAttr] == "Cate"){
       rowsToUse.tgt<-which(dfWithCtx[,input$targetAttr] %in% input$whichtgtclassesA == TRUE) #only A
       rowsToUse.tgt<-union(
@@ -493,7 +511,7 @@ shinyServer(function(input,output){
         which(dfWithCtx[,input$targetAttr] %in% input$whichtgtclassesB == TRUE)) #A U B
     }
     rowsToUse<-intersect(rowsToUse.tgt,rowsToUse.cmp)    
-    #now for Actx
+    # now for Actx
     if(!is.null(ctx.attr)){
       items.df<-data.frame(t(data.frame(sapply(ctx.items,FUN=strsplit,"="),
                                         stringsAsFactors=F)),
@@ -507,26 +525,14 @@ shinyServer(function(input,output){
           rowsToUse.ctx<-c(rowsToUse.ctx,which(dfWithCtx[,attr] == class))
       }
       rowsToUse.ctx<-unique(rowsToUse.ctx)
-      #now, combine the rowsToUse
+      # now, combine the rowsToUse
       rowsToUse<-intersect(rowsToUse.cmp,intersect(rowsToUse.tgt,rowsToUse.ctx))
     }
-    
-    #retrieve the data
+    # retrieve the data
     dfWithCtx<-dfWithCtx[rowsToUse,]
 
-    #add class attributes (A,B,X,Y)
-    #start with Atgt
-    if(Groupings()[[1]] == "Cont"){
-      m<-mean(dfWithCtx[,input$targetAttr])
-      #using mean instead of median,
-      #because median cannot handle extremely skewed data
-      #print(unique(dfWithCtx[,input$targetAttr]))
-      dfWithCtx$tgt.class<-sapply(dfWithCtx[,input$targetAttr],
-                                  FUN=function(x){
-                                  if(x>=m) return(">= mean")
-                                  else return("< mean")})
-    }
-    else if(Groupings()[[1]] == "Cate"){
+    # step three: finally, add tgt.class for cate Atgt and cmp.class based on tgt and cmp items
+    if(Groupings()[[1]] == "Cate" && is.null(dfWithCtx$tgt.class)){
       dfWithCtx$tgt.class<-sapply(dfWithCtx[,input$targetAttr],
                                   FUN=function(x){
                                     if(x %in% grpA.classes) return("1")
@@ -541,7 +547,7 @@ shinyServer(function(input,output){
     # For the contexted data stored in memory as a data.frame,
     # tgt.class and cmp.class do not contain the Atgt.names and Acmp.names
     # as per in Groupings()
-    # they only contain ">= mean"/"< mean" or "1"/"2"
+    # they only contain "above/equal mean"/"below mean" or "1"/"2"
     
     #add the attribute type for the cutoff attribute
     attr.type<-Data()[[2]]
@@ -549,7 +555,7 @@ shinyServer(function(input,output){
     
     #**console**#
     print(paste("nrow(dfWithCtx): ",nrow(dfWithCtx)))
-    
+
     return(list(dfWithCtx,attr.type,Data()[[3]]))
     #081014: context bug resolved
   })
@@ -595,7 +601,7 @@ shinyServer(function(input,output){
     else{ #target attribute is continuous
       
       # want to return both the data.frame of means and
-      # the contingency table based on tgt.class = {">= mean", "< mean"}
+      # the contingency table based on tgt.class = {"above/equal mean", "below mean"}
       # 131014: for now only the data.frame of means will be displayed in the UI
       
       # first, the data.frame of means
@@ -609,8 +615,8 @@ shinyServer(function(input,output){
       
       # next, the contingency table
       tab<-table(df[,c("cmp.class","tgt.class")])
-      rownames(tab)<-Groupings()[[3]]
-      colnames(tab)<-Groupings()[[2]]
+      rownames(tab)<-Groupings()[[3]] # Acmp, cmp.class
+      colnames(tab)<-Groupings()[[2]] # Atgt, tgt.class
       
       return(list(means.df=means.df,
                   cont.tab=tab,
@@ -667,7 +673,7 @@ shinyServer(function(input,output){
                                  as.character(round(stats,3)),
                                  as.character(pvalue)))
       rownames(returnMe)<-c("Method","Test statistic","p-value")
-      colnames(returnMe)<-"Initial test"
+      colnames(returnMe)<-"Initial chi-squared test on contingency table"
       returnMe
     }
     else if(Groupings()[[1]] == "Cont"){
@@ -681,10 +687,46 @@ shinyServer(function(input,output){
                                 as.character(round(stats,3)),
                                 as.character(pvalue)))
       rownames(returnMe)<-c("Method","Test statistic","p-value")
-      colnames(returnMe)<-"Initial test"
+      colnames(returnMe)<-"Initial t-test on means"
       returnMe
     }
   })
+
+  # render contingency table for continuous Atgt as well
+  output$contTable2<-renderTable({
+    if(Table()[["tab.type"]] == "Comparison"){
+      tab<-Table()[["cont.tab"]]
+      append.col<-c((tab[1,1]+tab[1,2])/sum(tab),
+                    (tab[2,1]+tab[2,2])/sum(tab))
+      append.row<-c((tab[1,1]+tab[2,1])/sum(tab),
+                    (tab[1,2]+tab[2,2])/sum(tab),
+                    sum(tab))
+      tab<-cbind(tab,append.col)
+      tab<-rbind(tab,append.row)
+      colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Proportions"
+      return(tab)
+    }
+  })
+
+  output$initialTest2<-renderTable({
+    
+    if(Groupings()[[1]] == "Cont"){
+      test<-chisq.test(Table()[["cont.tab"]]) #chisq.test() works on the table itself
+      stats<-test$statistic
+      pvalue<-test$p.value
+      method<-test$method
+      
+      returnMe<-as.data.frame(c(as.character(method),
+                                as.character(round(stats,3)),
+                                as.character(pvalue)))
+      rownames(returnMe)<-c("Method","Test statistic","p-value")
+      colnames(returnMe)<-"Chi-squared test on contingency table"
+      returnMe
+    }
+  })
+
+
+
 
   output$hypothesis.statement.it<-renderText({
     if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
@@ -726,7 +768,7 @@ shinyServer(function(input,output){
     else if(Groupings()[[1]] == "Cont")
       statement<-paste("In the context of {",
                        ctx.items.text,
-                       "} there is a difference in ",
+                       "}, there is a difference in ",
                        toupper(tgt.attr),
                        " when comparing the samples on ",
                        toupper(cmp.attr),
@@ -778,7 +820,7 @@ shinyServer(function(input,output){
     else if(Groupings()[[1]] == "Cont")
       statement<-paste("In the context of {",
                        ctx.items.text,
-                       "} there is a difference in ",
+                       "}, there is a difference in ",
                        toupper(tgt.attr),
                        " when comparing the samples on ",
                        toupper(cmp.attr),
@@ -831,9 +873,9 @@ shinyServer(function(input,output){
     else if(Groupings()[[1]] == "Cont")
       statement<-paste("In the context of {",
                        ctx.items.text,
-                       "} there is a difference in ",
+                       "}, there is a difference in ",
                        toupper(tgt.attr),
-                       #" between {>= mean} vs. {< mean}",
+                       #" between {above/equal mean} vs. {below mean}",
                        " when comparing the samples on ",
                        toupper(cmp.attr),
                        " between {",
@@ -931,7 +973,7 @@ shinyServer(function(input,output){
                                   as.character(round(stats,3)),
                                   as.character(pvalue)))
         rownames(returnMe)<-c("Method","Test statistic","p-value")
-        colnames(returnMe)<-"Non-parametric test"
+        colnames(returnMe)<-"Non-parametric Wilcoxon rank sum test on means"
         returnMe
       }
     }
@@ -999,8 +1041,8 @@ shinyServer(function(input,output){
       m<-mean(df[,an.attr])
       new.col<-sapply(df[,an.attr],
                       FUN=function(x){
-                        if(x>=m) return(">= mean")
-                        else return("< mean")})
+                        if(x>=m) return("above/equal mean")
+                        else return("below mean")})
       return(new.col)
     }
     
@@ -1260,9 +1302,9 @@ shinyServer(function(input,output){
                    minedAttributes()[[3]])
   }) #return: input$mined.attr
 
+  # contingency table of initial hypothesis
   output$contTable.ctx<-renderTable({
     tab<-Table()[[1]]
-    
     
     if(Table()[["tab.type"]] == "Contingency"){
       append.col<-c((tab[1,1]+tab[1,2])/sum(tab),
@@ -1311,7 +1353,7 @@ shinyServer(function(input,output){
     for(j in seq(1:2)){
       for(i in seq(1,2)){
         
-        tgt.classes<-c(">= mean","< mean")
+        tgt.classes<-c("above/equal mean","below mean")
         
         if(Data2()[[2]][tgt.attr] == "Cate"){
           #grab the subset of data
@@ -1586,7 +1628,7 @@ shinyServer(function(input,output){
                               as.character(pvalue)))
     
     rownames(returnMe)<-c("Method","Test statistic","p-value")
-    colnames(returnMe)<-paste("Mined hypothesis: ",item,sep="")
+    colnames(returnMe)<-paste("Chi-squared test on mined hypothesis: ",item,sep="")
     return(returnMe)
   })
   output$analyse.hypothesis.statement<-renderText({
@@ -1610,7 +1652,8 @@ shinyServer(function(input,output){
     cmp.class2.text<-paste(cmp.class2,collapse=" & ")
     
     # add in the ctx item to analyse
-    ctx.items.text<-paste(ctx.items.text,input$analyse.which.item, sep=" & ")
+    if(ctx.items.text == "") ctx.items.text<-paste(input$analyse.which.item, collapse=" & ")
+    else ctx.items.text<-paste(ctx.items.text,input$analyse.which.item, sep=" & ")
     
     if(Groupings()[[1]] == "Cate")
       statement<-paste("In the context of {",
@@ -1632,7 +1675,7 @@ shinyServer(function(input,output){
     else if(Groupings()[[1]] == "Cont")
       statement<-paste("In the context of {",
                        ctx.items.text,
-                       "} there is a difference in ",
+                       "}, there is a difference in ",
                        toupper(tgt.attr),
                        " when comparing the samples on ",
                        toupper(cmp.attr),
