@@ -1,8 +1,8 @@
 WISHLIST
 
--> Test diagnostics: navPanel(), Tinitial = t-test => both t-test and chi. else chi only
+-> identification of outliers, removal of outliers from dataset
 
--> context mining: show contTab2
+-> Test diagnostics: navPanel(), Tinitial = t-test => both t-test and chi. else chi only
 
 -> alternative way to visualise SP in hypothesis analysis tab?
 

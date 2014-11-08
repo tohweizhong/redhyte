@@ -1,8 +1,9 @@
 require(shiny)
+require(shinyIncubator)
 require(randomForest)
 source("related_codes/settings.R")
 
-shinyServer(function(input,output){
+shinyServer(function(input,output,session){
   
   #fancy work here
   #render images
@@ -1123,161 +1124,184 @@ shinyServer(function(input,output){
     else
       k<-top.k
     
-    # construct models
-    mod.tgt<-randomForest(formula=fm.tgt,
-                          data=df,
-                          importance=TRUE)
-    mod.cmp<-randomForest(formula=fm.cmp,
-                          data=df,
-                          importance=TRUE)
-
-    # now evaluate whether the models has been accurate
-    # three things to consider:
-    #  @ whether Atgt is continous or categorical
-    #  @ if Atgt is categorical, whether Atgt is binary or multi-class
-    #  @ if Atgt is categorical, whether Atgt has class-imbalance
-    # the only piece of additional guiding input from the user is vtgt
-    # the other problems need to be resolved using class-imbalance learning techniques
-    
-    # compute accuracies
-    tmp.cm.tgt<-mod.tgt$confusion
-    tmp.cm.cmp<-mod.cmp$confusion
-    tmp.cm.tgt<-tmp.cm.tgt[,-ncol(tmp.cm.tgt)]
-    tmp.cm.cmp<-tmp.cm.cmp[,-ncol(tmp.cm.cmp)]
-    # these confusion matrices are for computing accuracies only,
-    # will not be returned by this reactive module
-    
-    # 090914: consider only the diagonal entries of the confusion matrices for now
-    acc.tgt<-sum(diag(tmp.cm.tgt))/sum(tmp.cm.tgt)
-    acc.cmp<-sum(diag(tmp.cm.cmp))/sum(tmp.cm.cmp)
-    # this is severly affected by class-imbalance and multi-classes
-    
-    # 211014: using adjusted geometric mean as a start
-    # need to first figure out which class is less
-    # arbitrarily consider 5:1 as class-imbalance
-    # AGm = (Gm+SP*Nn)/(1+Nn),
-    # where SP refers to the specificity, which is the sensitivity for the negative class
-    # Nn refers to proportion of the data that belongs to the more abundant class
-    
-    # mod.tgt first
-    sup.tgt1<-tmp.cm.tgt[1,1]+tmp.cm.tgt[1,2]
-    sup.tgt2<-tmp.cm.tgt[2,1]+tmp.cm.tgt[2,2]
-    if(sup.tgt1/sup.tgt2 >= class.ratio){ # class.ratio defined in settings.R
-      # tgt1 is more abundant => tgt1 is -ve
-      # tgt2 is less abundant => tgt2 is +ve
-      se<-tmp.cm.tgt[2,2]/(tmp.cm.tgt[2,2]+tmp.cm.tgt[2,1])
-      sp<-tmp.cm.tgt[1,1]/(tmp.cm.tgt[1,1]+tmp.cm.tgt[1,2])
-      gm<-sqrt(se*sp)
-      nn<-sup.tgt1/(sup.tgt1+sup.tgt2)
-      acc.tgt<-(gm+sp*nn)/(1+nn)
-    }
-    else if(sup.tgt2/sup.tgt1 >= class.ratio){
-      # tgt2 is more abundant => tgt2 is -ve
-      # tgt1 is less abundant => tgt1 is +ve
-      sp<-tmp.cm.tgt[2,2]/(tmp.cm.tgt[2,2]+tmp.cm.tgt[2,1])
-      se<-tmp.cm.tgt[1,1]/(tmp.cm.tgt[1,1]+tmp.cm.tgt[1,2])
-      gm<-sqrt(se*sp)
-      nn<-sup.tgt2/(sup.tgt1+sup.tgt2)
-      acc.tgt<-(gm+sp*nn)/(1+nn)
-    }
-    
-    # now for mod.cmp
-    sup.cmp1<-tmp.cm.cmp[1,1]+tmp.cm.cmp[1,2]
-    sup.cmp2<-tmp.cm.cmp[2,1]+tmp.cm.cmp[2,2]
-    if(sup.cmp1/sup.cmp2 >= class.ratio){ # class.ratio defined in settings.R
-      # cmp1 is more abundant => cmp1 is -ve
-      # cmp2 is less abundant => cmp2 is +ve
-      se<-tmp.cm.cmp[2,2]/(tmp.cm.cmp[2,2]+tmp.cm.cmp[2,1])
-      sp<-tmp.cm.cmp[1,1]/(tmp.cm.cmp[1,1]+tmp.cm.cmp[1,2])
-      gm<-sqrt(se*sp)
-      nn<-sup.cmp1/(sup.cmp1+sup.cmp2)
-      acc.cmp<-(gm+sp*nn)/(1+nn)
-    }
-    else if(sup.cmp2/sup.cmp1 >= class.ratio){
-      # cmp2 is more abundant => cmp2 is -ve
-      # cmp1 is less abundant => cmp1 is +ve
-      sp<-tmp.cm.cmp[2,2]/(tmp.cm.cmp[2,2]+tmp.cm.cmp[2,1])
-      se<-tmp.cm.cmp[1,1]/(tmp.cm.cmp[1,1]+tmp.cm.cmp[1,2])
-      gm<-sqrt(se*sp)
-      nn<-sup.cmp2/(sup.cmp1+sup.cmp2)
-      acc.cmp<-(gm+sp*nn)/(1+nn)
-    }
-    
-    print(paste("acc.tgt: ",acc.tgt,sep=""))
-    print(paste("acc.cmp: ",acc.cmp,sep=""))
-    
-    # compare the accuracies of the models with the default accuracy threshold
-    # defined in related_codes/settings.R
-    # 3 cases:
-    # -> acc.tgt >= acc.rf.default && acc.cmp >= acc.rf.default
-    # -> acc.tgt >= acc.rf.default && acc.cmp <  acc.rf.default
-    # -> acc.tgt <  acc.rf.default && acc.cmp >= acc.rf.default
-    
-    mined.attr<-NULL
-    
-    if(acc.tgt >= acc.rf.default && acc.cmp < acc.rf.default){
+    withProgress(session, {
+      setProgress(message="Mining context...",detail="This might take a while...")
+      # construct models
+      run.time.tgt<-system.time(
+        mod.tgt<-randomForest(formula=fm.tgt,
+                              data=df,
+                              importance=TRUE))[3]
+      setProgress(message="Target model constructed.",detail = "Constructing comparing model...")
+      run.time.cmp<-system.time(
+        mod.cmp<-randomForest(formula=fm.cmp,
+                              data=df,
+                              importance=TRUE))[3]
+      setProgress(message="Comparing model constructed.")
       
-      print(mod.tgt$importance)
+      # now evaluate whether the models has been accurate
+      # three things to consider:
+      #  @ whether Atgt is continous or categorical
+      #  @ if Atgt is categorical, whether Atgt is binary or multi-class
+      #  @ if Atgt is categorical, whether Atgt has class-imbalance
+      # the only piece of additional guiding input from the user is vtgt
+      # the other problems need to be resolved using class-imbalance learning techniques
       
-      mined.attr<-rownames(mod.tgt$importance)[seq(k)]
-      names(mined.attr)<-paste(mined.attr,".tgt",sep="") # adding a tail ".tgt" or ".cmp"
-    }
-    else if(acc.tgt < acc.rf.default && acc.cmp >= acc.rf.default){
-      mined.attr<-rownames(mod.cmp$importance)[seq(k)]
-      names(mined.attr)<-paste(mined.attr,".cmp",sep="")
-    }
-    else if(acc.tgt >= acc.rf.default && acc.cmp >= acc.rf.default){
-      # both models are accurate; extract top k attributes
-      # from the intersection of the top attributes in
-      # both models based on variable importance (VI)
+      # compute accuracies
+      tmp.cm.tgt<-mod.tgt$confusion
+      tmp.cm.cmp<-mod.cmp$confusion
+      tmp.cm.tgt<-tmp.cm.tgt[,-ncol(tmp.cm.tgt)]
+      tmp.cm.cmp<-tmp.cm.cmp[,-ncol(tmp.cm.cmp)]
+      # these confusion matrices are for computing accuracies only,
+      # will not be returned by this reactive module
       
-      # combine the list of MeanDecreaseAccuracy
-      mda.tgt<-mod.tgt$importance[,"MeanDecreaseAccuracy"]
-      mda.cmp<-mod.cmp$importance[,"MeanDecreaseAccuracy"]
+      # 090914: consider only the diagonal entries of the confusion matrices for now
+      acc.tgt<-sum(diag(tmp.cm.tgt))/sum(tmp.cm.tgt)
+      acc.cmp<-sum(diag(tmp.cm.cmp))/sum(tmp.cm.cmp)
+      # this is severly affected by class-imbalance and multi-classes
       
-      names(mda.tgt)<-paste(names(mda.tgt),".tgt",sep="")
-      names(mda.cmp)<-paste(names(mda.cmp),".cmp",sep="")
+      # 211014: using adjusted geometric mean as a start
+      # need to first figure out which class is less
+      # arbitrarily consider 5:1 as class-imbalance
+      # AGm = (Gm+SP*Nn)/(1+Nn),
+      # where SP refers to the specificity, which is the sensitivity for the negative class
+      # Nn refers to proportion of the data that belongs to the more abundant class
       
-      mda.both<-c(mda.tgt,mda.cmp)
-      mda.both<-sort(mda.both,decreasing=TRUE)
-      
-      mined.attr<-names(mda.both)[seq(k)]
-      
-      # function to remove the tails ".tgt" and ".cmp"
-      remove.tail<-function(s){
-        last.dot<-regexpr("\\.[^\\.]*$", s)
-        return(substr(s,1,last.dot-1))
+      # mod.tgt first
+      sup.tgt1<-tmp.cm.tgt[1,1]+tmp.cm.tgt[1,2]
+      sup.tgt2<-tmp.cm.tgt[2,1]+tmp.cm.tgt[2,2]
+      if(sup.tgt1/sup.tgt2 >= class.ratio){ # class.ratio defined in settings.R
+        # tgt1 is more abundant => tgt1 is -ve
+        # tgt2 is less abundant => tgt2 is +ve
+        se<-tmp.cm.tgt[2,2]/(tmp.cm.tgt[2,2]+tmp.cm.tgt[2,1])
+        sp<-tmp.cm.tgt[1,1]/(tmp.cm.tgt[1,1]+tmp.cm.tgt[1,2])
+        gm<-sqrt(se*sp)
+        nn<-sup.tgt1/(sup.tgt1+sup.tgt2)
+        acc.tgt<-(gm+sp*nn)/(1+nn)
       }
-      mined.attr<-sapply(mined.attr,FUN=remove.tail)
-      
-      # while-loop to remove duplicates in mined.attr and add new ones
-      idx<-k
-      while(length(unique(mined.attr)) != length(mined.attr)){
-        dup<-which(duplicated(mined.attr) == TRUE)
-        mined.attr<-mined.attr[-dup[1]] # remove one at a time
-        original.name<-names(mda.both)[idx+1]
-        mined.attr<-c(mined.attr,remove.tail(names(mda.both)[idx+1]))
-        names(mined.attr)[(length(mined.attr))]<-original.name
-        idx<-idx+1
+      else if(sup.tgt2/sup.tgt1 >= class.ratio){
+        # tgt2 is more abundant => tgt2 is -ve
+        # tgt1 is less abundant => tgt1 is +ve
+        sp<-tmp.cm.tgt[2,2]/(tmp.cm.tgt[2,2]+tmp.cm.tgt[2,1])
+        se<-tmp.cm.tgt[1,1]/(tmp.cm.tgt[1,1]+tmp.cm.tgt[1,2])
+        gm<-sqrt(se*sp)
+        nn<-sup.tgt2/(sup.tgt1+sup.tgt2)
+        acc.tgt<-(gm+sp*nn)/(1+nn)
       }
-    }
-    
-    #**console**#
-    print(paste("mined.attr: ",names(mined.attr)))
-    
-    cm.tgt<-mod.tgt$confusion
-    cm.cmp<-mod.cmp$confusion
-    
-    rownames(cm.tgt)<-colnames(cm.tgt)[1:2]<-Groupings()[[2]]
-    rownames(cm.cmp)<-colnames(cm.cmp)[1:2]<-Groupings()[[3]]
-    
-    if(!is.null(mined.attr)) return(list(cm.tgt,cm.cmp,mined.attr))
-    #both mod.tgt and mod.cmp are inaccurate, therefore no mined attributes
-    else return(list(cm.tgt,cm.cmp,NULL))
+      
+      # now for mod.cmp
+      sup.cmp1<-tmp.cm.cmp[1,1]+tmp.cm.cmp[1,2]
+      sup.cmp2<-tmp.cm.cmp[2,1]+tmp.cm.cmp[2,2]
+      if(sup.cmp1/sup.cmp2 >= class.ratio){ # class.ratio defined in settings.R
+        # cmp1 is more abundant => cmp1 is -ve
+        # cmp2 is less abundant => cmp2 is +ve
+        se<-tmp.cm.cmp[2,2]/(tmp.cm.cmp[2,2]+tmp.cm.cmp[2,1])
+        sp<-tmp.cm.cmp[1,1]/(tmp.cm.cmp[1,1]+tmp.cm.cmp[1,2])
+        gm<-sqrt(se*sp)
+        nn<-sup.cmp1/(sup.cmp1+sup.cmp2)
+        acc.cmp<-(gm+sp*nn)/(1+nn)
+      }
+      else if(sup.cmp2/sup.cmp1 >= class.ratio){
+        # cmp2 is more abundant => cmp2 is -ve
+        # cmp1 is less abundant => cmp1 is +ve
+        sp<-tmp.cm.cmp[2,2]/(tmp.cm.cmp[2,2]+tmp.cm.cmp[2,1])
+        se<-tmp.cm.cmp[1,1]/(tmp.cm.cmp[1,1]+tmp.cm.cmp[1,2])
+        gm<-sqrt(se*sp)
+        nn<-sup.cmp2/(sup.cmp1+sup.cmp2)
+        acc.cmp<-(gm+sp*nn)/(1+nn)
+      }
+      
+      print(paste("acc.tgt: ",acc.tgt,sep=""))
+      print(paste("acc.cmp: ",acc.cmp,sep=""))
+      
+      # compare the accuracies of the models with the default accuracy threshold
+      # defined in related_codes/settings.R
+      # 3 cases:
+      # -> acc.tgt >= acc.rf.default && acc.cmp >= acc.rf.default
+      # -> acc.tgt >= acc.rf.default && acc.cmp <  acc.rf.default
+      # -> acc.tgt <  acc.rf.default && acc.cmp >= acc.rf.default
+      
+      mined.attr<-NULL
+      
+      if(acc.tgt >= acc.rf.default && acc.cmp < acc.rf.default){
+        
+        print(mod.tgt$importance)
+        
+        mined.attr<-rownames(mod.tgt$importance)[seq(k)]
+        names(mined.attr)<-paste(mined.attr,".tgt",sep="") # adding a tail ".tgt" or ".cmp"
+      }
+      else if(acc.tgt < acc.rf.default && acc.cmp >= acc.rf.default){
+        mined.attr<-rownames(mod.cmp$importance)[seq(k)]
+        names(mined.attr)<-paste(mined.attr,".cmp",sep="")
+      }
+      else if(acc.tgt >= acc.rf.default && acc.cmp >= acc.rf.default){
+        # both models are accurate; extract top k attributes
+        # from the intersection of the top attributes in
+        # both models based on variable importance (VI)
+        
+        # combine the list of MeanDecreaseAccuracy
+        mda.tgt<-mod.tgt$importance[,"MeanDecreaseAccuracy"]
+        mda.cmp<-mod.cmp$importance[,"MeanDecreaseAccuracy"]
+        
+        names(mda.tgt)<-paste(names(mda.tgt),".tgt",sep="")
+        names(mda.cmp)<-paste(names(mda.cmp),".cmp",sep="")
+        
+        mda.both<-c(mda.tgt,mda.cmp)
+        mda.both<-sort(mda.both,decreasing=TRUE)
+        
+        mined.attr<-names(mda.both)[seq(k)]
+        
+        # function to remove the tails ".tgt" and ".cmp"
+        remove.tail<-function(s){
+          last.dot<-regexpr("\\.[^\\.]*$", s)
+          return(substr(s,1,last.dot-1))
+        }
+        mined.attr<-sapply(mined.attr,FUN=remove.tail)
+        
+        # while-loop to remove duplicates in mined.attr and add new ones
+        idx<-k
+        while(length(unique(mined.attr)) != length(mined.attr)){
+          dup<-which(duplicated(mined.attr) == TRUE)
+          mined.attr<-mined.attr[-dup[1]] # remove one at a time
+          original.name<-names(mda.both)[idx+1]
+          mined.attr<-c(mined.attr,remove.tail(names(mda.both)[idx+1]))
+          names(mined.attr)[(length(mined.attr))]<-original.name
+          idx<-idx+1
+        }
+      }
+      
+      #**console**#
+      print(paste("mined.attr: ",names(mined.attr)))
+      
+      cm.tgt<-mod.tgt$confusion
+      cm.cmp<-mod.cmp$confusion
+      
+      rownames(cm.tgt)<-colnames(cm.tgt)[1:2]<-Groupings()[[2]]
+      rownames(cm.cmp)<-colnames(cm.cmp)[1:2]<-Groupings()[[3]]
+      
+      if(!is.null(mined.attr)) return(list(cm.tgt,
+                                           cm.cmp,
+                                           mined.attr,
+                                           run.time.tgt=run.time.tgt,
+                                           run.time.cmp=run.time.cmp))
+      
+      #both mod.tgt and mod.cmp are inaccurate, therefore no mined attributes
+      else return(list(cm.tgt,
+                       cm.cmp,
+                       NULL,
+                       run.time.tgt=run.time.tgt,
+                       run.time.cmp=run.time.cmp))
+    })
   })
   
   #*********************************************#
   
+  output$run.time.tgt<-renderText({
+    return(paste("Run time for target model: ",round(minedAttributes()[["run.time.tgt"]],3),sep=""))
+  })
+  output$run.time.cmp<-renderText({
+    return(paste("Run time for comparing model: ",round(minedAttributes()[["run.time.cmp"]],3),sep=""))
+  })
+
   output$testRF1<-renderTable({
     minedAttributes()[[1]]
   })
@@ -1320,17 +1344,34 @@ shinyServer(function(input,output){
       return(tab)
     }
     else if(Table()[["tab.type"]] == "Comparison"){
-      
       cont.tab<-Table()[["cont.tab"]]
       append.col<-c((cont.tab[1,1]+cont.tab[1,2])/sum(cont.tab),
                     (cont.tab[2,1]+cont.tab[2,2])/sum(cont.tab))
-      tab<-cbind(tab,append.col)
-      
+      tab<-cbind(tab,
+                 c(cont.tab[1,1]+cont.tab[1,2],cont.tab[2,1]+cont.tab[2,2]),
+                 append.col)
+      colnames(tab)[ncol(tab)-1]<-"Support"
       colnames(tab)[ncol(tab)]<-"Proportions"
+      return(tab)
       
+    }
+  })
+
+  output$contTable2.ctx<-renderTable({
+    if(Table()[["tab.type"]] == "Comparison"){
+      tab<-Table()[["cont.tab"]]
+      append.col<-c((tab[1,1]+tab[1,2])/sum(tab),
+                    (tab[2,1]+tab[2,2])/sum(tab))
+      append.row<-c((tab[1,1]+tab[2,1])/sum(tab),
+                    (tab[1,2]+tab[2,2])/sum(tab),
+                    sum(tab))
+      tab<-cbind(tab,append.col)
+      tab<-rbind(tab,append.row)
+      colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Proportions"
       return(tab)
     }
   })
+
 
   #render the plot for one mined attribute indicated by user
   output$mined.attr.viz<-renderPlot({
@@ -1686,6 +1727,60 @@ shinyServer(function(input,output){
                        "}",
                        sep="")
     return(statement)
-})
+  })
+
+  Settings<-reactive({
+    # data
+    log.filename<-as.character(input$datFile[[1]])
+    log.header<-input$datHeader
+    log.sep<-input$datSep
+    log.quote<-input$datQuote
+
+    # test diagnostics
+    log.p.significant<-p.significant
+    
+    # context mining
+    log.acc.rf.default<-acc.rf.default
+    log.top.k<-top.k
+    log.class.ratio<-class.ratio
+    log.mined.attr<-paste(minedAttributes()[[3]],collapse=", ")
+    
+    # hypothesis mining
+    log.min.sup.cij<-min.sup.cij
+    
+    col1<-c(rep("Data",4),
+            rep("Test diagnostics",1),
+            rep("Context mining",4),
+            rep("Hypothesis mining",1))
+    col2<-c("Filename",
+            "Header has attribute names",
+            "Separator",
+            "Quotes",
+            "p-value threshold",
+            "Random forest accuracy threshold",
+            "Number of context attributes to shortlist",
+            "Class ratio threshold for class-imbalance learning",
+            "Mined attributes",
+            "Min support for each cell")
+    col3<-c(log.filename,
+            log.header,
+            log.sep,
+            log.quote,
+            log.p.significant,
+            log.acc.rf.default,
+            log.top.k,
+            paste("1 : ",log.class.ratio),
+            log.mined.attr,
+            log.min.sup.cij)
+  
+    log<-data.frame(cbind(col1,col2,col3))
+    colnames(log)<-c("","","Settings")
+    rownames(log)<-NULL
+    return(log)
+  })
+
+  output$session.log<-renderTable({
+    return(Settings())
+  })
 
 }) #end shinyServer

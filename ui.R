@@ -176,11 +176,15 @@ shinyUI(pageWithSidebar(
                  tabPanel("Attributes to exclude",
                           htmlOutput("attr.to.exclude")),
                  tabPanel("Mined context attributes",
+                          progressInit(),
+                          verbatimTextOutput("run.time.tgt"),
+                          verbatimTextOutput("run.time.cmp"),
                           tableOutput("testRF1"),
                           tableOutput("testRF2"),
                           tableOutput("testRF3")),
                  tabPanel("Visualization",
                           tableOutput("contTable.ctx"),
+                          tableOutput("contTable2.ctx"),
                           sidebarPanel(
                             htmlOutput("minedAttrCtrl")),
                           plotOutput("mined.attr.viz")),
@@ -217,7 +221,8 @@ shinyUI(pageWithSidebar(
       #=============9. Session log==================#
       #=============================================#
       
-      tabPanel("9. Session log")
+      tabPanel("9. Session log",
+               tableOutput("session.log"))
       
     )#end tabset panel
   ) #end main panel
