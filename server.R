@@ -520,12 +520,23 @@ shinyServer(function(input,output,session){
       rownames(items.df)<-NULL
       colnames(items.df)<-c("Actx","vctx")
   
-      for(i in seq(nrow(items.df))){
-          attr<-items.df$Actx[i]
-          class<-items.df$vctx[i]
-          rowsToUse.ctx<-c(rowsToUse.ctx,which(dfWithCtx[,attr] == class))
+      # based on the ctx items, retrieve the rows
+      list.of.rows<-vector("list",length(ctx.attr))
+      for(i in seq(length(ctx.attr))){
+        # from items.df, find all Actx that are the same
+        # from these, need to concatenate the rowsToUse
+        # when the Actx differs, do intersect
+        where.in.items.df<-which(items.df$Actx == ctx.attr[i])
+        ctx.classes<-items.df$vctx[where.in.items.df]
+        for(a.class in ctx.classes){
+          list.of.rows[[i]]<-c(list.of.rows[[i]],which(dfWithCtx[,ctx.attr[i]] == a.class))
+        }
       }
-      rowsToUse.ctx<-unique(rowsToUse.ctx)
+      rowsToUse.ctx<-list.of.rows[[1]]
+      for(i in seq(length(list.of.rows)-1)){
+        if(length(list.of.rows) != 1) rowsToUse.ctx<-intersect(rowsToUse.ctx,list.of.rows[[i+1]])
+        # weird behavior of seq(): seq(0) == c(1,0) !
+      }
       # now, combine the rowsToUse
       rowsToUse<-intersect(rowsToUse.cmp,intersect(rowsToUse.tgt,rowsToUse.ctx))
     }
