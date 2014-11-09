@@ -14,6 +14,8 @@ WISHLIST
 
 -> difflift and contribution of the attributes as a whole, OR test
 
+-> use MH-test to complement difflift and contribution (3-way tables)
+
 -> min.sup for Tinitial
 
 -> consider all pairwise context items combinations (put dl, pvalues in a matrix)

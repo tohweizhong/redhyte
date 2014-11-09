@@ -1,5 +1,3 @@
-require(shiny)
-require(shinyIncubator)
 require(randomForest)
 source("related_codes/settings.R")
 
@@ -1129,11 +1127,16 @@ shinyServer(function(input,output,session){
     fm.cmp<-paste(" ",predictors,sep="",collapse="+")
     fm.cmp<-as.formula(paste("cmp.class","~",fm.cmp,sep=""))
     
+    print(fm.tgt)
+    print(fm.cmp)
+    
     # take the first k attributes, consider them shortlisted
     if(length(predictors) < top.k)
       k<-length(predictors)
     else
       k<-top.k
+    
+    print(k)
     
     withProgress(session, {
       setProgress(message="Mining context...",detail="This might take a while...")
@@ -1234,10 +1237,7 @@ shinyServer(function(input,output,session){
       mined.attr<-NULL
       
       if(acc.tgt >= acc.rf.default && acc.cmp < acc.rf.default){
-        
-        print(mod.tgt$importance)
-        
-        mined.attr<-rownames(mod.tgt$importance)[seq(k)]
+        mined.attr<-rownames(mod.tgt$importance)[seq(k)]        
         names(mined.attr)<-paste(mined.attr,".tgt",sep="") # adding a tail ".tgt" or ".cmp"
       }
       else if(acc.tgt < acc.rf.default && acc.cmp >= acc.rf.default){
@@ -1268,6 +1268,8 @@ shinyServer(function(input,output,session){
         }
         mined.attr<-sapply(mined.attr,FUN=remove.tail)
         
+        print(mined.attr)
+        
         # while-loop to remove duplicates in mined.attr and add new ones
         idx<-k
         while(length(unique(mined.attr)) != length(mined.attr)){
@@ -1278,6 +1280,10 @@ shinyServer(function(input,output,session){
           names(mined.attr)[(length(mined.attr))]<-original.name
           idx<-idx+1
         }
+        
+        # special case when k = 1, and both models are accurate
+        if(k == 1)
+          mined.attr<-predictors
       }
       
       #**console**#

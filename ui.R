@@ -1,3 +1,6 @@
+require(shinyIncubator)
+require(shiny)
+
 shinyUI(pageWithSidebar(
   
   titlePanel(imageOutput("logoPNG",width="180px",height="50px"),
