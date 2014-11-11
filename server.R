@@ -1688,7 +1688,7 @@ shinyServer(function(input,output,session){
     }
     
     #correct for multiple testing using Bonferroni correction
-    prop.df$pvalue.adj<-p.adjust(prop.df$pvalue, method = "fdr")
+    prop.df$pvalue.adj<-p.adjust(prop.df$pvalue, method = "bonferroni")
     # sort
     prop.df<-prop.df[with(prop.df,order(-sufficient,difflift,contri,pvalue.adj)),]
     return(prop.df)

@@ -1,5 +1,9 @@
 WISHLIST
 
+#===CRUCIAL===#
+
+-> Test diagnostics: check of iid by considering the distributions of all other attributes in the data, besides Atgt and Acmp. Use MH-test, iterate through all the variables. if TD fails, non-parametric test and/or permutation test (exchangibility), with sequential hypothesis testing. also the 1-sum(p-values from stratified tests)
+
 -> identification of outliers, removal of outliers from dataset
 
 -> sort hypotheses mdf by different metrics (user i/p)
@@ -7,10 +11,6 @@ WISHLIST
 -> Test diagnostics: navPanel(), Tinitial = t-test => both t-test and chi. else chi only
 
 -> alternative way to visualise SP in hypothesis analysis tab?
-
--> alternative models for context mining (stepwise regression, NBC)?
-
--> exclude Acmp as predictor for context mining?
 
 -> display RF VIP
 
@@ -20,7 +20,9 @@ WISHLIST
 
 -> min.sup for Tinitial
 
--> consider all pairwise context items combinations (put dl, pvalues in a matrix)
+-> alternative models for context mining (stepwise regression, NBC)?
+
+-> option to exclude Acmp as predictor for context mining
 
 -> top contributor for mined hypothesis analysis if Tinitial is collapsed x2
 
@@ -29,6 +31,8 @@ WISHLIST
 -> user i/p discretization and discretization algorithm
 
 -> An analysis log like MetaboNexus'
+
+-> play around with RF parameters
 
 -> find classic use-cases and examples datasets
 
@@ -50,3 +54,7 @@ WISHLIST
 -> flowchart/UML
 
 -> ship/deploy (gist, shinyapps.io, package)
+
+#===OPTIONAL===#
+
+-> consider all pairwise context items combinations (put dl, pvalues in a matrix)
