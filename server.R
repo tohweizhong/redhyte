@@ -35,6 +35,7 @@ shinyServer(function(input,output,session){
     path<-as.character(datFile$datapath)
     df<-read.csv(path,
                  header=input$datHeader,
+                 #row.names=ifelse(input$datRownames,1,NA),
                  sep=input$datSep,
                  quote=input$datQuote,
                  stringsAsFactors=F)
@@ -297,7 +298,7 @@ shinyServer(function(input,output,session){
       
       checkboxGroupInput("whichtgtclassesA",
                          "Indicate which target attribute classes to form group A",
-                         choices=c(.choices))
+                         choices=c(sort(.choices)))
     }
   }) #return: input$whichtgtclassesA
   output$test.tgt.class.ctrl2<-renderUI({
@@ -313,7 +314,7 @@ shinyServer(function(input,output,session){
       
       checkboxGroupInput("whichtgtclassesB",
                          "Indicate which target attribute classes to form group B",
-                         choices=c(.choices))
+                         choices=c(sort(.choices)))
     }
   }) #return: input$whichtgtclassesB
   output$test.cmp.class.ctrl1<-renderUI({
@@ -328,7 +329,7 @@ shinyServer(function(input,output,session){
       
       checkboxGroupInput("whichcmpclassesX",
                          "Indicate which comparing attribute class to form group X",
-                         choices=c(.choices))
+                         choices=c(sort(.choices)))
     }
   }) #return: input$whichcmpclassesX
   output$test.cmp.class.ctrl2<-renderUI({
@@ -343,7 +344,7 @@ shinyServer(function(input,output,session){
       
       checkboxGroupInput("whichcmpclassesY",
                          "Indicate which comparing attribute classes to form group Y",
-                         choices=c(.choices))
+                         choices=c(sort(.choices)))
     }
   }) #return: input$whichcmpclassesY
 
@@ -614,14 +615,21 @@ shinyServer(function(input,output,session){
       # the contingency table based on tgt.class = {"above/equal mean", "below mean"}
       # 131014: for now only the data.frame of means will be displayed in the UI
       
-      # first, the data.frame of means
+      # first, the data.frame of means and std deviation
       mean1<-mean(df[which(df$cmp.class == "1"),input$targetAttr])
       mean2<-mean(df[which(df$cmp.class == "2"),input$targetAttr])
+      
+      sd1<-sd(df[which(df$cmp.class == "1"),input$targetAttr])
+      sd2<-sd(df[which(df$cmp.class == "2"),input$targetAttr])
       
       means.df<-data.frame(c(mean1,mean2))
       rownames(means.df)<-c(paste(input$whichcmpclassesX,collapse="&"),
                             paste(input$whichcmpclassesY,collapse="&"))
-      colnames(means.df)<-paste("means of ",input$targetAttr,sep="")
+      
+      means.df<-cbind(means.df,c(sd1,sd2))
+      
+      colnames(means.df)<-c(paste("means of ",input$targetAttr,sep=""),
+                            paste("sd of ",input$targetAttr,sep=""))
       
       # next, the contingency table
       tab<-table(df[,c("cmp.class","tgt.class")])
@@ -642,14 +650,29 @@ shinyServer(function(input,output,session){
     tab<-Table()[[1]]
     
     if(Table()[["tab.type"]] == "Contingency"){
-      append.col<-c((tab[1,1]+tab[1,2])/sum(tab),
-                    (tab[2,1]+tab[2,2])/sum(tab))
-      append.row<-c((tab[1,1]+tab[2,1])/sum(tab),
-                    (tab[1,2]+tab[2,2])/sum(tab),
+      append.col<-c((tab[1,1]+tab[1,2]),
+                    (tab[2,1]+tab[2,2]))
+      append.row<-c((tab[1,1]+tab[2,1]),
+                    (tab[1,2]+tab[2,2]),
                     sum(tab))
+      append.col<-round(append.col,2)
+      append.row<-round(append.row,2)
+      
+      # include cell proportions in rendered table
+      cell.proportions<-c(tab[1,1]/(tab[1,1]+tab[1,2]),
+                          tab[1,2]/(tab[1,1]+tab[1,2]),
+                          tab[2,1]/(tab[2,1]+tab[2,2]),
+                          tab[2,2]/(tab[2,1]+tab[2,2]))
+      cell.proportions<-round(cell.proportions,2)
+      
+      tab[1,1]<-paste(tab[1,1]," (",cell.proportions[1],")",sep="")
+      tab[1,2]<-paste(tab[1,2]," (",cell.proportions[2],")",sep="")
+      tab[2,1]<-paste(tab[2,1]," (",cell.proportions[3],")",sep="")
+      tab[2,2]<-paste(tab[2,2]," (",cell.proportions[4],")",sep="")
+      
       tab<-cbind(tab,append.col)
       tab<-rbind(tab,append.row)
-      colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Proportions"
+      colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Total"
       return(tab)
     }
     else if(Table()[["tab.type"]] == "Comparison"){
@@ -706,14 +729,29 @@ shinyServer(function(input,output,session){
   output$contTable2<-renderTable({
     if(Table()[["tab.type"]] == "Comparison"){
       tab<-Table()[["cont.tab"]]
-      append.col<-c((tab[1,1]+tab[1,2])/sum(tab),
-                    (tab[2,1]+tab[2,2])/sum(tab))
-      append.row<-c((tab[1,1]+tab[2,1])/sum(tab),
-                    (tab[1,2]+tab[2,2])/sum(tab),
+      append.col<-c((tab[1,1]+tab[1,2]),
+                    (tab[2,1]+tab[2,2]))
+      append.row<-c((tab[1,1]+tab[2,1]),
+                    (tab[1,2]+tab[2,2]),
                     sum(tab))
+      append.col<-round(append.col,2)
+      append.row<-round(append.row,2)
+      
+      # include cell proportions in rendered table
+      cell.proportions<-c(tab[1,1]/(tab[1,1]+tab[1,2]),
+                          tab[1,2]/(tab[1,1]+tab[1,2]),
+                          tab[2,1]/(tab[2,1]+tab[2,2]),
+                          tab[2,2]/(tab[2,1]+tab[2,2]))
+      cell.proportions<-round(cell.proportions,2)
+      
+      tab[1,1]<-paste(tab[1,1]," (",cell.proportions[1],")",sep="")
+      tab[1,2]<-paste(tab[1,2]," (",cell.proportions[2],")",sep="")
+      tab[2,1]<-paste(tab[2,1]," (",cell.proportions[3],")",sep="")
+      tab[2,2]<-paste(tab[2,2]," (",cell.proportions[4],")",sep="")
+      
       tab<-cbind(tab,append.col)
       tab<-rbind(tab,append.row)
-      colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Proportions"
+      colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Total"
       return(tab)
     }
   })
@@ -761,7 +799,7 @@ shinyServer(function(input,output,session){
     if(Groupings()[[1]] == "Cate")
       statement<-paste("In the context of {",
                        ctx.items.text,
-                       "}, there is a difference in ",
+                       "}, is there a difference in ",
                        toupper(tgt.attr),
                        " between {",
                        tgt.class1.text,
@@ -773,12 +811,12 @@ shinyServer(function(input,output,session){
                        cmp.class1.text,
                        "} vs. {",
                        cmp.class2.text,
-                       "}",
+                       "}?",
                        sep="")
     else if(Groupings()[[1]] == "Cont")
       statement<-paste("In the context of {",
                        ctx.items.text,
-                       "}, there is a difference in ",
+                       "}, is there a difference in ",
                        toupper(tgt.attr),
                        " when comparing the samples on ",
                        toupper(cmp.attr),
@@ -786,7 +824,7 @@ shinyServer(function(input,output,session){
                        cmp.class1.text,
                        "} vs. {",
                        cmp.class2.text,
-                       "}",
+                       "}?",
                        sep="")
     return(statement)
   })
@@ -813,7 +851,7 @@ shinyServer(function(input,output,session){
     if(Groupings()[[1]] == "Cate")
       statement<-paste("In the context of {",
                        ctx.items.text,
-                       "}, there is a difference in ",
+                       "},is there a difference in ",
                        toupper(tgt.attr),
                        " between {",
                        tgt.class1.text,
@@ -825,12 +863,12 @@ shinyServer(function(input,output,session){
                        cmp.class1.text,
                        "} vs. {",
                        cmp.class2.text,
-                       "}",
+                       "}?",
                        sep="")
     else if(Groupings()[[1]] == "Cont")
       statement<-paste("In the context of {",
                        ctx.items.text,
-                       "}, there is a difference in ",
+                       "}, is there a difference in ",
                        toupper(tgt.attr),
                        " when comparing the samples on ",
                        toupper(cmp.attr),
@@ -838,7 +876,7 @@ shinyServer(function(input,output,session){
                        cmp.class1.text,
                        "} vs. {",
                        cmp.class2.text,
-                       "}",
+                       "}?",
                        sep="")
     return(statement)
   })
@@ -866,7 +904,7 @@ shinyServer(function(input,output,session){
     if(Groupings()[[1]] == "Cate")
       statement<-paste("In the context of {",
                        ctx.items.text,
-                       "}, there is a difference in ",
+                       "}, is there a difference in ",
                        toupper(tgt.attr),
                        " between {",
                        tgt.class1.text,
@@ -878,12 +916,12 @@ shinyServer(function(input,output,session){
                        cmp.class1.text,
                        "} vs. {",
                        cmp.class2.text,
-                       "}",
+                       "}?",
                        sep="")
     else if(Groupings()[[1]] == "Cont")
       statement<-paste("In the context of {",
                        ctx.items.text,
-                       "}, there is a difference in ",
+                       "}, is there a difference in ",
                        toupper(tgt.attr),
                        #" between {above/equal mean} vs. {below mean}",
                        " when comparing the samples on ",
@@ -892,7 +930,7 @@ shinyServer(function(input,output,session){
                        cmp.class1.text,
                        "} vs. {",
                        cmp.class2.text,
-                       "}",
+                       "}?",
                        sep="")
     return(statement)
   })
@@ -1343,20 +1381,35 @@ shinyServer(function(input,output,session){
                    minedAttributes()[[3]])
   }) #return: input$mined.attr
 
-  # contingency table of initial hypothesis
+  # contingency table of initial hypothesis in viz of mined attributes
   output$contTable.ctx<-renderTable({
     tab<-Table()[[1]]
     
     if(Table()[["tab.type"]] == "Contingency"){
-      append.col<-c((tab[1,1]+tab[1,2])/sum(tab),
-                    (tab[2,1]+tab[2,2])/sum(tab))
-      append.row<-c((tab[1,1]+tab[2,1])/sum(tab),
-                    (tab[1,2]+tab[2,2])/sum(tab),
+      append.col<-c((tab[1,1]+tab[1,2]),
+                    (tab[2,1]+tab[2,2]))
+      append.row<-c((tab[1,1]+tab[2,1]),
+                    (tab[1,2]+tab[2,2]),
                     sum(tab))
+      append.col<-round(append.col,2)
+      append.row<-round(append.row,2)
+      
+      # include cell proportions in rendered table
+      cell.proportions<-c(tab[1,1]/(tab[1,1]+tab[1,2]),
+                          tab[1,2]/(tab[1,1]+tab[1,2]),
+                          tab[2,1]/(tab[2,1]+tab[2,2]),
+                          tab[2,2]/(tab[2,1]+tab[2,2]))
+      cell.proportions<-round(cell.proportions,2)
+      
+      tab[1,1]<-paste(tab[1,1]," (",cell.proportions[1],")",sep="")
+      tab[1,2]<-paste(tab[1,2]," (",cell.proportions[2],")",sep="")
+      tab[2,1]<-paste(tab[2,1]," (",cell.proportions[3],")",sep="")
+      tab[2,2]<-paste(tab[2,2]," (",cell.proportions[4],")",sep="")
+      
       tab<-cbind(tab,append.col)
       tab<-rbind(tab,append.row)
       
-      colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Proportions"
+      colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Total"
       
       return(tab)
     }
@@ -1377,18 +1430,32 @@ shinyServer(function(input,output,session){
   output$contTable2.ctx<-renderTable({
     if(Table()[["tab.type"]] == "Comparison"){
       tab<-Table()[["cont.tab"]]
-      append.col<-c((tab[1,1]+tab[1,2])/sum(tab),
-                    (tab[2,1]+tab[2,2])/sum(tab))
-      append.row<-c((tab[1,1]+tab[2,1])/sum(tab),
-                    (tab[1,2]+tab[2,2])/sum(tab),
+      append.col<-c((tab[1,1]+tab[1,2]),
+                    (tab[2,1]+tab[2,2]))
+      append.row<-c((tab[1,1]+tab[2,1]),
+                    (tab[1,2]+tab[2,2]),
                     sum(tab))
+      append.col<-round(append.col,2)
+      append.row<-round(append.row,2)
+      
+      # include cell proportions in rendered table
+      cell.proportions<-c(tab[1,1]/(tab[1,1]+tab[1,2]),
+                          tab[1,2]/(tab[1,1]+tab[1,2]),
+                          tab[2,1]/(tab[2,1]+tab[2,2]),
+                          tab[2,2]/(tab[2,1]+tab[2,2]))
+      cell.proportions<-round(cell.proportions,2)
+      
+      tab[1,1]<-paste(tab[1,1]," (",cell.proportions[1],")",sep="")
+      tab[1,2]<-paste(tab[1,2]," (",cell.proportions[2],")",sep="")
+      tab[2,1]<-paste(tab[2,1]," (",cell.proportions[3],")",sep="")
+      tab[2,2]<-paste(tab[2,2]," (",cell.proportions[4],")",sep="")
+      
       tab<-cbind(tab,append.col)
       tab<-rbind(tab,append.row)
-      colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Proportions"
+      colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Total"
       return(tab)
     }
   })
-
 
   #render the plot for one mined attribute indicated by user
   output$mined.attr.viz<-renderPlot({
@@ -1482,6 +1549,12 @@ shinyServer(function(input,output,session){
     # compute initial n
     initial.n1<-compute.sup(cont.tab)["n1"]
     initial.n2<-compute.sup(cont.tab)["n2"]
+
+    #**console**#
+    print(paste("initial.p1: ",initial.p1))
+    print(paste("initial.p2: ",initial.p2))
+    print(paste("initial.n1: ",initial.n1))
+    print(paste("initial.n2: ",initial.n2))
     
     # create the master data.frame that has all of the following columns:
     # $ rownames: ctx items
@@ -1638,6 +1711,154 @@ shinyServer(function(input,output,session){
     prop.df<-prop.df[with(prop.df,order(-sufficient,difflift,contri,pvalue.adj)),]
     return(prop.df)
   })
+
+  output$analyse.hypothesis.statement.initial<-renderText({
+    if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
+    
+    tgt.attr<-input$targetAttr
+    cmp.attr<-input$comparingAttr
+    
+    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is cont
+    tgt.class2<-input$whichtgtclassesB # <--- could be NULL
+    cmp.class1<-input$whichcmpclassesX
+    cmp.class2<-input$whichcmpclassesY
+    
+    ctx.attr    <-input$ctxAttr
+    ctx.items   <-input$ctxItems # in the format of Actx = vctx
+    
+    ctx.items.text<-paste(ctx.items, collapse=" & ")
+    tgt.class1.text<-paste(tgt.class1,collapse=" & ")
+    tgt.class2.text<-paste(tgt.class2,collapse=" & ")
+    cmp.class1.text<-paste(cmp.class1,collapse=" & ")
+    cmp.class2.text<-paste(cmp.class2,collapse=" & ")
+    
+    if(Groupings()[[1]] == "Cate")
+      statement<-paste("In the context of {",
+                       ctx.items.text,
+                       "}, is there a difference in ",
+                       toupper(tgt.attr),
+                       " between {",
+                       tgt.class1.text,
+                       "} vs. {",
+                       tgt.class2.text,
+                       "} when comparing the samples on ",
+                       toupper(cmp.attr),
+                       " between {",
+                       cmp.class1.text,
+                       "} vs. {",
+                       cmp.class2.text,
+                       "}?",
+                       sep="")
+    else if(Groupings()[[1]] == "Cont")
+      statement<-paste("In the context of {",
+                       ctx.items.text,
+                       "}, is there a difference in ",
+                       toupper(tgt.attr),
+                       " when comparing the samples on ",
+                       toupper(cmp.attr),
+                       " between {",
+                       cmp.class1.text,
+                       "} vs. {",
+                       cmp.class2.text,
+                       "}?",
+                       sep="")
+    return(statement)
+  })
+
+  output$analyse.contTable<-renderTable({
+    tab<-Table()[[1]]
+    
+    if(Table()[["tab.type"]] == "Contingency"){
+      append.col<-c((tab[1,1]+tab[1,2]),
+                    (tab[2,1]+tab[2,2]))
+      append.row<-c((tab[1,1]+tab[2,1]),
+                    (tab[1,2]+tab[2,2]),
+                    sum(tab))
+      append.col<-round(append.col,2)
+      append.row<-round(append.row,2)
+      
+      # include cell proportions in rendered table
+      cell.proportions<-c(tab[1,1]/(tab[1,1]+tab[1,2]),
+                          tab[1,2]/(tab[1,1]+tab[1,2]),
+                          tab[2,1]/(tab[2,1]+tab[2,2]),
+                          tab[2,2]/(tab[2,1]+tab[2,2]))
+      cell.proportions<-round(cell.proportions,2)
+      
+      tab[1,1]<-paste(tab[1,1]," (",cell.proportions[1],")",sep="")
+      tab[1,2]<-paste(tab[1,2]," (",cell.proportions[2],")",sep="")
+      tab[2,1]<-paste(tab[2,1]," (",cell.proportions[3],")",sep="")
+      tab[2,2]<-paste(tab[2,2]," (",cell.proportions[4],")",sep="")
+      
+      tab<-cbind(tab,append.col)
+      tab<-rbind(tab,append.row)
+      
+      colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Total"
+      
+      return(tab)
+    }
+    else if(Table()[["tab.type"]] == "Comparison"){
+      tab<-Table()[["cont.tab"]]
+      append.col<-c((tab[1,1]+tab[1,2]),
+                    (tab[2,1]+tab[2,2]))
+      append.row<-c((tab[1,1]+tab[2,1]),
+                    (tab[1,2]+tab[2,2]),
+                    sum(tab))
+      append.col<-round(append.col,2)
+      append.row<-round(append.row,2)
+      
+      # include cell proportions in rendered table
+      cell.proportions<-c(tab[1,1]/(tab[1,1]+tab[1,2]),
+                          tab[1,2]/(tab[1,1]+tab[1,2]),
+                          tab[2,1]/(tab[2,1]+tab[2,2]),
+                          tab[2,2]/(tab[2,1]+tab[2,2]))
+      cell.proportions<-round(cell.proportions,2)
+      
+      tab[1,1]<-paste(tab[1,1]," (",cell.proportions[1],")",sep="")
+      tab[1,2]<-paste(tab[1,2]," (",cell.proportions[2],")",sep="")
+      tab[2,1]<-paste(tab[2,1]," (",cell.proportions[3],")",sep="")
+      tab[2,2]<-paste(tab[2,2]," (",cell.proportions[4],")",sep="")
+      
+      tab<-cbind(tab,append.col)
+      tab<-rbind(tab,append.row)
+      colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Total"
+      return(tab)
+    }
+  })
+
+  output$analyse.initialTest<-renderTable({
+    # 081014: only t-test and chi-squared tests are used now.
+    # no more ANOVA
+    # 2 groups only
+    
+    # check the type of table
+    if(Groupings()[[1]] == "Cate"){
+      test<-chisq.test(Table()[[1]]) #chisq.test() works on the table itself
+      stats<-test$statistic
+      pvalue<-test$p.value
+      method<-test$method
+      
+      returnMe<-as.data.frame(c(as.character(method),
+                                as.character(round(stats,3)),
+                                as.character(pvalue)))
+      rownames(returnMe)<-c("Method","Test statistic","p-value")
+      colnames(returnMe)<-"Initial chi-squared test on contingency table"
+      returnMe
+    }
+    else if(Groupings()[[1]] == "Cont"){
+      test<-chisq.test(Table()[["cont.tab"]]) #chisq.test() works on the table itself
+      stats<-test$statistic
+      pvalue<-test$p.value
+      method<-test$method
+      
+      returnMe<-as.data.frame(c(as.character(method),
+                                as.character(round(stats,3)),
+                                as.character(pvalue)))
+      rownames(returnMe)<-c("Method","Test statistic","p-value")
+      colnames(returnMe)<-"Chi-squared test on contingency table"
+      returnMe
+    }
+  })
+  # based on selected item
   output$analyse.cont.tab<-renderTable({
         
     print(input$analyse.which.item)
@@ -1655,14 +1876,30 @@ shinyServer(function(input,output,session){
     rownames(tab)<-Groupings()[[3]]
     colnames(tab)<-Groupings()[[2]]
     
-    append.col<-c((tab[1,1]+tab[1,2])/sum(tab),
-                  (tab[2,1]+tab[2,2])/sum(tab))
-    append.row<-c((tab[1,1]+tab[2,1])/sum(tab),
-                  (tab[1,2]+tab[2,2])/sum(tab),
+    append.col<-c((tab[1,1]+tab[1,2]),
+                  (tab[2,1]+tab[2,2]))
+    append.row<-c((tab[1,1]+tab[2,1]),
+                  (tab[1,2]+tab[2,2]),
                   sum(tab))
+    
+    append.col<-round(append.col,2)
+    append.row<-round(append.row,2)
+    
+    # include cell proportions in rendered table
+    cell.proportions<-c(tab[1,1]/(tab[1,1]+tab[1,2]),
+                        tab[1,2]/(tab[1,1]+tab[1,2]),
+                        tab[2,1]/(tab[2,1]+tab[2,2]),
+                        tab[2,2]/(tab[2,1]+tab[2,2]))
+    cell.proportions<-round(cell.proportions,2)
+    
+    tab[1,1]<-paste(tab[1,1]," (",cell.proportions[1],")",sep="")
+    tab[1,2]<-paste(tab[1,2]," (",cell.proportions[2],")",sep="")
+    tab[2,1]<-paste(tab[2,1]," (",cell.proportions[3],")",sep="")
+    tab[2,2]<-paste(tab[2,2]," (",cell.proportions[4],")",sep="")
+    
     tab<-cbind(tab,append.col)
     tab<-rbind(tab,append.row)
-    colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Proportions"
+    colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Total"
     return(tab)
   })
   output$analyse.test<-renderTable({
@@ -1716,7 +1953,7 @@ shinyServer(function(input,output,session){
     if(Groupings()[[1]] == "Cate")
       statement<-paste("In the context of {",
                        ctx.items.text,
-                       "}, there is a difference in ",
+                       "}, is there a difference in ",
                        toupper(tgt.attr),
                        " between {",
                        tgt.class1.text,
@@ -1728,12 +1965,12 @@ shinyServer(function(input,output,session){
                        cmp.class1.text,
                        "} vs. {",
                        cmp.class2.text,
-                       "}",
+                       "}?",
                        sep="")
     else if(Groupings()[[1]] == "Cont")
       statement<-paste("In the context of {",
                        ctx.items.text,
-                       "}, there is a difference in ",
+                       "}, is there a difference in ",
                        toupper(tgt.attr),
                        " when comparing the samples on ",
                        toupper(cmp.attr),

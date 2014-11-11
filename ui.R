@@ -18,6 +18,7 @@ shinyUI(pageWithSidebar(
     tags$hr(),
     #checkbox to indicate header == true or false
     checkboxInput('datHeader','Header contains attribute names', TRUE),
+    checkboxInput("datRownames","Row names present in file",FALSE),
     tags$hr(),
     #file type
     radioButtons('datSep',
@@ -191,7 +192,7 @@ shinyUI(pageWithSidebar(
                           sidebarPanel(
                             htmlOutput("minedAttrCtrl")),
                           plotOutput("mined.attr.viz")),
-                 widths=c(3,9))),
+                 widths=c(3,9),selected="Attributes to exclude")),
       
       #=============================================#
       #===========7. Hypothesis mining==============#
@@ -214,6 +215,10 @@ shinyUI(pageWithSidebar(
                             width=4),
                           tableOutput("analyse.hypothesis")),
                  tabPanel("Analysis",
+                          tags$h5("Initial hypothesis:"),
+                          verbatimTextOutput("analyse.hypothesis.statement.initial"),
+                          tableOutput("analyse.contTable"),
+                          tableOutput("analyse.initialTest"),
                           tags$h5("Mined hypothesis:"),
                           verbatimTextOutput("analyse.hypothesis.statement"),
                           tableOutput("analyse.cont.tab"),
