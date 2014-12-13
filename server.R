@@ -35,7 +35,7 @@ shinyServer(function(input,output,session){
     path<-as.character(datFile$datapath)
     df<-read.csv(path,
                  header=input$datHeader,
-                 #row.names=ifelse(input$datRownames,1,NA),
+                 #row.names=ifelse(input$datRownames,1,NULL),
                  sep=input$datSep,
                  quote=input$datQuote,
                  stringsAsFactors=F)
@@ -246,6 +246,63 @@ shinyServer(function(input,output,session){
     type
   })
   
+  Ctx.state<-reactive({
+    
+    # did not do the subsetting of data yet!
+    
+    tgt.attr<-input$targetAttr
+    cmp.attr<-input$comparingAttr
+    ctx.attr<-input$ctxAttr
+    
+    print(tgt.attr)
+    print(cmp.attr)
+    print(ctx.attr)
+    
+    tgt.attr.sup<-NULL
+    cmp.attr.sup<-NULL
+    ctx.attr.sup<-NULL
+    
+    # based on the attributes, find the support for their classes
+    
+    if(!is.null(tgt.attr)){
+      if(Data()[[2]][tgt.attr] == "Cate"){
+        classes<-unique(Data()[[1]][,tgt.attr])
+        for(c in classes)
+          tgt.attr.sup<-c(tgt.attr.sup,
+                          length(which(Data()[[1]][,tgt.attr] == c)))
+      }
+    }
+    
+    if(!is.null(cmp.attr)){
+      if(Data()[[2]][cmp.attr] == "Cate"){
+        classes<-unique(Data()[[1]][cmp.attr])
+        for(c in classes)
+          cmp.attr.sup<-c(cmp.attr.sup,
+                          length(which(Data()[[1]][,cmp.attr] == c)))
+      }
+    }
+    
+    if(!is.null(ctx.attr)){
+      for(a.ctx.attr in ctx.attr){
+        if(Data()[[2]][a.ctx.attr] == "Cate"){ #always true
+          classes<-unique(Data()[[1]][,a.ctx.attr])
+          for(c in classes)
+            ctx.attr.sup<-c(ctx.attr.sup,
+                            length(which(Data()[[1]][,a.ctx.attr] == c)))
+        }
+      }
+    }
+    
+    print(tgt.attr.sup)
+    print(cmp.attr.sup)
+    print(ctx.attr.sup)
+    
+    return(list(tgt.attr.sup=tgt.attr.sup,
+                cmp.attr.sup=cmp.attr.sup,
+                ctx.attr.sup=ctx.attr.sup
+                ))
+  })
+  
 #   Data1.1<-reactive({
 #     
 #     cur.df<-Data()[[1]]
@@ -290,9 +347,14 @@ shinyServer(function(input,output,session){
     if(Data()[[2]][input$targetAttr] == "Cate"){
       .choices<-unique(Data()[[1]][,input$targetAttr])
       .names<-NULL
+      
+      i<-1
       for(c in .choices){
+  
+        #sup<-Ctx.state()[[1]][i]
         sup<-length(which(Data()[[1]][,input$targetAttr] == c))
         .names<-c(.names,paste(c," (",sup,")",sep=""))
+        i<-i+1
       }
       names(.choices)<-.names
       
@@ -1706,9 +1768,36 @@ shinyServer(function(input,output,session){
   output$analyse.ctrl<-renderUI({
     selectizeInput("analyse.which.item","Select context item",rownames(Hypotheses()))
   })
+
+  output$analyse.sort.ctrl.one<-renderUI({
+    selectizeInput("analyse.sort.one","Sort first by?",
+                   c("sufficient","SP","difflift",	"contri",	"pvalue",	"pvalue.adj"))
+  })
+
+  output$analyse.sort.ctrl.two<-renderUI({
+    selectizeInput("analyse.sort.two","Then by?",
+                   c("sufficient","SP","difflift",  "contri",	"pvalue",	"pvalue.adj"))
+  })
+
   output$analyse.hypothesis<-renderTable({
     prop.df<-subset(Hypotheses(),select=c(sufficient,SP,difflift,contri,pvalue,pvalue.adj))
-    prop.df<-prop.df[with(prop.df,order(-sufficient,difflift,contri,pvalue.adj)),]
+    
+    sort.first.by<-which(colnames(prop.df) == input$analyse.sort.one)
+    then.by<-which(colnames(prop.df) == input$analyse.sort.two)
+    
+    # sort descendingly for sufficient and SP only
+    if((sort.first.by == 1 || sort.first.by == 2) && (then.by == 1 || then.by == 2))
+        prop.df<-prop.df[order(-prop.df[,sort.first.by],-prop.df[,then.by]),]
+    
+    else if((sort.first.by == 1 || sort.first.by == 2) && (then.by != 1 && then.by != 2))
+        prop.df<-prop.df[order(-prop.df[,sort.first.by],prop.df[,then.by]),]
+    
+    else if((sort.first.by != 1 && sort.first.by != 2) && (then.by == 1 && then.by == 2))
+        prop.df<-prop.df[order(prop.df[,sort.first.by],-prop.df[,then.by]),]
+    
+    else
+      prop.df<-prop.df[order(prop.df[,sort.first.by],prop.df[,then.by]),]
+    
     return(prop.df)
   })
 

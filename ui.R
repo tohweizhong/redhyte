@@ -80,7 +80,7 @@ shinyUI(pageWithSidebar(
                           tableOutput("viz.tukeyfive2"),
                           plotOutput("viz.hist2")),
                           #plotOutput("viz.boxplot2")),
-                 tabPanel("Bivariate",
+                 tabPanel("Relationship",
                           plotOutput("viz.scatterplot")),
                  tabPanel("Multivariate",
                           tags$h6("PCA score plot?")),
@@ -212,6 +212,8 @@ shinyUI(pageWithSidebar(
                  tabPanel("Select context item",
                           sidebarPanel(
                             htmlOutput("analyse.ctrl"),
+                            htmlOutput("analyse.sort.ctrl.one"),
+                            htmlOutput("analyse.sort.ctrl.two"),
                             width=4),
                           tableOutput("analyse.hypothesis")),
                  tabPanel("Analysis",
