@@ -54,11 +54,9 @@ shinyServer(function(input,output,session){
     typ<-NULL
     numCl<-NULL
     for(i in seq(ncol(df))){
-      if(is.numeric(df[,i])){ # <--- POSSIBLE SOURCE OF BUG, BECAUSE THIS IS A LITTLE HARD-CODING HERE
-        if(length(unique(df[,i]))>5){
-          typ<-c(typ,"Cont")
-          numCl<-c(numCl,NA)
-        }
+      if(is.numeric(df[,i]) && length(unique(df[,i]))>5){
+        typ<-c(typ,"Cont")
+        numCl<-c(numCl,NA)
       }
       else{
         typ<-c(typ,"Cate")
@@ -1399,14 +1397,18 @@ shinyServer(function(input,output,session){
                                            cm.cmp,
                                            mined.attr,
                                            run.time.tgt=run.time.tgt,
-                                           run.time.cmp=run.time.cmp))
+                                           run.time.cmp=run.time.cmp,
+                                           mod.tgt=mod.tgt,
+                                           mod.cmp=mod.cmp))
       
       #both mod.tgt and mod.cmp are inaccurate, therefore no mined attributes
       else return(list(cm.tgt,
                        cm.cmp,
                        NULL,
                        run.time.tgt=run.time.tgt,
-                       run.time.cmp=run.time.cmp))
+                       run.time.cmp=run.time.cmp,
+                       mod.tgt=mod.tgt,
+                       mod.cmp=mod.cmp))
     })
   })
   
@@ -1442,6 +1444,14 @@ shinyServer(function(input,output,session){
                    "Which mined attribute?",
                    minedAttributes()[[3]])
   }) #return: input$mined.attr
+
+  # variable importance plot of RF models
+  output$VIplot.tgt<-renderPlot({
+    varImpPlot(minedAttributes()[["mod.tgt"]],main="Variable Importance for Target Model")
+  })
+  output$VIplot.cmp<-renderPlot({
+    varImpPlot(minedAttributes()[["mod.cmp"]],main="Variable Importance for Comparing Model")
+  })
 
   # contingency table of initial hypothesis in viz of mined attributes
   output$contTable.ctx<-renderTable({

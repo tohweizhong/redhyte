@@ -8,13 +8,9 @@ WISHLIST
 
 -> identification of outliers, removal of outliers from dataset
 
--> sort hypotheses mdf by different metrics (user i/p)
-
 -> Test diagnostics: navPanel(), Tinitial = t-test => both t-test and chi. else chi only
 
 -> alternative way to visualise SP in hypothesis analysis tab?
-
--> display RF VIP
 
 -> difflift and contribution of the attributes as a whole, OR test
 
