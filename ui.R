@@ -18,7 +18,7 @@ shinyUI(pageWithSidebar(
     tags$hr(),
     #checkbox to indicate header == true or false
     checkboxInput('datHeader','Header contains attribute names', TRUE),
-    checkboxInput("datRownames","Row names present in file",FALSE),
+    #checkboxInput("datRownames","Row names present in file",FALSE),
     tags$hr(),
     #file type
     radioButtons('datSep',
@@ -150,17 +150,20 @@ shinyUI(pageWithSidebar(
                tags$h6("Objectives:"),
                tags$h6("-> if Tinitial is t-test, check parametric assumptions"),
                tags$h6("-> if Tinitial is collapsed chi-squared test, find top contributor in the Acmp classes"),
+               tags$h6("-> for both t-test and collapsed chi-squared test, use Cochran-Mantel-Haenszel Chi-Squared Test to identify potential confounders"),
                tags$h5("Your hypothesis:"),
                verbatimTextOutput("hypothesis.statement.td"),
                navlistPanel(
                  tabPanel("t-test",
                           tableOutput("KStest"),
                           tableOutput("Ftest"),
-                          tableOutput("MWtest")),
+                          tableOutput("MWtest"),
+                          tableOutput("MHtest.cont")),
                  tabPanel("Chi-squared test",
                           tableOutput("flat.table"),
                           tableOutput("flat.chi.sq"),
-                          tableOutput("chi.sq.top")))),
+                          tableOutput("chi.sq.top"),
+                          tableOutput("MHtest.cate")))),
       #half implemented, will come back to this
       
       #=============================================#

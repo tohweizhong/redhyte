@@ -616,8 +616,7 @@ shinyServer(function(input,output,session){
                                   else if(x %in% grpY.classes) return("2")})
     
     # For the contexted data stored in memory as a data.frame,
-    # tgt.class and cmp.class do not contain the Atgt.names and Acmp.names
-    # as per in Groupings()
+    # tgt.class and cmp.class do not contain the Atgt.names and Acmp.names as per in Groupings()
     # they only contain "above/equal mean"/"below mean" or "1"/"2"
     
     #add the attribute type for the cutoff attribute
@@ -632,7 +631,7 @@ shinyServer(function(input,output,session){
   })
   
   #***************END REACTIVE*******************#
-  
+
   # display contexted data
   output$ctx.data<-renderTable({
     data.frame(Data()[[1]][1:input$ctxRows,])
@@ -833,9 +832,6 @@ shinyServer(function(input,output,session){
     }
   })
 
-
-
-
   output$hypothesis.statement.it<-renderText({
     if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
     
@@ -998,9 +994,6 @@ shinyServer(function(input,output,session){
   #=============================================#
   #============4. Test diagnostics==============#
   #=============================================#
-
-  # test diagnostics for t-test and ANOVA only  
-  # not implemented yet
   
   #***************REACTIVE**********************#
   
@@ -1085,7 +1078,96 @@ shinyServer(function(input,output,session){
         returnMe
       }
     }
-  })  
+  })
+  output$MHtest.cont<-renderTable({
+    df<-Data2()[[1]]
+    
+    # create a data.frame with the same attributes, but all discretized
+    df.dis<-NULL
+    for(j in seq(ncol(df))){
+      if(Data2()[[2]][j] == "Cate") df.dis<-cbind(df.dis,df[,j])
+      else if(Data2()[[2]][j] == "Cont"){
+        attr.name<-colnames(df)[j]
+        m<-mean(df[,j])
+        vec<-NULL
+        for(i in seq(nrow(df))){
+          if(df[i,j] >= m) vec<-c(vec,paste(attr.name,"above or equal mean",sep=" "))
+          else if(df[i,j] < m) vec<-c(vec,paste(attr.name,"below mean",sep=" "))
+        }
+        df.dis<-cbind(df.dis,vec)
+      }
+    }
+    
+    df.dis<-data.frame(df.dis)
+    colnames(df.dis)<-colnames(df)
+    
+    # now, for each attribute that is not the Atgt or Acmp,
+    # use Atgt or Acmp as 3rd attribute
+    # stratify the data according to the classes of the 3rd attribute
+    # and create a 2 x K x 2 table for each attribute
+    # finally, do a MH-test
+    
+    MH.df<-NULL
+    for(j in seq(ncol(df.dis))){
+      if(colnames(df.dis)[j] != "tgt.class" 
+         && colnames(df.dis)[j] != "cmp.class"
+         && colnames(df.dis)[j] != input$targetAttr
+         && colnames(df.dis)[j] != input$comparingAttr){
+        
+        # firstly, for Acmp as 3rd attribute
+        
+        df.tmp<-df.dis[,"tgt.class"]
+        df.tmp<-cbind(df.tmp,df.dis[,j])
+        df.tmp<-cbind(df.tmp,df.dis[,"cmp.class"])
+        
+        df.tmp<-data.frame(df.tmp)
+        tab<-table(df.tmp)
+        
+        sup<-as.vector(tab)
+        if(any(sup <= 0))
+          MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
+                               input$comparingAttr,
+                               "Insufficient",
+                               "Insufficient"))
+        else{
+          test<-mantelhaen.test(tab)
+          stats<-test$statistic
+          pvalue<-test$p.value
+          
+          MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
+                               input$comparingAttr,
+                               round(stats,3),
+                               round(pvalue,3)))
+        }
+        
+        # now for Atgt as 3rd attribute
+        df.tmp<-df.dis[,"cmp.class"]
+        df.tmp<-cbind(df.tmp,df.dis[,j])
+        df.tmp<-cbind(df.tmp,df.dis[,"tgt.class"])
+        
+        df.tmp<-data.frame(df.tmp)
+        sup<-as.vector(tab)
+        if(any(sup <= 0))
+          MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
+                               input$targetAttr,
+                               "Insufficient",
+                               "Insufficient"))
+        else{
+          test<-mantelhaen.test(tab)
+          stats<-test$statistic
+          pvalue<-test$p.value
+          
+          MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
+                               input$targetAttr,
+                               round(stats,3),
+                               round(pvalue,3)))
+        }
+      }
+    }
+    
+    colnames(MH.df)<-c("Attribute","3rd Attribute","Mantel-Haenszel Chi-squared","p-value")
+    return(MH.df)
+  })
 
   output$flat.table<-renderTable({
     if(Test()[["test.type"]] == "collapsed.chi.sq"){
@@ -1134,6 +1216,100 @@ shinyServer(function(input,output,session){
       return(chisq.contri)
     }
   })
+  output$MHtest.cate<-renderTable({
+    df<-Data2()[[1]]
+    
+    # create a data.frame with the same attributes, but all discretized
+    # can re-use code in Data3()
+    df.dis<-NULL
+    for(j in seq(ncol(df))){
+      if(Data2()[[2]][j] == "Cate") df.dis<-cbind(df.dis,df[,j])
+      else if(Data2()[[2]][j] == "Cont"){
+        attr.name<-colnames(df)[j]
+        m<-mean(df[,j])
+        vec<-NULL
+        for(i in seq(nrow(df))){
+          if(df[i,j] >= m) vec<-c(vec,paste(attr.name,"above or equal mean",sep=" "))
+          else if(df[i,j] < m) vec<-c(vec,paste(attr.name,"below mean",sep=" "))
+        }
+        df.dis<-cbind(df.dis,vec)
+      }
+    }
+    
+    df.dis<-data.frame(df.dis)
+    colnames(df.dis)<-colnames(df)
+    
+    # now, for each attribute that is not the Atgt or Acmp,
+    # use Atgt or Acmp as 3rd attribute
+    # stratify the data according to the classes of the 3rd attribute
+    # and create a 2 x K x 2 table for each attribute
+    # finally, do a MH-test
+    
+    MH.df<-NULL
+    for(j in seq(ncol(df.dis))){
+      if(colnames(df.dis)[j] != "tgt.class" 
+         && colnames(df.dis)[j] != "cmp.class"
+         && colnames(df.dis)[j] != input$targetAttr
+         && colnames(df.dis)[j] != input$comparingAttr){
+        
+        # firstly, for Acmp as 3rd attribute
+        
+        df.tmp<-df.dis[,"tgt.class"]
+        df.tmp<-cbind(df.tmp,df.dis[,j])
+        df.tmp<-cbind(df.tmp,df.dis[,"cmp.class"])
+        
+        df.tmp<-data.frame(df.tmp)
+        tab<-table(df.tmp)
+        
+        sup<-as.vector(tab)
+        if(any(sup <= 0))
+          MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
+                               input$comparingAttr,
+                               "Insufficient",
+                               "Insufficient"))
+        else{
+          test<-mantelhaen.test(tab)
+          stats<-test$statistic
+          pvalue<-test$p.value
+          
+          MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
+                               input$comparingAttr,
+                               round(stats,3),
+                               round(pvalue,3)))
+        }
+        
+        # now for Atgt as 3rd attribute
+        df.tmp<-df.dis[,"cmp.class"]
+        df.tmp<-cbind(df.tmp,df.dis[,j])
+        df.tmp<-cbind(df.tmp,df.dis[,"tgt.class"])
+        
+        df.tmp<-data.frame(df.tmp)
+        tab<-table(df.tmp)
+        
+        sup<-as.vector(tab)
+        if(any(sup <= 0))
+          MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
+                               input$targetAttr,
+                               "Insufficient",
+                               "Insufficient"))
+        else{
+          test<-mantelhaen.test(tab)
+          stats<-test$statistic
+          pvalue<-test$p.value
+          
+          MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
+                               input$targetAttr,
+                               round(stats,3),
+                               round(pvalue,3)))
+        }
+      }
+    }
+    
+    colnames(MH.df)<-c("Attribute","3rd Attribute","Mantel-Haenszel Chi-squared","p-value")
+    return(MH.df)
+    
+  })
+
 
   #***************REACTIVE**********************#
   
