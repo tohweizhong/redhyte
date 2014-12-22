@@ -1081,27 +1081,27 @@ shinyServer(function(input,output,session){
   })
   output$MHtest.cont<-renderTable({
     if(Groupings()[["Atgt.type"]] == "Cont"){
-      df<-Data2()[[1]]
       
-      # create a data.frame with the same attributes, but all discretized
-      df.dis<-NULL
-      for(j in seq(ncol(df))){
-        if(Data2()[[2]][j] == "Cate") df.dis<-cbind(df.dis,df[,j])
-        else if(Data2()[[2]][j] == "Cont"){
-          attr.name<-colnames(df)[j]
-          m<-mean(df[,j])
-          vec<-NULL
-          for(i in seq(nrow(df))){
-            if(df[i,j] >= m) vec<-c(vec,paste(attr.name,"above or equal mean",sep=" "))
-            else if(df[i,j] < m) vec<-c(vec,paste(attr.name,"below mean",sep=" "))
-          }
-          df.dis<-cbind(df.dis,vec)
-        }
+      df<-Data2()[[1]]
+      attr.type<-Data2()[[2]]
+      
+      #change all continuous attributes to categorical before hypothesis mining
+      #discretise by the mean
+      mean.discre<-function(an.attr){
+        m<-mean(df[,an.attr])
+        new.col<-sapply(df[,an.attr],
+                        FUN=function(x){
+                          if(x>=m) return("above/equal mean")
+                          else return("below mean")})
+        return(new.col)
       }
       
-      df.dis<-data.frame(df.dis)
-      colnames(df.dis)<-colnames(df)
+      which.are.cont<-which(attr.type == "Cont")
+      for(an.attr in which.are.cont)
+        df[,an.attr]<-mean.discre(an.attr)
       
+      df.dis<-df # discretized
+
       # now, for each attribute that is not the Atgt or Acmp,
       # use Atgt or Acmp as 3rd attribute
       # stratify the data according to the classes of the 3rd attribute
@@ -1222,26 +1222,24 @@ shinyServer(function(input,output,session){
     
     if(Groupings()[["Atgt.type"]] == "Cate"){
       df<-Data2()[[1]]
+      attr.type<-Data2()[[2]]
       
-      # create a data.frame with the same attributes, but all discretized
-      # can re-use code in Data3()
-      df.dis<-NULL
-      for(j in seq(ncol(df))){
-        if(Data2()[[2]][j] == "Cate") df.dis<-cbind(df.dis,df[,j])
-        else if(Data2()[[2]][j] == "Cont"){
-          attr.name<-colnames(df)[j]
-          m<-mean(df[,j])
-          vec<-NULL
-          for(i in seq(nrow(df))){
-            if(df[i,j] >= m) vec<-c(vec,paste(attr.name,"above or equal mean",sep=" "))
-            else if(df[i,j] < m) vec<-c(vec,paste(attr.name,"below mean",sep=" "))
-          }
-          df.dis<-cbind(df.dis,vec)
-        }
+      #change all continuous attributes to categorical before hypothesis mining
+      #discretise by the mean
+      mean.discre<-function(an.attr){
+        m<-mean(df[,an.attr])
+        new.col<-sapply(df[,an.attr],
+                        FUN=function(x){
+                          if(x>=m) return("above/equal mean")
+                          else return("below mean")})
+        return(new.col)
       }
       
-      df.dis<-data.frame(df.dis)
-      colnames(df.dis)<-colnames(df)
+      which.are.cont<-which(attr.type == "Cont")
+      for(an.attr in which.are.cont)
+        df[,an.attr]<-mean.discre(an.attr)
+      
+      df.dis<-df # discretized
       
       # now, for each attribute that is not the Atgt or Acmp,
       # use Atgt or Acmp as 3rd attribute

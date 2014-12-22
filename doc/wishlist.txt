@@ -4,8 +4,6 @@ WISHLIST
 
 -> implement Bayesian lift
 
--> Test diagnostics: if TD fails, non-parametric test and/or permutation test (exchangibility), with sequential hypothesis testing. also the 1-sum(p-values from stratified tests)
-
 -> Test diagnostics: navPanel(), Tinitial = t-test => both t-test and chi. else chi only
 
 -> alternative way to visualise SP in hypothesis analysis tab?
@@ -15,8 +13,6 @@ WISHLIST
 -> use MH-test to complement difflift and contribution (3-way tables)
 
 -> min.sup for Tinitial
-
--> alternative models for context mining (stepwise regression, NBC)?
 
 -> option to exclude Acmp as predictor for context mining
 
@@ -52,6 +48,10 @@ WISHLIST
 -> ship/deploy (gist, shinyapps.io, package)
 
 #===OPTIONAL===#
+
+-> alternative models for context mining (stepwise regression, NBC)?
+
+-> Test diagnostics: if TD fails, non-parametric test and/or permutation test (exchangibility), with sequential hypothesis testing. also the 1-sum(p-values from stratified tests)
 
 -> consider all pairwise context items combinations (put dl, pvalues in a matrix)
 
