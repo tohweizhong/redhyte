@@ -658,14 +658,26 @@ shinyServer(function(input,output,session){
     if(Data2()[[2]][input$targetAttr] == "Cate"){
       tab<-table(df[,c("cmp.class","tgt.class")])
       # cmp.class is rows, tgt.class is columns
-      rownames(tab)<-c(paste(input$whichcmpclassesX,collapse="&"),
-                       paste(input$whichcmpclassesY,collapse="&"))
-      colnames(tab)<-c(paste(input$whichtgtclassesA,collapse="&"),
-                       paste(input$whichtgtclassesB,collapse="&"))
+      if(nrow(tab)*ncol(tab) == 4){
+        rownames(tab)<-c(paste(input$whichcmpclassesX,collapse="&"),
+                         paste(input$whichcmpclassesY,collapse="&"))
+        colnames(tab)<-c(paste(input$whichtgtclassesA,collapse="&"),
+                         paste(input$whichtgtclassesB,collapse="&"))
+        
+        return(list(cont.tab=tab,
+                    tab.type="Contingency",
+                    tab.df=df,
+                    sufficient="Sufficient"))
       
-      return(list(cont.tab=tab,
-                  tab.type="Contingency",
-                  tab.df=df))
+      }
+      else{
+        tab<-data.frame("Insufficient support for hypothesis")
+        colnames(tab)<-""
+        return(list(cont.tab=tab,
+                    tab.type="Contingency",
+                    tab.df=df,
+                    sufficient="Insufficient"))
+      }
     }
     
     else{ #target attribute is continuous
@@ -674,31 +686,45 @@ shinyServer(function(input,output,session){
       # the contingency table based on tgt.class = {"above/equal mean", "below mean"}
       # 131014: for now only the data.frame of means will be displayed in the UI
       
-      # first, the data.frame of means and std deviation
-      mean1<-mean(df[which(df$cmp.class == "1"),input$targetAttr])
-      mean2<-mean(df[which(df$cmp.class == "2"),input$targetAttr])
+      if(length(which(df$cmp.class == "1")) !=  0
+         && length(which(df$cmp.class == "2")) != 0){
       
-      sd1<-sd(df[which(df$cmp.class == "1"),input$targetAttr])
-      sd2<-sd(df[which(df$cmp.class == "2"),input$targetAttr])
-      
-      means.df<-data.frame(c(mean1,mean2))
-      rownames(means.df)<-c(paste(input$whichcmpclassesX,collapse="&"),
-                            paste(input$whichcmpclassesY,collapse="&"))
-      
-      means.df<-cbind(means.df,c(sd1,sd2))
-      
-      colnames(means.df)<-c(paste("means of ",input$targetAttr,sep=""),
-                            paste("sd of ",input$targetAttr,sep=""))
-      
-      # next, the contingency table
-      tab<-table(df[,c("cmp.class","tgt.class")])
-      rownames(tab)<-Groupings()[[3]] # Acmp, cmp.class
-      colnames(tab)<-Groupings()[[2]] # Atgt, tgt.class
-      
-      return(list(means.df=means.df,
-                  cont.tab=tab,
-                  tab.type="Comparison",
-                  tab.df=df))
+        # first, the data.frame of means and std deviation
+        mean1<-mean(df[which(df$cmp.class == "1"),input$targetAttr])
+        mean2<-mean(df[which(df$cmp.class == "2"),input$targetAttr])
+        
+        sd1<-sd(df[which(df$cmp.class == "1"),input$targetAttr])
+        sd2<-sd(df[which(df$cmp.class == "2"),input$targetAttr])
+        
+        means.df<-data.frame(c(mean1,mean2))
+        rownames(means.df)<-c(paste(input$whichcmpclassesX,collapse="&"),
+                              paste(input$whichcmpclassesY,collapse="&"))
+        
+        means.df<-cbind(means.df,c(sd1,sd2))
+        
+        colnames(means.df)<-c(paste("means of ",input$targetAttr,sep=""),
+                              paste("sd of ",input$targetAttr,sep=""))
+        
+        # next, the contingency table
+        tab<-table(df[,c("cmp.class","tgt.class")])
+        rownames(tab)<-Groupings()[[3]] # Acmp, cmp.class
+        colnames(tab)<-Groupings()[[2]] # Atgt, tgt.class
+        
+        return(list(means.df=means.df,
+                    cont.tab=tab,
+                    tab.type="Comparison",
+                    tab.df=df,
+                    sufficient="Sufficient"))
+      }
+      else{
+        tab<-data.frame("Insufficent support for hypothesis")
+        colnames(tab)<-""
+        return(list(means.df=df,
+                    cont.tab=tab,
+                    tab.type="Comparison",
+                    tab.df=df,
+                    sufficient="Insufficient"))
+      }
     }
   })
 
@@ -708,7 +734,7 @@ shinyServer(function(input,output,session){
   output$contTable<-renderTable({
     tab<-Table()[[1]]
     
-    if(Table()[["tab.type"]] == "Contingency"){
+    if(Table()[["tab.type"]] == "Contingency" && Table()[["sufficient"]] == "Sufficient"){
       append.col<-c((tab[1,1]+tab[1,2]),
                     (tab[2,1]+tab[2,2]))
       append.row<-c((tab[1,1]+tab[2,1]),
@@ -734,7 +760,7 @@ shinyServer(function(input,output,session){
       colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Total"
       return(tab)
     }
-    else if(Table()[["tab.type"]] == "Comparison"){
+    else if(Table()[["tab.type"]] == "Comparison" && Table()[["sufficient"]] == "Sufficient"){
       
       cont.tab<-Table()[["cont.tab"]]
       append.col<-c((cont.tab[1,1]+cont.tab[1,2])/sum(cont.tab),
@@ -746,8 +772,8 @@ shinyServer(function(input,output,session){
       colnames(tab)[ncol(tab)]<-"Proportions"
       return(tab)
     }
+    return(Table()[["cont.tab"]])
   })
-
   #initial parametric test
   output$initialTest<-renderTable({
     # 081014: only t-test and chi-squared tests are used now.
@@ -755,7 +781,7 @@ shinyServer(function(input,output,session){
     # 2 groups only
 
     # check the type of table
-    if(Groupings()[[1]] == "Cate"){
+    if(Groupings()[[1]] == "Cate" && Table()[["sufficient"]] == "Sufficient"){
       test<-chisq.test(Table()[[1]]) #chisq.test() works on the table itself
       stats<-test$statistic
       pvalue<-test$p.value
@@ -768,7 +794,7 @@ shinyServer(function(input,output,session){
       colnames(returnMe)<-"Initial chi-squared test on contingency table"
       returnMe
     }
-    else if(Groupings()[[1]] == "Cont"){
+    else if(Groupings()[[1]] == "Cont" && Table()[["sufficient"]] == "Sufficient"){
       #t-test
       test<-t.test(Data2()[[1]][,input$targetAttr]~Data2()[[1]]$cmp.class) #t-test bug resolved
       stats<-test$statistic
@@ -814,7 +840,6 @@ shinyServer(function(input,output,session){
       return(tab)
     }
   })
-
   output$initialTest2<-renderTable({
     
     if(Groupings()[[1]] == "Cont"){
@@ -832,6 +857,7 @@ shinyServer(function(input,output,session){
     }
   })
 
+  # hypothesis statements
   output$hypothesis.statement.it<-renderText({
     if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
     
@@ -1001,6 +1027,10 @@ shinyServer(function(input,output,session){
     if(Table()[["tab.type"]] == "Comparison"){
       test.type<-"t.test"
       test<-t.test(Data2()[[1]][,input$targetAttr]~Data2()[[1]]$cmp.class)
+      if(length(input$whichcmpclassesX) > 1 || length(input$whichcmpclassesY) > 1){
+        second.test.type<-"collapsed.chi.sq"
+      }
+      else second.test.type<-"chi.sq"
     }
     else if(Table()[["tab.type"]] == "Contingency"){
       test<-chisq.test(Table()[[1]])
@@ -1009,11 +1039,22 @@ shinyServer(function(input,output,session){
       }
       else
         test.type<-"chi.sq"
+      second.test.type<-NULL
     }
-    return(list(test=test,test.type=test.type))
+    return(list(test=test,
+                test.type=test.type,
+                second.test.type=second.test.type))
   })
   
   #***************END REACTIVE*******************#
+
+  # Test diagnostics for continuous Atgt:
+  # -> K-S test for normality
+  # -> F-test for equal variances
+  # -> M-W test for either of the both fails
+  # -> display flat table
+  # -> do flat chi-sq test, find top contributor
+  # -> M-H test for 3rd attribute association (assumes no 3-way interaction)
 
   output$KStest<-renderTable({
     if(Test()[["test.type"]] == "t.test"){
@@ -1147,6 +1188,8 @@ shinyServer(function(input,output,session){
           df.tmp<-cbind(df.tmp,df.dis[,"tgt.class"])
           
           df.tmp<-data.frame(df.tmp)
+          tab<-table(df.tmp)
+          
           sup<-as.vector(tab)
           if(any(sup <= 0) || length(sup) < 6)
             MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
@@ -1170,8 +1213,60 @@ shinyServer(function(input,output,session){
       return(MH.df)
     }
   })
+  output$flat.table.cont<-renderTable({
+    if(Test()[["test.type"]] == "t.test"
+       && Test()[["second.test.type"]] == "collapsed.chi.sq"){
+      tab.df<-Table()[["tab.df"]][,c(2:3)] # ony Acmp and tgt.class, no cmp.class
+      tab<-table(tab.df)
+      colnames(tab)<-Groupings()[["Atgt.names"]]
+      return(tab)
+    }
+  })
+  output$flat.chi.sq.cont<-renderTable({
+    if(Test()[["test.type"]] == "t.test"
+       && Test()[["second.test.type"]] == "collapsed.chi.sq"){
+      tab.df<-Table()[["tab.df"]][,c(2:3)] # ony Acmp and tgt.class, no cmp.class
+      tab<-table(tab.df)
+      test<-chisq.test(tab)
+      stats<-test$statistic
+      pvalue<-test$p.value
+      method<-test$method
+      
+      returnMe<-as.data.frame(c(as.character(method),
+                                as.character(round(stats,3)),
+                                as.character(pvalue)))
+      rownames(returnMe)<-c("Method","Test statistic","p-value")
+      colnames(returnMe)<-"Flat chi-squared test on discretized target attribute"
+      returnMe
+    }
+  })
+  output$chi.sq.top.cont<-renderTable({
+    if(Test()[["test.type"]] == "t.test"
+       && Test()[["second.test.type"]] == "collapsed.chi.sq"){
+      tab.df<-Table()[["tab.df"]][,c(2:3)] # only Acmp and tgt.class
+      # not using Atgt,cmp.class
+      tab<-table(tab.df)
+      test<-chisq.test(tab)
+      o<-test$observed
+      e<-test$expected
+      vtgt<-colnames(o)[which(colnames(o) == "1")] # vtgt is tgt.class == 1
+      cmp.classes<-rownames(e) # <--- want to compute top contributor for Acmp,
+      # for vtgt only
+      chisq.contri<-cbind(o[,1],
+                          e[,1],
+                          (((o-e)^2)/e)[,1])
+      colnames(chisq.contri)<-c("Observed",
+                                "Expected",
+                                "Chi-squared contribution")
+      return(chisq.contri)
+    }
+  })
 
-  output$flat.table<-renderTable({
+  # Test diagnostics for categorical Acmp, collapsed chi-sq
+  # -> display flat table
+  # -> do flat chi-sq test, find top contributor
+  # -> M-H test for 3rd attribute assoication (assumes no 3-way interaction)
+  output$flat.table.cate<-renderTable({
     if(Test()[["test.type"]] == "collapsed.chi.sq"){
       tab.df<-Table()[["tab.df"]][,c(2:3)] # ony Acmp and tgt.class
       tab<-table(tab.df)
@@ -1180,7 +1275,7 @@ shinyServer(function(input,output,session){
       return(tab)
     }
   })
-  output$flat.chi.sq<-renderTable({
+  output$flat.chi.sq.cate<-renderTable({
     if(Test()[["test.type"]] == "collapsed.chi.sq"){
       
       tab.df<-Table()[["tab.df"]][,c(2:3)] # ony Acmp and tgt.class
@@ -1198,7 +1293,7 @@ shinyServer(function(input,output,session){
       returnMe
     }
   })
-  output$chi.sq.top<-renderTable({
+  output$chi.sq.top.cate<-renderTable({
     if(Test()[["test.type"]] == "collapsed.chi.sq"){
       tab.df<-Table()[["tab.df"]][,c(2:3)] # only Acmp and tgt.class
       # not using Atgt,cmp.class
@@ -1316,7 +1411,6 @@ shinyServer(function(input,output,session){
       return(MH.df)
     }
   })
-
 
   #***************REACTIVE**********************#
 
@@ -1604,13 +1698,13 @@ shinyServer(function(input,output,session){
     return(paste("Run time for comparing model: ",round(minedAttributes()[["run.time.cmp"]],3),sep=""))
   })
 
-  output$testRF1<-renderTable({
+  output$cm.tgt<-renderTable({
     minedAttributes()[[1]]
   })
-  output$testRF2<-renderTable({
+  output$cm.cmp<-renderTable({
     minedAttributes()[[2]]
   })
-  output$testRF3<-renderTable({
+  output$minedAttr<-renderTable({
     if(is.null(minedAttributes()[[3]])){
       tmp<-data.frame("No significant context attributes were found")
       colnames(tmp)<-""

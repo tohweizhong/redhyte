@@ -4,10 +4,6 @@ WISHLIST
 
 -> implement Bayesian lift
 
--> Test diagnostics: navPanel(), Tinitial = t-test => both t-test and chi. else chi only
-
--> alternative way to visualise SP in hypothesis analysis tab?
-
 -> difflift and contribution of the attributes as a whole, OR test
 
 -> use MH-test to complement difflift and contribution (3-way tables)
@@ -48,6 +44,8 @@ WISHLIST
 -> ship/deploy (gist, shinyapps.io, package)
 
 #===OPTIONAL===#
+
+-> alternative way to visualise SP in hypothesis analysis tab?
 
 -> alternative models for context mining (stepwise regression, NBC)?
 
