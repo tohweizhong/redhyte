@@ -21,8 +21,10 @@ shinyServer(function(input,output,session){
   
   #grabbing the data
   
+  #*********************************************#
   #***************REACTIVE**********************#
-
+  #*********************************************#
+  
   #Data() consists of *THREE* things at the moment
   # 1. Data()[[1]] is the data itself
   # 2. Data()[[2]] is the type of variable: continuous or categorical
@@ -67,6 +69,8 @@ shinyServer(function(input,output,session){
     return(list(df,typ,numCl))
   })
   
+  #*********************************************#
+  #***************END REACTIVE******************#
   #*********************************************#
   
   #=============================================#
@@ -244,17 +248,76 @@ shinyServer(function(input,output,session){
     type
   })
   
+  # doesnt work
   Ctx.state<-reactive({
     
     # did not do the subsetting of data yet!
+    dfWithCtx<-Data()[[1]]
     
     tgt.attr<-input$targetAttr
     cmp.attr<-input$comparingAttr
     ctx.attr<-input$ctxAttr
     
-    print(tgt.attr)
-    print(cmp.attr)
-    print(ctx.attr)
+    
+    
+    grpA.classes<-input$whichtgtclassesA
+    grpB.classes<-input$whichtgtclassesB
+    grpX.classes<-input$whichcmpclassesX
+    grpY.classes<-input$whichcmpclassesY
+    ctx.attr    <-input$ctxAttr
+    ctx.items   <-input$ctxItems # in the format of Actx = vctx
+    
+    rowsToUse.cmp<-seq(nrow(dfWithCtx))
+    rowsToUse.tgt<-seq(nrow(dfWithCtx))
+    rowsToUse.ctx<-NULL
+    
+    
+    
+    if(!is.null(cmp.attr)){
+      rowsToUse.cmp<-which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclassesX == TRUE) #only X
+      rowsToUse.cmp<-union(
+        rowsToUse.cmp,
+        which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclassesY == TRUE)) #X U Y
+    }
+    
+    # now with Atgt
+    if(!is.null(tgt.attr) && Data()[[2]][input$targetAttr] == "Cate"){
+      rowsToUse.tgt<-which(dfWithCtx[,input$targetAttr] %in% input$whichtgtclassesA == TRUE) #only A
+      rowsToUse.tgt<-union(
+        rowsToUse.tgt,
+        which(dfWithCtx[,input$targetAttr] %in% input$whichtgtclassesB == TRUE)) #A U B
+    }
+    rowsToUse<-intersect(rowsToUse.tgt,rowsToUse.cmp)    
+    # now for Actx
+    if(!is.null(ctx.attr)){
+      items.df<-data.frame(t(data.frame(sapply(ctx.items,FUN=strsplit,"="),
+                                        stringsAsFactors=F)),
+                           stringsAsFactors=F) #ugly, will change this later
+      rownames(items.df)<-NULL
+      colnames(items.df)<-c("Actx","vctx")
+      
+      # based on the ctx items, retrieve the rows
+      list.of.rows<-vector("list",length(ctx.attr))
+      for(i in seq(length(ctx.attr))){
+        # from items.df, find all Actx that are the same
+        # from these, need to concatenate the rowsToUse
+        # when the Actx differs, do intersect
+        where.in.items.df<-which(items.df$Actx == ctx.attr[i])
+        ctx.classes<-items.df$vctx[where.in.items.df]
+        for(a.class in ctx.classes){
+          list.of.rows[[i]]<-c(list.of.rows[[i]],which(dfWithCtx[,ctx.attr[i]] == a.class))
+        }
+      }
+      rowsToUse.ctx<-list.of.rows[[1]]
+      for(i in seq(length(list.of.rows)-1)){
+        if(length(list.of.rows) != 1) rowsToUse.ctx<-intersect(rowsToUse.ctx,list.of.rows[[i+1]])
+        # weird behavior of seq(): seq(0) == c(1,0) !
+      }
+      # now, combine the rowsToUse
+      rowsToUse<-intersect(rowsToUse.cmp,intersect(rowsToUse.tgt,rowsToUse.ctx))
+    }
+    # retrieve the data
+    dfWithCtx<-dfWithCtx[rowsToUse,]
     
     tgt.attr.sup<-NULL
     cmp.attr.sup<-NULL
@@ -264,29 +327,29 @@ shinyServer(function(input,output,session){
     
     if(!is.null(tgt.attr)){
       if(Data()[[2]][tgt.attr] == "Cate"){
-        classes<-unique(Data()[[1]][,tgt.attr])
+        classes<-unique(dfWithCtx[,tgt.attr])
         for(c in classes)
           tgt.attr.sup<-c(tgt.attr.sup,
-                          length(which(Data()[[1]][,tgt.attr] == c)))
+                          length(which(dfWithCtx[,tgt.attr] == c)))
       }
     }
     
     if(!is.null(cmp.attr)){
       if(Data()[[2]][cmp.attr] == "Cate"){
-        classes<-unique(Data()[[1]][cmp.attr])
+        classes<-unique(dfWithCtx[cmp.attr])
         for(c in classes)
           cmp.attr.sup<-c(cmp.attr.sup,
-                          length(which(Data()[[1]][,cmp.attr] == c)))
+                          length(which(dfWithCtx[,cmp.attr] == c)))
       }
     }
     
     if(!is.null(ctx.attr)){
       for(a.ctx.attr in ctx.attr){
         if(Data()[[2]][a.ctx.attr] == "Cate"){ #always true
-          classes<-unique(Data()[[1]][,a.ctx.attr])
+          classes<-unique(dfWithCtx[,a.ctx.attr])
           for(c in classes)
             ctx.attr.sup<-c(ctx.attr.sup,
-                            length(which(Data()[[1]][,a.ctx.attr] == c)))
+                            length(which(dfWithCtx[,a.ctx.attr] == c)))
         }
       }
     }
@@ -300,45 +363,6 @@ shinyServer(function(input,output,session){
                 ctx.attr.sup=ctx.attr.sup
                 ))
   })
-  
-#   Data1.1<-reactive({
-#     
-#     cur.df<-Data()[[1]]
-#     
-#     rows.tgt<-NULL
-#     print(input$targetAttr)
-#     if(!is.null(input$targetAttr)){
-#       if(!is.null(input$whichtgtclassesA))
-#         rows.tgt<-c(rows.tgt,which(cur.df[,input$targetAttr] %in% input$whichtgtclassesA))
-#       if(!is.null(input$whichtgtclassesB))
-#         rows.tgt<-c(rows.tgt,which(cur.df[,input$targetAttr] %in% input$whichtgtclassesB))
-#     }
-#     rows.cmp<-NULL
-#     if(!is.null(input$comparingAttr)){
-#       if(!is.null(input$whichcmpclassesX))
-#         rows.cmp<-c(rows.cmp,which(cur.df[,input$comparingAttr] %in% input$whichcmpclassesX))
-#       if(!is.null(input$whichcmpclassesY))
-#         rows.cmp<-c(rows.cmp,which(cur.df[,input$comparingAttr] %in% input$whichcmpclassesY))
-#     }
-#     rows.ctx<-NULL
-#     if(!is.null(input$ctxItems)){
-#       for(an.item in input$ctxItems){
-#         
-#         Actx<-unlist(strsplit(an.item,"="))[1]
-#         vctx<-unlist(strsplit(an.item,"="))[2]
-#         rows.ctx<-c(rows.ctx,which(cur.df[,Actx] %in% vctx))
-#       }
-#     }
-#     rows<-unique(c(rows.tgt,rows.cmp,rows.ctx))
-#     
-#     str(rows.tgt)
-#     str(rows.cmp)
-#     str(rows.ctx)
-#     str(rows)
-#     
-#     if(is.null(rows)) return(cur.df)
-#     else if(!is.null(rows)) return(cur.df[rows,])
-#   })
   
   #target and comparing control
   output$test.tgt.class.ctrl1<-renderUI({
@@ -357,7 +381,7 @@ shinyServer(function(input,output,session){
       names(.choices)<-.names
       
       checkboxGroupInput("whichtgtclassesA",
-                         "Indicate which target attribute classes to form group A",
+                         "Indicate which target attribute classes to form group 1 (target value group)",
                          choices=c(sort(.choices)))
     }
   }) #return: input$whichtgtclassesA
@@ -373,7 +397,7 @@ shinyServer(function(input,output,session){
       names(.choices)<-.names
       
       checkboxGroupInput("whichtgtclassesB",
-                         "Indicate which target attribute classes to form group B",
+                         "Indicate which target attribute classes to form group 2",
                          choices=c(sort(.choices)))
     }
   }) #return: input$whichtgtclassesB
@@ -388,7 +412,7 @@ shinyServer(function(input,output,session){
       names(.choices)<-.names
       
       checkboxGroupInput("whichcmpclassesX",
-                         "Indicate which comparing attribute class to form group X",
+                         "Indicate which comparing attribute class to form group 1",
                          choices=c(sort(.choices)))
     }
   }) #return: input$whichcmpclassesX
@@ -403,7 +427,7 @@ shinyServer(function(input,output,session){
       names(.choices)<-.names
       
       checkboxGroupInput("whichcmpclassesY",
-                         "Indicate which comparing attribute classes to form group Y",
+                         "Indicate which comparing attribute classes to form group 2",
                          choices=c(sort(.choices)))
     }
   }) #return: input$whichcmpclassesY
@@ -443,37 +467,10 @@ shinyServer(function(input,output,session){
                        choices=.choices)
     
   }) #return: input$ctxItems
-
-  #***************REACTIVE**********************#
   
-#   Cinitial<-reactive({
-#     # retrieve attributes
-#     tgt.attr<-input$targetAttr
-#     cmp.attr<-input$comparingAttr
-#     ctx.attr<-input$ctxAttr
-#     
-#     # retrieve items
-#     tgt.class1<-input$whichtgtclassesA
-#     tgt.class2<-input$whichtgtclassesB
-#     cmp.class1<-input$whichcmpclassesX
-#     cmp.class2<-input$whichcmpclassesY
-#     ctx.items <-input$ctxItems
-#     
-#     # remove support at end of string
-#     remove.sup<-function(s){return(unlist(strsplit(s," [()]"))[1])}
-#     tgt.class1<-sapply(tgt.class1,FUN=remove.sup)
-#     tgt.class2<-sapply(tgt.class2,FUN=remove.sup)
-#     cmp.class1<-sapply(cmp.class1,FUN=remove.sup)
-#     cmp.class2<-sapply(cmp.class2,FUN=remove.sup)
-#     ctx.items <-sapply(ctx.items, FUN=remove.sup)
-#     
-#     return(list(tgt.attr=tgt.attr,cmp.attr=cmp.attr,ctx.attr=ctx.attr,
-#                 tgt.class1=tgt.class1,tgt.class2=tgt.class2,
-#                 cmp.class1=cmp.class1,cmp.class2=cmp.class2,
-#                 ctx.items=ctx.items))
-#   })
-  
+  #*********************************************#
   #***************REACTIVE**********************#
+  #*********************************************#
 
   # Groupings() is a simple reactive module to
   # -> Keep track of type of Atgt (cont or cate)
@@ -500,6 +497,8 @@ shinyServer(function(input,output,session){
                                paste(input$whichcmpclassesY,collapse="&"))))
   })
   
+  #*********************************************#
+  #***************END REACTIVE******************#
   #*********************************************#
   
   #***************REACTIVE**********************#
@@ -630,15 +629,14 @@ shinyServer(function(input,output,session){
     #081014: context bug resolved
   })
   
-  #***************END REACTIVE*******************#
-
-  # display contexted data
-  output$ctx.data<-renderTable({
-    data.frame(Data()[[1]][1:input$ctxRows,])
-  },digits=3)
-
+  #*********************************************#
+  #***************END REACTIVE******************#
+  #*********************************************#
+  
+  #*********************************************#
   #***************REACTIVE**********************#
-
+  #*********************************************#
+  
   # Table() consists of *THREE OR FOUR* things at the moment
   #  1. Table()[["means.df"]] is the comparison table for cont Atgt
   #  2. Table()[["cont.tab"]]] is the contingency table, for both cont or cate Atgt
@@ -728,7 +726,9 @@ shinyServer(function(input,output,session){
     }
   })
 
-  #***************END REACTIVE*******************#
+  #*********************************************#
+  #***************END REACTIVE******************#
+  #*********************************************#
   
   #render the comparison or contingency table
   output$contTable<-renderTable({
@@ -1018,10 +1018,21 @@ shinyServer(function(input,output,session){
   })
   
   #=============================================#
-  #============4. Test diagnostics==============#
+  #============4. Contexted data================#
   #=============================================#
   
+  # display contexted data
+  output$ctx.data<-renderTable({
+    data.frame(Data()[[1]][1:input$ctxRows,])
+  },digits=3)
+  
+  #=============================================#
+  #============5. Test diagnostics==============#
+  #=============================================#
+  
+  #*********************************************#
   #***************REACTIVE**********************#
+  #*********************************************#
   
   Test<-reactive({
     if(Table()[["tab.type"]] == "Comparison"){
@@ -1046,8 +1057,10 @@ shinyServer(function(input,output,session){
                 second.test.type=second.test.type))
   })
   
-  #***************END REACTIVE*******************#
-
+  #*********************************************#
+  #***************END REACTIVE******************#
+  #*********************************************#
+  
   # Test diagnostics for continuous Atgt:
   # -> K-S test for normality
   # -> F-test for equal variances
@@ -1412,8 +1425,10 @@ shinyServer(function(input,output,session){
     }
   })
 
+  #*********************************************#
   #***************REACTIVE**********************#
-
+  #*********************************************#
+  
   # Objective of Data3(): discretize all attributes for ctx mining
 
   Data3<-reactive({
@@ -1440,8 +1455,12 @@ shinyServer(function(input,output,session){
     return(list(df,attr.type,Data2()[[3]]))
   })
   
+  #*********************************************#
+  #***************END REACTIVE******************#
+  #*********************************************#
+  
   #=============================================#
-  #============5. Context mining================#
+  #============6. Context mining================#
   #=============================================#
   
   output$attr.to.exclude<-renderUI({
@@ -1458,8 +1477,9 @@ shinyServer(function(input,output,session){
                        choices=to.mine.from)
   }) #return: input$exclude.attr
   
-  
+  #*********************************************#  
   #***************REACTIVE**********************#
+  #*********************************************#
   
   minedAttributes<-reactive({
     df<-Data3()[[1]]
@@ -1690,6 +1710,8 @@ shinyServer(function(input,output,session){
   })
   
   #*********************************************#
+  #***************END REACTIVE******************#
+  #*********************************************#
   
   output$run.time.tgt<-renderText({
     return(paste("Run time for target model: ",round(minedAttributes()[["run.time.tgt"]],3),sep=""))
@@ -1775,7 +1797,6 @@ shinyServer(function(input,output,session){
       
     }
   })
-
   output$contTable2.ctx<-renderTable({
     if(Table()[["tab.type"]] == "Comparison"){
       tab<-Table()[["cont.tab"]]
@@ -1860,11 +1881,13 @@ shinyServer(function(input,output,session){
   })
   
   #=============================================#
-  #============5. Hypothesis mining=============#
+  #============7. Hypothesis mining=============#
   #=============================================#
 
+  #*********************************************#
   #***************REACTIVE**********************#
-
+  #*********************************************#
+  
   Hypotheses<-reactive({
     
     tgt.attr<-input$targetAttr
@@ -1898,7 +1921,7 @@ shinyServer(function(input,output,session){
     # compute initial n
     initial.n1<-compute.sup(cont.tab)["n1"]
     initial.n2<-compute.sup(cont.tab)["n2"]
-
+    
     #**console**#
     print(paste("initial.p1: ",initial.p1))
     print(paste("initial.p2: ",initial.p2))
@@ -1931,7 +1954,7 @@ shinyServer(function(input,output,session){
     
     prop.df<-data.frame(cbind(rep(NA,length(prop.df.names)),
                               rep(NA,length(prop.df.names))),
-                     row.names=prop.df.names)
+                        row.names=prop.df.names)
     colnames(prop.df)<-c("p1prime","p2prime")
     
     i<-1
@@ -1979,7 +2002,7 @@ shinyServer(function(input,output,session){
       p2prime<-prop.vec[2]
       n1prime<-prop.vec[3]
       n2prime<-prop.vec[4]
-
+      
       numer<-(n1prime/initial.n1)*(p1prime-initial.p1) - 
         (n2prime/initial.n2)*(p2prime-initial.p2)
       denom<-initial.p1-initial.p2
@@ -1995,11 +2018,11 @@ shinyServer(function(input,output,session){
                           FUN=compute.contri)
     
     prop.df$SP<-sapply(prop.df[,"difflift"],
-                      FUN=function(x){
-                        if(is.na(x)) return(FALSE)
-                        else if(x<0) return(TRUE)
-                        else if(x>=0) return(FALSE)
-                      })
+                       FUN=function(x){
+                         if(is.na(x)) return(FALSE)
+                         else if(x<0) return(TRUE)
+                         else if(x>=0) return(FALSE)
+                       })
     # now, append the chi-squared test stats and p-values
     
     for(i in seq(nrow(prop.df))){
@@ -2043,29 +2066,32 @@ shinyServer(function(input,output,session){
     return(prop.df)
   })
   
+  #*********************************************#
+  #***************END REACTIVE******************#
+  #*********************************************#
+  
   output$hypotheses<-renderTable({
     Hypotheses()
   },digits=3)
-
-
+  
   #=============================================#
-  #============5. Hypothesis analysis===========#
+  #============8. Hypothesis analysis===========#
   #=============================================#
-
+  
   output$analyse.ctrl<-renderUI({
     selectizeInput("analyse.which.item","Select context item",rownames(Hypotheses()))
-  })
-
+  }) # return: input$analyse.which.item
+  
   output$analyse.sort.ctrl.one<-renderUI({
     selectizeInput("analyse.sort.one","Sort first by?",
-                   c("sufficient","SP","difflift",	"contri",	"pvalue",	"pvalue.adj"))
-  })
-
+                   c("sufficient","SP","difflift",  "contri",	"pvalue",	"pvalue.adj"))
+  }) # return: input$analyse.sort.one
   output$analyse.sort.ctrl.two<-renderUI({
     selectizeInput("analyse.sort.two","Then by?",
                    c("sufficient","SP","difflift",  "contri",	"pvalue",	"pvalue.adj"))
-  })
-
+  }) # return: input$analyse.sort.two
+  
+  # render the Hypotheses master data frame, sorted according to user
   output$analyse.hypothesis<-renderTable({
     prop.df<-subset(Hypotheses(),select=c(sufficient,SP,difflift,contri,pvalue,pvalue.adj))
     
@@ -2074,73 +2100,21 @@ shinyServer(function(input,output,session){
     
     # sort descendingly for sufficient and SP only
     if((sort.first.by == 1 || sort.first.by == 2) && (then.by == 1 || then.by == 2))
-        prop.df<-prop.df[order(-prop.df[,sort.first.by],-prop.df[,then.by]),]
+      prop.df<-prop.df[order(-prop.df[,sort.first.by],-prop.df[,then.by]),]
     
     else if((sort.first.by == 1 || sort.first.by == 2) && (then.by != 1 && then.by != 2))
-        prop.df<-prop.df[order(-prop.df[,sort.first.by],prop.df[,then.by]),]
+      prop.df<-prop.df[order(-prop.df[,sort.first.by],prop.df[,then.by]),]
     
     else if((sort.first.by != 1 && sort.first.by != 2) && (then.by == 1 && then.by == 2))
-        prop.df<-prop.df[order(prop.df[,sort.first.by],-prop.df[,then.by]),]
+      prop.df<-prop.df[order(prop.df[,sort.first.by],-prop.df[,then.by]),]
     
     else
       prop.df<-prop.df[order(prop.df[,sort.first.by],prop.df[,then.by]),]
     
     return(prop.df)
   })
-
-  output$analyse.hypothesis.statement.initial<-renderText({
-    if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
-    
-    tgt.attr<-input$targetAttr
-    cmp.attr<-input$comparingAttr
-    
-    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is cont
-    tgt.class2<-input$whichtgtclassesB # <--- could be NULL
-    cmp.class1<-input$whichcmpclassesX
-    cmp.class2<-input$whichcmpclassesY
-    
-    ctx.attr    <-input$ctxAttr
-    ctx.items   <-input$ctxItems # in the format of Actx = vctx
-    
-    ctx.items.text<-paste(ctx.items, collapse=" & ")
-    tgt.class1.text<-paste(tgt.class1,collapse=" & ")
-    tgt.class2.text<-paste(tgt.class2,collapse=" & ")
-    cmp.class1.text<-paste(cmp.class1,collapse=" & ")
-    cmp.class2.text<-paste(cmp.class2,collapse=" & ")
-    
-    if(Groupings()[[1]] == "Cate")
-      statement<-paste("In the context of {",
-                       ctx.items.text,
-                       "}, is there a difference in ",
-                       toupper(tgt.attr),
-                       " between {",
-                       tgt.class1.text,
-                       "} vs. {",
-                       tgt.class2.text,
-                       "} when comparing the samples on ",
-                       toupper(cmp.attr),
-                       " between {",
-                       cmp.class1.text,
-                       "} vs. {",
-                       cmp.class2.text,
-                       "}?",
-                       sep="")
-    else if(Groupings()[[1]] == "Cont")
-      statement<-paste("In the context of {",
-                       ctx.items.text,
-                       "}, is there a difference in ",
-                       toupper(tgt.attr),
-                       " when comparing the samples on ",
-                       toupper(cmp.attr),
-                       " between {",
-                       cmp.class1.text,
-                       "} vs. {",
-                       cmp.class2.text,
-                       "}?",
-                       sep="")
-    return(statement)
-  })
-
+  
+  # display initial hypothesis and test
   output$analyse.contTable<-renderTable({
     tab<-Table()[[1]]
     
@@ -2200,12 +2174,7 @@ shinyServer(function(input,output,session){
       return(tab)
     }
   })
-
   output$analyse.initialTest<-renderTable({
-    # 081014: only t-test and chi-squared tests are used now.
-    # no more ANOVA
-    # 2 groups only
-    
     # check the type of table
     if(Groupings()[[1]] == "Cate"){
       test<-chisq.test(Table()[[1]]) #chisq.test() works on the table itself
@@ -2234,9 +2203,62 @@ shinyServer(function(input,output,session){
       returnMe
     }
   })
-  # based on selected item
+  output$analyse.hypothesis.statement.initial<-renderText({
+    if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
+    
+    tgt.attr<-input$targetAttr
+    cmp.attr<-input$comparingAttr
+    
+    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is cont
+    tgt.class2<-input$whichtgtclassesB # <--- could be NULL
+    cmp.class1<-input$whichcmpclassesX
+    cmp.class2<-input$whichcmpclassesY
+    
+    ctx.attr    <-input$ctxAttr
+    ctx.items   <-input$ctxItems # in the format of Actx = vctx
+    
+    ctx.items.text<-paste(ctx.items, collapse=" & ")
+    tgt.class1.text<-paste(tgt.class1,collapse=" & ")
+    tgt.class2.text<-paste(tgt.class2,collapse=" & ")
+    cmp.class1.text<-paste(cmp.class1,collapse=" & ")
+    cmp.class2.text<-paste(cmp.class2,collapse=" & ")
+    
+    if(Groupings()[[1]] == "Cate")
+      statement<-paste("In the context of {",
+                       ctx.items.text,
+                       "}, is there a difference in ",
+                       toupper(tgt.attr),
+                       " between {",
+                       tgt.class1.text,
+                       "} vs. {",
+                       tgt.class2.text,
+                       "} when comparing the samples on ",
+                       toupper(cmp.attr),
+                       " between {",
+                       cmp.class1.text,
+                       "} vs. {",
+                       cmp.class2.text,
+                       "}?",
+                       sep="")
+    else if(Groupings()[[1]] == "Cont")
+      statement<-paste("In the context of {",
+                       ctx.items.text,
+                       "}, is there a difference in ",
+                       toupper(tgt.attr),
+                       " when comparing the samples on ",
+                       toupper(cmp.attr),
+                       " between {",
+                       cmp.class1.text,
+                       "} vs. {",
+                       cmp.class2.text,
+                       "}?",
+                       sep="")
+    return(statement)
+  })
+  
+  # display mined hypothesis and test based on selected item
   output$analyse.cont.tab<-renderTable({
-        
+    
     print(input$analyse.which.item)
     
     item<-input$analyse.which.item
@@ -2304,18 +2326,18 @@ shinyServer(function(input,output,session){
   })
   output$analyse.hypothesis.statement<-renderText({
     if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
-  
+    
     tgt.attr<-input$targetAttr
     cmp.attr<-input$comparingAttr
-  
+    
     tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is cont
     tgt.class2<-input$whichtgtclassesB # <--- could be NULL
     cmp.class1<-input$whichcmpclassesX
     cmp.class2<-input$whichcmpclassesY
-  
+    
     ctx.attr    <-input$ctxAttr
     ctx.items   <-input$ctxItems # in the format of Actx = vctx
-  
+    
     ctx.items.text<-paste(ctx.items, collapse=" & ")
     tgt.class1.text<-paste(tgt.class1,collapse=" & ")
     tgt.class2.text<-paste(tgt.class2,collapse=" & ")
@@ -2358,14 +2380,22 @@ shinyServer(function(input,output,session){
                        sep="")
     return(statement)
   })
-
+  
+  #=============================================#
+  #============9. Session log===================#
+  #=============================================#
+  
+  #*********************************************#
+  #***************REACTIVE**********************#
+  #*********************************************#
+  
   Settings<-reactive({
     # data
     log.filename<-as.character(input$datFile[[1]])
     log.header<-input$datHeader
     log.sep<-input$datSep
     log.quote<-input$datQuote
-
+    
     # test diagnostics
     log.p.significant<-p.significant
     
@@ -2402,15 +2432,19 @@ shinyServer(function(input,output,session){
             paste("1 : ",log.class.ratio),
             log.mined.attr,
             log.min.sup.cij)
-  
+    
     log<-data.frame(cbind(col1,col2,col3))
     colnames(log)<-c("","","Settings")
     rownames(log)<-NULL
     return(log)
   })
-
+  
+  #*********************************************#
+  #***************END REACTIVE******************#
+  #*********************************************#
+  
   output$session.log<-renderTable({
     return(Settings())
   })
-
+  
 }) #end shinyServer
