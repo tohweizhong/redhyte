@@ -247,6 +247,11 @@ shinyServer(function(input,output,session){
     else type<-"Type: Categorical"
     type
   })
+
+  
+  #*********************************************#
+  #***************REACTIVE**********************#
+  #*********************************************#
   
   # doesnt work
   Ctx.state<-reactive({
@@ -363,6 +368,10 @@ shinyServer(function(input,output,session){
                 ctx.attr.sup=ctx.attr.sup
                 ))
   })
+
+  #*********************************************#
+  #***************END REACTIVE******************#
+  #*********************************************#
   
   #target and comparing control
   output$test.tgt.class.ctrl1<-renderUI({
@@ -501,7 +510,9 @@ shinyServer(function(input,output,session){
   #***************END REACTIVE******************#
   #*********************************************#
   
+  #*********************************************#
   #***************REACTIVE**********************#
+  #*********************************************#
   
   # The objectives of Data2() are:
   #  -> subsetting the data based on the user's initial context
@@ -1896,7 +1907,7 @@ shinyServer(function(input,output,session){
     
     df<-Data3()[[1]][,c(tgt.attr,cmp.attr,"cmp.class","tgt.class",c(mined.attr))]
     
-    #function to compute proportions, given a 2x2 table
+    # function to compute proportions, given a 2x2 table
     compute.prop<-function(tab){
       p1<-tab[1,1]/sum(tab[1,1],tab[1,2])
       p2<-tab[2,1]/sum(tab[2,1],tab[2,2])
@@ -1914,6 +1925,18 @@ shinyServer(function(input,output,session){
       return(c(c11=c11,c12=c12,c21=c21,c22=c22,n1=n1,n2=n2))
     }
     
+    # function to compute b, given a 2x2 table
+    compute.b<-function(tab){
+     sum<-sum(tab)
+     c11<-tab[1,1]
+     c12<-tab[1,2]
+     c21<-tab[2,1]
+     c22<-tab[2,2]
+     b1<-(c11/((c11+c12)*(c11+c21)))/sum
+     b2<-(c21/((c11+c21)*(c21+c22)))/sum
+     return(c(b1,b2))
+    }
+    
     # compute initial proportions
     cont.tab<-Table()[["cont.tab"]]
     initial.p1<-compute.prop(cont.tab)[1]
@@ -1921,6 +1944,9 @@ shinyServer(function(input,output,session){
     # compute initial n
     initial.n1<-compute.sup(cont.tab)["n1"]
     initial.n2<-compute.sup(cont.tab)["n2"]
+    # compute initial b
+    initial.b1<-compute.b(cont.tab)[1]
+    initial.b2<-compute.b(cont.tab)[2] # <--- speed can be improved here
     
     #**console**#
     print(paste("initial.p1: ",initial.p1))
@@ -1981,12 +2007,16 @@ shinyServer(function(input,output,session){
         
         prop.df$n1prime[i]<-tmp.sup["n1"]
         prop.df$n2prime[i]<-tmp.sup["n2"]
+        
+        prop.df$b1prime[i]<-compute.b(tab.to.prop)[1]
+        prop.df$b2prime[i]<-compute.b(tab.to.prop)[2]
       }
       
       else{
         prop.df$c11[i]<-prop.df$c12[i]<-NA
         prop.df$c21[i]<-prop.df$c22[i]<-NA
         prop.df$n1prime[i]<-prop.df$n2prime[i]<-NA
+        prop.df$b1prime[i]<-prop.df$b2prime[i]<-NA
       }
       i<-i+1
     }
@@ -2010,9 +2040,17 @@ shinyServer(function(input,output,session){
       return(numer/denom)
     }
     
+    # function to compute Bayesian Lift
+    compute.bl<-function(prop.vec){
+      b1prime<-prop.vec[1]
+      b2prime<-prop.vec[2]
+      return((b1prime-b2prime)/(initial.b1-initial.b2))
+    }
+    
     prop.df$difflift<-apply(prop.df[,c("p1prime","p2prime")],
                             MARGIN=1,
                             FUN=compute.dl)
+    
     prop.df$contri<-apply(prop.df[,c("p1prime","p2prime","n1prime","n2prime")],
                           MARGIN=1,
                           FUN=compute.contri)
@@ -2023,6 +2061,11 @@ shinyServer(function(input,output,session){
                          else if(x<0) return(TRUE)
                          else if(x>=0) return(FALSE)
                        })
+    
+    prop.df$bayeslift<-apply(prop.df[,c("b1prime","b2prime")],
+                      MARGIN=1,
+                      FUN=compute.bl)
+    
     # now, append the chi-squared test stats and p-values
     
     for(i in seq(nrow(prop.df))){
@@ -2062,7 +2105,7 @@ shinyServer(function(input,output,session){
     #correct for multiple testing using Bonferroni correction
     prop.df$pvalue.adj<-p.adjust(prop.df$pvalue, method = "bonferroni")
     # sort
-    prop.df<-prop.df[with(prop.df,order(-sufficient,difflift,contri,pvalue.adj)),]
+    prop.df<-prop.df[with(prop.df,order(-sufficient,difflift,contri,bayeslift,pvalue.adj)),]
     return(prop.df)
   })
   
@@ -2084,16 +2127,16 @@ shinyServer(function(input,output,session){
   
   output$analyse.sort.ctrl.one<-renderUI({
     selectizeInput("analyse.sort.one","Sort first by?",
-                   c("sufficient","SP","difflift",  "contri",	"pvalue",	"pvalue.adj"))
+                   c("sufficient","SP","difflift","contri","bayeslift","pvalue","pvalue.adj"))
   }) # return: input$analyse.sort.one
   output$analyse.sort.ctrl.two<-renderUI({
     selectizeInput("analyse.sort.two","Then by?",
-                   c("sufficient","SP","difflift",  "contri",	"pvalue",	"pvalue.adj"))
+                   c("sufficient","SP","difflift","contri","bayeslift","pvalue","pvalue.adj"))
   }) # return: input$analyse.sort.two
   
   # render the Hypotheses master data frame, sorted according to user
   output$analyse.hypothesis<-renderTable({
-    prop.df<-subset(Hypotheses(),select=c(sufficient,SP,difflift,contri,pvalue,pvalue.adj))
+    prop.df<-subset(Hypotheses(),select=c(sufficient,SP,difflift,contri,bayeslift,pvalue,pvalue.adj))
     
     sort.first.by<-which(colnames(prop.df) == input$analyse.sort.one)
     then.by<-which(colnames(prop.df) == input$analyse.sort.two)
