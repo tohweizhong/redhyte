@@ -2,10 +2,6 @@ WISHLIST
 
 #===CRUCIAL===#
 
--> implement Bayesian lift
-
--> difflift and contribution of the attributes as a whole, OR test
-
 -> top contributor for mined hypothesis analysis if Tinitial is collapsed x2
 
 -> user i/p discretization and discretization algorithm

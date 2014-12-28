@@ -221,10 +221,12 @@ shinyUI(pageWithSidebar(
                navlistPanel(
                  tabPanel("Select context item",
                           sidebarPanel(
-                            htmlOutput("analyse.ctrl"),
                             htmlOutput("analyse.sort.ctrl.one"),
                             htmlOutput("analyse.sort.ctrl.two"),
                             width=4),
+                          sidebarPanel(
+                            htmlOutput("analyse.ctrl")
+                            ),
                           tableOutput("analyse.hypothesis")),
                  tabPanel("Analysis",
                           tags$h5("Initial hypothesis:"),
@@ -235,6 +237,8 @@ shinyUI(pageWithSidebar(
                           verbatimTextOutput("analyse.hypothesis.statement"),
                           tableOutput("analyse.cont.tab"),
                           tableOutput("analyse.test")),
+                 tabPanel("Summary",
+                          tableOutput("analyse.summary")),
                widths=c(3,9))),
       
       #=============================================#

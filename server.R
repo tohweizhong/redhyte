@@ -2106,6 +2106,9 @@ shinyServer(function(input,output,session){
     prop.df$pvalue.adj<-p.adjust(prop.df$pvalue, method = "bonferroni")
     # sort
     prop.df<-prop.df[with(prop.df,order(-sufficient,difflift,contri,bayeslift,pvalue.adj)),]
+    
+    print(prop.df$b1prime)
+    print(prop.df$b2prime)
     return(prop.df)
   })
   
@@ -2122,7 +2125,7 @@ shinyServer(function(input,output,session){
   #=============================================#
   
   output$analyse.ctrl<-renderUI({
-    selectizeInput("analyse.which.item","Select context item",rownames(Hypotheses()))
+    selectizeInput("analyse.which.item","Select context item to analyse",rownames(Hypotheses()))
   }) # return: input$analyse.which.item
   
   output$analyse.sort.ctrl.one<-renderUI({
@@ -2422,6 +2425,35 @@ shinyServer(function(input,output,session){
                        "}",
                        sep="")
     return(statement)
+  })
+  
+  output$analyse.summary<-renderTable({
+    prop.df<-Hypotheses()
+    actx<-unique(prop.df$Actx)
+    summary.df<-data.frame(difflift=numeric(),
+                           contri=numeric())
+    SP.vec<-NULL
+    for(a.ctx.attr in actx){
+      # extract the difflift's and contributions
+      all.dl<-prop.df$difflift[which(prop.df$Actx == a.ctx.attr)]
+      all.contri<-prop.df$contri[which(prop.df$Actx == a.ctx.attr)]
+      
+      # find the mean for each Actx
+      dl<-mean(all.dl,na.rm=TRUE)
+      contri<-mean(all.contri,na.rm=TRUE)
+      
+      # remove NAs, look for Simpson's Paradox
+      all.dl[is.na(dl)]<-0
+      if(any(all.dl > 0)) SP.vec<-c(SP.vec,FALSE)
+      else SP.vec<-c(SP.vec,TRUE)
+      
+      summary.df<-rbind(summary.df,c(dl,contri))
+    }
+    summary.df<-cbind(summary.df,SP.vec)
+    rownames(summary.df)<-actx
+    colnames(summary.df)<-c("difflift","contri","SP")
+    return(summary.df)
+    
   })
   
   #=============================================#
