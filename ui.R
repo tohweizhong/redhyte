@@ -139,6 +139,7 @@ shinyUI(pageWithSidebar(
                tags$h4("Displaying a preview of the contexted data"),
                sliderInput("ctxRows","Number of rows to display",
                            min=1,max=20,value=10,step=1,animate=FALSE),
+               downloadButton("ctx.download","Download contexted data"),
                tableOutput("ctx.data")),
       
       #=============================================#
@@ -168,7 +169,6 @@ shinyUI(pageWithSidebar(
                           tableOutput("flat.chi.sq.cate"),
                           tableOutput("chi.sq.top.cate"),
                           tableOutput("MHtest.cate")))),
-      #half implemented, will come back to this
       
       #=============================================#
       #============6. Context mining================#
@@ -223,10 +223,9 @@ shinyUI(pageWithSidebar(
                           sidebarPanel(
                             htmlOutput("analyse.sort.ctrl.one"),
                             htmlOutput("analyse.sort.ctrl.two"),
+                            htmlOutput("analyse.ctrl"),
                             width=4),
-                          sidebarPanel(
-                            htmlOutput("analyse.ctrl")
-                            ),
+                          tableOutput("analyse.summary"),
                           tableOutput("analyse.hypothesis")),
                  tabPanel("Analysis",
                           tags$h5("Initial hypothesis:"),
@@ -236,9 +235,11 @@ shinyUI(pageWithSidebar(
                           tags$h5("Mined hypothesis:"),
                           verbatimTextOutput("analyse.hypothesis.statement"),
                           tableOutput("analyse.cont.tab"),
-                          tableOutput("analyse.test")),
-                 tabPanel("Summary",
-                          tableOutput("analyse.summary")),
+                          tableOutput("analyse.test"),
+                          #tags$h5("Chi-squared contribution analysis:"),
+                          tableOutput("analyse.flat.table"),
+                          tableOutput("analyse.flat.chi.sq"),
+                          tableOutput("analyse.chi.sq.top.cont")),
                widths=c(3,9))),
       
       #=============================================#
@@ -246,6 +247,7 @@ shinyUI(pageWithSidebar(
       #=============================================#
       
       tabPanel("9. Session log",
+               downloadButton("log.download","Download session log")
                tableOutput("session.log"))
       
     )#end tabset panel

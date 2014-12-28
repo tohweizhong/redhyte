@@ -248,7 +248,6 @@ shinyServer(function(input,output,session){
     type
   })
 
-  
   #*********************************************#
   #***************REACTIVE**********************#
   #*********************************************#
@@ -1037,6 +1036,14 @@ shinyServer(function(input,output,session){
     data.frame(Data()[[1]][1:input$ctxRows,])
   },digits=3)
   
+  # download contexted data
+  output$ctx.download<-downloadHandler(
+    filename = function() { paste("contexted_data", '.csv', sep='') },
+    content = function(file) {
+      write.csv(Data2()[[1]], file)
+    }
+  )
+  
   #=============================================#
   #============5. Test diagnostics==============#
   #=============================================#
@@ -1273,8 +1280,8 @@ shinyServer(function(input,output,session){
       test<-chisq.test(tab)
       o<-test$observed
       e<-test$expected
-      vtgt<-colnames(o)[which(colnames(o) == "1")] # vtgt is tgt.class == 1
-      cmp.classes<-rownames(e) # <--- want to compute top contributor for Acmp,
+      #vtgt<-colnames(o)[which(colnames(o) == "1")] # vtgt is tgt.class == 1
+      #cmp.classes<-rownames(e) # <--- want to compute top contributor for Acmp,
       # for vtgt only
       chisq.contri<-cbind(o[,1],
                           e[,1],
@@ -1581,7 +1588,7 @@ shinyServer(function(input,output,session){
       
       # 211014: using adjusted geometric mean as a start
       # need to first figure out which class is less
-      # arbitrarily consider 5:1 as class-imbalance
+      # arbitrarily consider 3:1 as class-imbalance
       # AGm = (Gm+SP*Nn)/(1+Nn),
       # where SP refers to the specificity, which is the sensitivity for the negative class
       # Nn refers to proportion of the data that belongs to the more abundant class
@@ -2055,7 +2062,7 @@ shinyServer(function(input,output,session){
                           MARGIN=1,
                           FUN=compute.contri)
     
-    prop.df$SP<-sapply(prop.df[,"difflift"],
+    prop.df$SR<-sapply(prop.df[,"difflift"],
                        FUN=function(x){
                          if(is.na(x)) return(FALSE)
                          else if(x<0) return(TRUE)
@@ -2130,21 +2137,21 @@ shinyServer(function(input,output,session){
   
   output$analyse.sort.ctrl.one<-renderUI({
     selectizeInput("analyse.sort.one","Sort first by?",
-                   c("sufficient","SP","difflift","contri","bayeslift","pvalue","pvalue.adj"))
+                   c("sufficient","SR","difflift","contri","bayeslift","pvalue","pvalue.adj"))
   }) # return: input$analyse.sort.one
   output$analyse.sort.ctrl.two<-renderUI({
     selectizeInput("analyse.sort.two","Then by?",
-                   c("sufficient","SP","difflift","contri","bayeslift","pvalue","pvalue.adj"))
+                   c("sufficient","SR","difflift","contri","bayeslift","pvalue","pvalue.adj"))
   }) # return: input$analyse.sort.two
   
   # render the Hypotheses master data frame, sorted according to user
   output$analyse.hypothesis<-renderTable({
-    prop.df<-subset(Hypotheses(),select=c(sufficient,SP,difflift,contri,bayeslift,pvalue,pvalue.adj))
+    prop.df<-subset(Hypotheses(),select=c(sufficient,SR,difflift,contri,bayeslift,pvalue,pvalue.adj))
     
     sort.first.by<-which(colnames(prop.df) == input$analyse.sort.one)
     then.by<-which(colnames(prop.df) == input$analyse.sort.two)
     
-    # sort descendingly for sufficient and SP only
+    # sort descendingly for sufficient and SR only
     if((sort.first.by == 1 || sort.first.by == 2) && (then.by == 1 || then.by == 2))
       prop.df<-prop.df[order(-prop.df[,sort.first.by],-prop.df[,then.by]),]
     
@@ -2305,8 +2312,6 @@ shinyServer(function(input,output,session){
   # display mined hypothesis and test based on selected item
   output$analyse.cont.tab<-renderTable({
     
-    print(input$analyse.which.item)
-    
     item<-input$analyse.which.item
     Actx<-unlist(strsplit(item,"="))[1]
     vctx<-unlist(strsplit(item,"="))[2]
@@ -2427,6 +2432,84 @@ shinyServer(function(input,output,session){
     return(statement)
   })
   
+  # chi-sq top contribution
+  output$analyse.flat.table<-renderTable({
+    if((Test()[["test.type"]] == "t.test" && Test()[["second.test.type"]] == "collapsed.chi.sq")
+        || Test()[["test.type"]] == "collapsed.chi.sq"){
+      
+      item<-input$analyse.which.item
+      Actx<-unlist(strsplit(item,"="))[1]
+      vctx<-unlist(strsplit(item,"="))[2]
+      
+      df<-Data3()[[1]][,c("tgt.class",input$comparingAttr,Actx)]
+      
+      rows.to.prop<-which(df[,Actx] == vctx)
+      df.to.prop<-df[rows.to.prop,c(input$comparingAttr,"tgt.class")]
+      tab<-table(df.to.prop)
+      
+      colnames(tab)<-Groupings()[["Atgt.names"]]
+      return(tab)
+    }
+  })
+  output$analyse.flat.chi.sq<-renderTable({
+    if((Test()[["test.type"]] == "t.test" && Test()[["second.test.type"]] == "collapsed.chi.sq")
+       || Test()[["test.type"]] == "collapsed.chi.sq"){
+      
+      item<-input$analyse.which.item
+      Actx<-unlist(strsplit(item,"="))[1]
+      vctx<-unlist(strsplit(item,"="))[2]
+      
+      df<-Data3()[[1]][,c("tgt.class",input$comparingAttr,Actx)]
+      
+      rows.to.prop<-which(df[,Actx] == vctx)
+      df.to.prop<-df[rows.to.prop,c(input$comparingAttr,"tgt.class")]
+      tab<-table(df.to.prop)
+      
+      # flat chi-sq
+      test<-chisq.test(tab)
+      stats<-test$statistic
+      pvalue<-test$p.value
+      method<-test$method
+      
+      returnMe<-as.data.frame(c(as.character(method),
+                                as.character(round(stats,3)),
+                                as.character(pvalue)))
+      rownames(returnMe)<-c("Method","Test statistic","p-value")
+      colnames(returnMe)<-paste("Flat chi-squared test on mined hypothesis: ",item,sep="")
+      returnMe
+    }
+  })
+  output$analyse.chi.sq.top.cont<-renderTable({
+    if((Test()[["test.type"]] == "t.test" && Test()[["second.test.type"]] == "collapsed.chi.sq")
+       || Test()[["test.type"]] == "collapsed.chi.sq"){
+      
+      item<-input$analyse.which.item
+      Actx<-unlist(strsplit(item,"="))[1]
+      vctx<-unlist(strsplit(item,"="))[2]
+      
+      df<-Data3()[[1]][,c("tgt.class",input$comparingAttr,Actx)]
+      
+      rows.to.prop<-which(df[,Actx] == vctx)
+      df.to.prop<-df[rows.to.prop,c(input$comparingAttr,"tgt.class")]
+      tab<-table(df.to.prop)
+      
+      test<-chisq.test(tab)
+      o<-test$observed
+      e<-test$expected
+      #vtgt<-colnames(o)[which(colnames(o) == "1")] # vtgt is tgt.class == 1
+      #cmp.classes<-rownames(e) # <--- want to compute top contributor for Acmp,
+      # for vtgt only
+      chisq.contri<-cbind(o[,1],
+                          e[,1],
+                          (((o-e)^2)/e)[,1])
+      colnames(chisq.contri)<-c("Observed",
+                                "Expected",
+                                "Chi-squared contribution")
+      return(chisq.contri)
+    }
+  })
+  
+  # summary of difflift and contribution for attributes as a whole
   output$analyse.summary<-renderTable({
     prop.df<-Hypotheses()
     actx<-unique(prop.df$Actx)
@@ -2451,7 +2534,7 @@ shinyServer(function(input,output,session){
     }
     summary.df<-cbind(summary.df,SP.vec)
     rownames(summary.df)<-actx
-    colnames(summary.df)<-c("difflift","contri","SP")
+    colnames(summary.df)<-c("mean difflift","mean contri","Simpson's paradox")
     return(summary.df)
     
   })
@@ -2465,11 +2548,20 @@ shinyServer(function(input,output,session){
   #*********************************************#
   
   Settings<-reactive({
+    # general
+    log.timestamp<-date()
+    
     # data
     log.filename<-as.character(input$datFile[[1]])
     log.header<-input$datHeader
     log.sep<-input$datSep
     log.quote<-input$datQuote
+    
+    # initial test
+    log.Atgt<-input$targetAttr
+    log.Acmp<-input$comparingAttr
+    if(!is.null(input$ctxItems)) log.Actx<-paste(input$ctxItems,collapse=", ")
+    else log.Actx<-""
     
     # test diagnostics
     log.p.significant<-p.significant
@@ -2483,24 +2575,34 @@ shinyServer(function(input,output,session){
     # hypothesis mining
     log.min.sup.cij<-min.sup.cij
     
-    col1<-c(rep("Data",4),
+    col1<-c("Session",
+            rep("Data",4),
+            rep("Initial test",3),
             rep("Test diagnostics",1),
             rep("Context mining",4),
             rep("Hypothesis mining",1))
-    col2<-c("Filename",
+    col2<-c("Timestamp",
+            "Filename",
             "Header has attribute names",
             "Separator",
             "Quotes",
+            "Target attribute",
+            "Comparing attribute",
+            "Context items",
             "p-value threshold",
             "Random forest accuracy threshold",
             "Number of context attributes to shortlist",
             "Class ratio threshold for class-imbalance learning",
             "Mined attributes",
             "Min support for each cell")
-    col3<-c(log.filename,
+    col3<-c(log.timestamp,
+            log.filename,
             log.header,
             log.sep,
             log.quote,
+            log.Atgt,
+            log.Acmp,
+            log.Actx,
             log.p.significant,
             log.acc.rf.default,
             log.top.k,
@@ -2521,5 +2623,12 @@ shinyServer(function(input,output,session){
   output$session.log<-renderTable({
     return(Settings())
   })
+  
+  output$log.download<-downloadHandler(
+    filename = function() { paste("session_log", '.txt', sep='') },
+    content = function(file) {
+      write.csv(Settings(), file)
+    }
+  )
   
 }) #end shinyServer

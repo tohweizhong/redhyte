@@ -2,11 +2,7 @@ WISHLIST
 
 #===CRUCIAL===#
 
--> top contributor for mined hypothesis analysis if Tinitial is collapsed x2
-
 -> user i/p discretization and discretization algorithm
-
--> An analysis log like MetaboNexus'
 
 -> play around with RF parameters
 
@@ -17,8 +13,6 @@ WISHLIST
 -> test speeds on the classic datasets
 
 -> using googleVis or similiar API/packages to do interactive graphics
-
--> export contexted data
 
 -> clean code
   $ make naming of variables, functions, modules more consistent
@@ -33,7 +27,7 @@ WISHLIST
 
 #===OPTIONAL===#
 
--> min.sup for Tinitial
+-> nonzero min.sup for Tinitial
 
 -> display support (implemented but no reactive yet)
 
@@ -50,7 +44,5 @@ WISHLIST
 -> Test diagnostics: if TD fails, non-parametric test and/or permutation test (exchangibility), with sequential hypothesis testing. also the 1-sum(p-values from stratified tests)
 
 -> consider all pairwise context items combinations (put dl, pvalues in a matrix)
-
--> row.names
 
 -> identification of outliers, removal of outliers from dataset
