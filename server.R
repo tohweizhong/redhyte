@@ -208,7 +208,7 @@ shinyServer(function(input,output,session){
               xlab=input$viz.which.attr1,
               ylab=input$viz.which.attr2)
     else{
-      par(las=1)
+      par(las=2)
       spineplot(as.factor(Data()[[1]][,input$viz.which.attr1])~
                   as.factor(Data()[[1]][,input$viz.which.attr2]),
                 xlab=input$viz.which.attr2,
@@ -634,8 +634,15 @@ shinyServer(function(input,output,session){
     
     #**console**#
     print(paste("nrow(dfWithCtx): ",nrow(dfWithCtx)))
-
-    return(list(dfWithCtx,attr.type,Data()[[3]]))
+    
+    # number of classes
+    numCl<-NULL
+    for(j in seq(ncol(dfWithCtx))){
+      if(attr.type[j] == "Cate") numCl<-c(numCl,length(unique(dfWithCtx[,j])))
+      else if(attr.type[j] == "Cont") numCl<-c(numCl,NA)
+    }
+    
+    return(list(dfWithCtx,attr.type,numCl))
     #081014: context bug resolved
   })
   
@@ -1470,7 +1477,14 @@ shinyServer(function(input,output,session){
     
     attr.type<-rep("Cate",length(attr.type))
     
-    return(list(df,attr.type,Data2()[[3]]))
+    # number of classes
+    numCl<-NULL
+    for(j in seq(ncol(df))){
+      if(attr.type[j] == "Cate") numCl<-c(numCl,length(unique(df[,j])))
+      else if(attr.type[j] == "Cont") numCl<-c(numCl,NA)
+    }
+    
+    return(list(df,attr.type,numCl))
   })
   
   #*********************************************#

@@ -247,7 +247,7 @@ shinyUI(pageWithSidebar(
       #=============================================#
       
       tabPanel("9. Session log",
-               downloadButton("log.download","Download session log")
+               downloadButton("log.download","Download session log"),
                tableOutput("session.log"))
       
     )#end tabset panel

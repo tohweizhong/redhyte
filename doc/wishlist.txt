@@ -2,8 +2,6 @@ WISHLIST
 
 #===CRUCIAL===#
 
--> user i/p discretization and discretization algorithm
-
 -> play around with RF parameters
 
 -> find classic use-cases and examples datasets
@@ -26,6 +24,10 @@ WISHLIST
 -> ship/deploy (gist, shinyapps.io, package)
 
 #===OPTIONAL===#
+
+-> user i/p discretization and discretization algorithm
+
+-> vtgt for cont. Atgt, >= mean always?
 
 -> nonzero min.sup for Tinitial
 
