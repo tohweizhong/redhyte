@@ -96,10 +96,10 @@ shinyServer(function(input,output,session){
   
   #selecting which attributes to visualise
   output$viz.ctrl1<-renderUI({
-    selectizeInput("viz.which.attr1","Select attribute to visualize",colnames(Data()[[1]]))
+    selectizeInput("viz.which.attr1","Select an attribute to visualize",colnames(Data()[[1]]))
   })
   output$viz.ctrl2<-renderUI({
-    selectizeInput("viz.which.attr2","Select attribute to visualize",colnames(Data()[[1]]))
+    selectizeInput("viz.which.attr2","Select another attribute to visualize",colnames(Data()[[1]]))
   })
   
   #display type of attribute: continuous or categorical
@@ -1045,7 +1045,7 @@ shinyServer(function(input,output,session){
   
   # download contexted data
   output$ctx.download<-downloadHandler(
-    filename = function() { paste("contexted_data", '.csv', sep='') },
+    filename = function() {paste("contexted_data", '.csv', sep='') },
     content = function(file) {
       write.csv(Data2()[[1]], file)
     }
@@ -1247,7 +1247,7 @@ shinyServer(function(input,output,session){
         }
       }
       
-      colnames(MH.df)<-c("Attribute","3rd Attribute","Mantel-Haenszel Chi-squared","p-value")
+      colnames(MH.df)<-c("Attribute","Stratified by","Mantel-Haenszel Chi-squared","p-value")
       return(MH.df)
     }
   })
@@ -1445,7 +1445,7 @@ shinyServer(function(input,output,session){
         }
       }
       
-      colnames(MH.df)<-c("Attribute","3rd Attribute","Mantel-Haenszel Chi-squared","p-value")
+      colnames(MH.df)<-c("Attribute","Stratified by","Mantel-Haenszel Chi-squared","p-value")
       return(MH.df)
     }
   })
@@ -1946,16 +1946,16 @@ shinyServer(function(input,output,session){
       return(c(c11=c11,c12=c12,c21=c21,c22=c22,n1=n1,n2=n2))
     }
     
-    # function to compute b, given a 2x2 table
-    compute.b<-function(tab){
+    # function to compute i, given a 2x2 table
+    compute.indp<-function(tab){
      sum<-sum(tab)
      c11<-tab[1,1]
      c12<-tab[1,2]
      c21<-tab[2,1]
      c22<-tab[2,2]
-     b1<-(c11/((c11+c12)*(c11+c21)))/sum
-     b2<-(c21/((c11+c21)*(c21+c22)))/sum
-     return(c(b1,b2))
+     i1<-(c11/((c11+c12)*(c11+c21)))/sum
+     i2<-(c21/((c11+c21)*(c21+c22)))/sum
+     return(c(i1,i2))
     }
     
     # compute initial proportions
@@ -1965,9 +1965,9 @@ shinyServer(function(input,output,session){
     # compute initial n
     initial.n1<-compute.sup(cont.tab)["n1"]
     initial.n2<-compute.sup(cont.tab)["n2"]
-    # compute initial b
-    initial.b1<-compute.b(cont.tab)[1]
-    initial.b2<-compute.b(cont.tab)[2] # <--- speed can be improved here
+    # compute initial i
+    initial.i1<-compute.indp(cont.tab)[1]
+    initial.i2<-compute.indp(cont.tab)[2] # <--- speed can be improved here
     
     #**console**#
     print(paste("initial.p1: ",initial.p1))
@@ -2029,15 +2029,15 @@ shinyServer(function(input,output,session){
         prop.df$n1prime[i]<-tmp.sup["n1"]
         prop.df$n2prime[i]<-tmp.sup["n2"]
         
-        prop.df$b1prime[i]<-compute.b(tab.to.prop)[1]
-        prop.df$b2prime[i]<-compute.b(tab.to.prop)[2]
+        prop.df$i1prime[i]<-compute.indp(tab.to.prop)[1]
+        prop.df$i2prime[i]<-compute.indp(tab.to.prop)[2]
       }
       
       else{
         prop.df$c11[i]<-prop.df$c12[i]<-NA
         prop.df$c21[i]<-prop.df$c22[i]<-NA
         prop.df$n1prime[i]<-prop.df$n2prime[i]<-NA
-        prop.df$b1prime[i]<-prop.df$b2prime[i]<-NA
+        prop.df$i1prime[i]<-prop.df$i2prime[i]<-NA
       }
       i<-i+1
     }
@@ -2061,11 +2061,11 @@ shinyServer(function(input,output,session){
       return(numer/denom)
     }
     
-    # function to compute Bayesian Lift
-    compute.bl<-function(prop.vec){
-      b1prime<-prop.vec[1]
-      b2prime<-prop.vec[2]
-      return((b1prime-b2prime)/(initial.b1-initial.b2))
+    # function to compute Independence Lift
+    compute.il<-function(prop.vec){
+      i1prime<-prop.vec[1]
+      i2prime<-prop.vec[2]
+      return((i1prime-i2prime)/(initial.i1-initial.i2))
     }
     
     prop.df$difflift<-apply(prop.df[,c("p1prime","p2prime")],
@@ -2083,9 +2083,9 @@ shinyServer(function(input,output,session){
                          else if(x>=0) return(FALSE)
                        })
     
-    prop.df$bayeslift<-apply(prop.df[,c("b1prime","b2prime")],
+    prop.df$indplift<-apply(prop.df[,c("i1prime","i2prime")],
                       MARGIN=1,
-                      FUN=compute.bl)
+                      FUN=compute.il)
     
     # now, append the chi-squared test stats and p-values
     
@@ -2126,10 +2126,10 @@ shinyServer(function(input,output,session){
     #correct for multiple testing using Bonferroni correction
     prop.df$pvalue.adj<-p.adjust(prop.df$pvalue, method = "bonferroni")
     # sort
-    prop.df<-prop.df[with(prop.df,order(-sufficient,difflift,contri,bayeslift,pvalue.adj)),]
+    prop.df<-prop.df[with(prop.df,order(-sufficient,difflift,contri,indplift,pvalue.adj)),]
     
-    print(prop.df$b1prime)
-    print(prop.df$b2prime)
+    print(prop.df$i1prime)
+    print(prop.df$i2prime)
     return(prop.df)
   })
   
@@ -2138,7 +2138,15 @@ shinyServer(function(input,output,session){
   #*********************************************#
   
   output$hypotheses<-renderTable({
-    Hypotheses()
+    prop.df<-Hypotheses()
+    prop.df<-subset(prop.df,select=c(Actx,vctx,
+                                     sufficient,
+                                     c11,c12,c21,c22,
+                                     n1prime,n2prime,
+                                     p1prime,p2prime,
+                                     i1prime,i2prime,
+                                     difflift,contri,indplift,SR,
+                                     stats,pvalue,pvalue.adj))
   },digits=3)
   
   #=============================================#
@@ -2151,32 +2159,60 @@ shinyServer(function(input,output,session){
   
   output$analyse.sort.ctrl.one<-renderUI({
     selectizeInput("analyse.sort.one","Sort first by?",
-                   c("sufficient","SR","difflift","contri","bayeslift","pvalue","pvalue.adj"))
+                   c("sufficient","SR","difflift","contri","indplift","pvalue","pvalue.adj"))
   }) # return: input$analyse.sort.one
   output$analyse.sort.ctrl.two<-renderUI({
     selectizeInput("analyse.sort.two","Then by?",
-                   c("sufficient","SR","difflift","contri","bayeslift","pvalue","pvalue.adj"))
+                   c("sufficient","SR","difflift","contri","indplift","pvalue","pvalue.adj"))
   }) # return: input$analyse.sort.two
   
   # render the Hypotheses master data frame, sorted according to user
   output$analyse.hypothesis<-renderTable({
-    prop.df<-subset(Hypotheses(),select=c(sufficient,SR,difflift,contri,bayeslift,pvalue,pvalue.adj))
+    prop.df<-subset(Hypotheses(),select=c(sufficient,SR,difflift,contri,indplift,pvalue,pvalue.adj))
     
     sort.first.by<-which(colnames(prop.df) == input$analyse.sort.one)
     then.by<-which(colnames(prop.df) == input$analyse.sort.two)
     
     # sort descendingly for sufficient and SR only
+    # 1: sufficient
+    # 2: SR
+    # 5: indplift
+    
+    # first case: {1 or 2, 1 or 2}
     if((sort.first.by == 1 || sort.first.by == 2) && (then.by == 1 || then.by == 2))
       prop.df<-prop.df[order(-prop.df[,sort.first.by],-prop.df[,then.by]),]
     
-    else if((sort.first.by == 1 || sort.first.by == 2) && (then.by != 1 && then.by != 2))
-      prop.df<-prop.df[order(-prop.df[,sort.first.by],prop.df[,then.by]),]
+    # second case: {1 or 2, not 1 and 2}
+    else if((sort.first.by == 1 || sort.first.by == 2) && (then.by != 1 && then.by != 2)){
+     if(then.by != 5) 
+       prop.df<-prop.df[order(-prop.df[,sort.first.by],prop.df[,then.by]),]
+     else if(then.by == 5)
+       prop.df<-prop.df[order(-prop.df[,sort.first.by],abs(prop.df[,then.by])),]
+    }
     
-    else if((sort.first.by != 1 && sort.first.by != 2) && (then.by == 1 && then.by == 2))
-      prop.df<-prop.df[order(prop.df[,sort.first.by],-prop.df[,then.by]),]
+    # third case: {not 1 and 2, 1 or 2}
+    else if((sort.first.by != 1 && sort.first.by != 2) && (then.by == 1 && then.by == 2)){
+      if(sort.first.by != 5)
+        prop.df<-prop.df[order(prop.df[,sort.first.by],-prop.df[,then.by]),]
+      else (sort.first.by == 5)
+        prop.df<-prop.df[order(abs(prop.df[,sort.first.by]),-prop.df[,then.by]),]
+    }
     
+    # at this point, both must be neither 1 or 2
+    # fourth case: {5, not 1 and 2}
+    else if(sort.first.by == 5)
+      prop.df<-prop.df[order(abs(prop.df[,sort.first.by]),prop.df[,then.by]),]
+    
+    # fifth case: {not 1 and 2, 5}
+    else if(then.by == 5)
+      prop.df<-prop.df[order(prop.df[,sort.first.by],abs(prop.df[,then.by])),]
+    
+    # sixth case: {not 1 and 2 and 5, not 1 and 2 and 5}
     else
       prop.df<-prop.df[order(prop.df[,sort.first.by],prop.df[,then.by]),]
+    
+    colnames(prop.df)<-c("sufficient","Simpson's Reversal","difference lift",
+                         "contribution","independence lift","p-value","adjusted p-lvaue")
     
     return(prop.df)
   })
@@ -2536,8 +2572,8 @@ shinyServer(function(input,output,session){
       all.contri<-prop.df$contri[which(prop.df$Actx == a.ctx.attr)]
       
       # find the mean for each Actx
-      dl<-mean(all.dl,na.rm=TRUE)
-      contri<-mean(all.contri,na.rm=TRUE)
+      dl<-mean(abs(all.dl),na.rm=TRUE)
+      contri<-mean(abs(all.contri),na.rm=TRUE)
       
       # remove NAs, look for Simpson's Paradox
       all.dl[is.na(dl)]<-0
@@ -2548,7 +2584,7 @@ shinyServer(function(input,output,session){
     }
     summary.df<-cbind(summary.df,SP.vec)
     rownames(summary.df)<-actx
-    colnames(summary.df)<-c("mean difflift","mean contri","Simpson's paradox")
+    colnames(summary.df)<-c("mean difference lift","mean contribution","Simpson's paradox")
     return(summary.df)
     
   })
@@ -2639,10 +2675,9 @@ shinyServer(function(input,output,session){
   })
   
   output$log.download<-downloadHandler(
-    filename = function() { paste("session_log", '.txt', sep='') },
-    content = function(file) {
+    filename = function(){paste("session_log",'.txt',sep='')},
+    content = function(file){
       write.csv(Settings(), file)
     }
   )
-  
 }) #end shinyServer

@@ -13,7 +13,7 @@ shinyUI(pageWithSidebar(
     tags$hr(),
     #data input
     fileInput('datFile',
-              tags$h5(tags$strong('Choose .csv or .txt file to upload local file')),
+              tags$h5(tags$strong('Choose file to analyse')),
               accept=c('text/csv', 'text/comma-separated-values,text/plain')),
     tags$hr(),
     #checkbox to indicate header == true or false
@@ -46,7 +46,7 @@ shinyUI(pageWithSidebar(
       #=============================================#
       #=============0. Getting started==============#
       #=============================================#
-      tabPanel("0. Getting started",
+      tabPanel("0. Overview of algorithm",
                imageOutput("algoPNG",height="700px")),
       
       #=============================================#
@@ -91,7 +91,7 @@ shinyUI(pageWithSidebar(
       #=============================================#
       
       tabPanel("3. Initial test",
-               tags$h4("Initial test"),
+               tags$h4("Set up your initial hypothesis and test"),
                tags$h5("Your hypothesis:"),
                verbatimTextOutput("hypothesis.statement.it"),
                navlistPanel(
@@ -124,7 +124,7 @@ shinyUI(pageWithSidebar(
                           sidebarPanel(
                             htmlOutput("test.ctx.item.ctrl"),
                             width=8)),
-                 tabPanel("Table(s) & test",
+                 tabPanel("Table(s) & test(s)",
                           tableOutput("contTable"),
                           tableOutput("initialTest"),
                           tableOutput("contTable2"),
@@ -149,8 +149,8 @@ shinyUI(pageWithSidebar(
       tabPanel("5. Test diagnostics",
                tags$h4("Test diagnostics"),
                tags$h6("Objectives:"),
-               tags$h6("-> if Tinitial is t-test, i) check parametric assumptions and ii) find chi-squared top contributor if valid"),
-               tags$h6("-> if Tinitial is collapsed chi-squared test, find top contributor in the Acmp classes"),
+               tags$h6("-> if initial test is a t-test, i) check parametric assumptions and ii) find chi-squared top contributor if valid"),
+               tags$h6("-> if initial test is a collapsed chi-squared test, find top contributor amongst the classes of the comparing attribute"),
                tags$h6("-> for both t-test and collapsed chi-squared test, use Cochran-Mantel-Haenszel Chi-Squared Test to identify potential confounders"),
                tags$h5("Your hypothesis:"),
                verbatimTextOutput("hypothesis.statement.td"),
@@ -178,9 +178,10 @@ shinyUI(pageWithSidebar(
                tags$h4("Context mining"),
                tags$h6("Redhyte's hypothesis mining implementation works by first constructing two
                        random forest models, using all other attributes in the data to predict the target and comparing attributes.
-                       For each of these two models, Redhyte extract the top k attributes that contribute
-                       to the classification of target and/or comparing attributes, if the model(s) is accurate.
-                       Confusion matrices of the models will be displayed, as well as the list of mined context attributes."),
+                       For each of these two models, Redhyte extract the top attributes that contribute
+                       to the classification of target and/or comparing attributes, if the model(s) is/are accurate.
+                       Confusion matrices of the models, a list of mined context attributes, random forest variable importance plots 
+                       and stratified histograms of the mined context attributes are displayed after mining."),
                tags$h5("Initial hypothesis: "),
                verbatimTextOutput("hypothesis.statement.cm"),
                navlistPanel(
@@ -210,6 +211,9 @@ shinyUI(pageWithSidebar(
       
       tabPanel("7. Hypothesis mining",
                tags$h4("Hypothesis mining"),
+               tags$h6("From the mined context attributes, Redhyte considers every possible context item 
+                       and includes each item in the initial hypothesis to form a mined hypothesis.
+                       Each mined hypothesis is then evaluated using various metrics."),
                tableOutput("hypotheses")),
       
       #=============================================#
