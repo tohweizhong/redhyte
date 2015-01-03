@@ -2675,9 +2675,9 @@ shinyServer(function(input,output,session){
   })
   
   output$log.download<-downloadHandler(
-    filename = function(){paste("session_log",'.txt',sep='')},
+    filename = function(){paste("session_log_", date(), '.txt',sep='')},
     content = function(file){
-      write.csv(Settings(), file)
+      write.table(Settings(),file,quote=FALSE,row.names=FALSE,na="NA",sep=" :: ",col.names=FALSE)
     }
   )
 }) #end shinyServer

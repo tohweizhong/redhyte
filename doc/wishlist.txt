@@ -6,7 +6,7 @@ WISHLIST
 
 -> find classic use-cases and examples datasets
 
--> one unified example for SP, hypo analysis, difflift and contri
+-> one unified example for SP, hypo analysis, difflift, contri and indplift
 
 -> test speeds on the classic datasets
 

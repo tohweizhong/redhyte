@@ -73,7 +73,7 @@ shinyUI(pageWithSidebar(
                             htmlOutput("viz.ctrl2"),
                             verbatimTextOutput("viz.type2")),
                           width=4),
-                 tabPanel("Univariate",
+                 tabPanel("Distributions",
                           tableOutput("viz.tukeyfive1"),
                           plotOutput("viz.hist1"),
                           #plotOutput("viz.boxplot1"),
@@ -82,8 +82,8 @@ shinyUI(pageWithSidebar(
                           #plotOutput("viz.boxplot2")),
                  tabPanel("Relationship",
                           plotOutput("viz.scatterplot")),
-                 tabPanel("Multivariate",
-                          tags$h6("PCA score plot?")),
+                 #tabPanel("Multivariate",
+                          #tags$h6("PCA score plot?")),
                  widths=c(3,9))),
       
       #=============================================#
