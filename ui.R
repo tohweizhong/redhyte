@@ -156,7 +156,8 @@ shinyUI(pageWithSidebar(
                verbatimTextOutput("hypothesis.statement.td"),
                navlistPanel(
                  tabPanel("Continuous target attribute",
-                          tableOutput("KStest"),
+                          tableOutput("SWtest.cmp1"),
+                          tableOutput("SWtest.cmp2"),
                           tableOutput("Ftest"),
                           tableOutput("MWtest"),
                           #tags$h6("Flat contingency table"),

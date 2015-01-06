@@ -1087,19 +1087,19 @@ shinyServer(function(input,output,session){
   #*********************************************#
   
   # Test diagnostics for continuous Atgt:
-  # -> K-S test for normality
+  # -> S-W test for normality of group 1 of Acmp
+  # -> S-W test for normality of group 2 of Acmp
   # -> F-test for equal variances
   # -> M-W test for either of the both fails
   # -> display flat table
   # -> do flat chi-sq test, find top contributor
   # -> M-H test for 3rd attribute association (assumes no 3-way interaction)
 
-  output$KStest<-renderTable({
+  output$SWtest.cmp1<-renderTable({
     if(Test()[["test.type"]] == "t.test"){
       df<-Data2()[[1]][,c(input$targetAttr,"cmp.class")]
       
-      test<-ks.test(df[which(df$cmp.class == "1"),input$targetAttr],
-                    df[which(df$cmp.class == "2"),input$targetAttr])
+      test<-shapiro.test(df[which(df$cmp.class == "1"),input$targetAttr])
       
       stats<-test$statistic
       pvalue<-test$p.value
@@ -1109,7 +1109,37 @@ shinyServer(function(input,output,session){
                                 as.character(round(stats,3)),
                                 as.character(pvalue)))
       rownames(returnMe)<-c("Method","Test statistic","p-value")
-      colnames(returnMe)<-"Kolmogorov-Smirnov test for normality"
+      colnames(returnMe)<-paste("Shapiro-Wilk test for normality of ",
+                                input$targetAttr,
+                                " in ",
+                                input$comparingAttr,
+                                " = {",
+                                Groupings()[["Acmp.names"]][1],
+                                "}",sep="")
+      returnMe
+    }
+  })
+  output$SWtest.cmp2<-renderTable({
+    if(Test()[["test.type"]] == "t.test"){
+      df<-Data2()[[1]][,c(input$targetAttr,"cmp.class")]
+      
+      test<-shapiro.test(df[which(df$cmp.class == "2"),input$targetAttr])
+      
+      stats<-test$statistic
+      pvalue<-test$p.value
+      method<-test$method
+      
+      returnMe<-as.data.frame(c(as.character(method),
+                                as.character(round(stats,3)),
+                                as.character(pvalue)))
+      rownames(returnMe)<-c("Method","Test statistic","p-value")
+      colnames(returnMe)<-paste("Shapiro-Wilk test for normality of ",
+                                input$targetAttr,
+                                " in ",
+                                input$comparingAttr,
+                                " = {",
+                                Groupings()[["Acmp.names"]][2],
+                                "}",sep="")
       returnMe
     }
   })
@@ -1139,8 +1169,8 @@ shinyServer(function(input,output,session){
       
       if(var.test(df[which(df$cmp.class == "1"),input$targetAttr],
                   df[which(df$cmp.class == "2"),input$targetAttr])$p.value <= p.significant ||
-           ks.test(df[which(df$cmp.class == "1"),input$targetAttr],
-                   df[which(df$cmp.class == "2"),input$targetAttr])$p.value <= p.significant){
+           shapiro.test(df[which(df$cmp.class == "1"),input$targetAttr])$p.value <= p.significant ||
+           shapiro.test(df[which(df$cmp.class == "2"),input$targetAttr])$p.value <= p.significant){
         
         test<-wilcox.test(df[which(df$cmp.class == "1"),input$targetAttr],
                           df[which(df$cmp.class == "2"),input$targetAttr])
