@@ -746,8 +746,18 @@ shinyServer(function(input,output,session){
   #*********************************************#
   #***************END REACTIVE******************#
   #*********************************************#
-  
-  #render the comparison or contingency table
+
+  # for the next 4 output objects:
+  # -> render text for comparison or contingency table
+  # -> render the comparison or contingency table
+  # -> render text for initial test
+  # -> initial parametric test
+  output$text.comp.or.cont<-renderText({
+    if(Table()[["tab.type"]] == "Contingency" && Table()[["sufficient"]] == "Sufficient")
+      return("Contingency table:")
+    else if(Table()[["tab.type"]] == "Comparison" && Table()[["sufficient"]] == "Sufficient")
+      return("Comparison table:")
+  })
   output$contTable<-renderTable({
     tab<-Table()[[1]]
     
@@ -791,7 +801,10 @@ shinyServer(function(input,output,session){
     }
     return(Table()[["cont.tab"]])
   })
-  #initial parametric test
+  
+  output$text.initial.test<-renderText({
+    return("Initial test:")
+  })
   output$initialTest<-renderTable({
     # 081014: only t-test and chi-squared tests are used now.
     # no more ANOVA
@@ -828,6 +841,13 @@ shinyServer(function(input,output,session){
   })
 
   # render contingency table for continuous Atgt as well
+  output$text.comp.or.cont2<-renderText({
+    if(Table()[["tab.type"]] == "Comparison")
+      return(paste("Contingency table on discretized ",
+                   input$targetAttr,
+                   ": ",
+                   sep=""))
+  })
   output$contTable2<-renderTable({
     if(Table()[["tab.type"]] == "Comparison"){
       tab<-Table()[["cont.tab"]]
@@ -856,6 +876,11 @@ shinyServer(function(input,output,session){
       colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Total"
       return(tab)
     }
+  })
+  
+  output$text.initial.test2<-renderText({
+    if(Table()[["tab.type"]] == "Comparison")
+      return("Chi-squared test on contingency table:")
   })
   output$initialTest2<-renderTable({
     
@@ -1095,6 +1120,11 @@ shinyServer(function(input,output,session){
   # -> do flat chi-sq test, find top contributor
   # -> M-H test for 3rd attribute association (assumes no 3-way interaction)
 
+  output$text.SWtest<-renderText({
+    if(Test()[["test.type"]] == "t.test"){
+      return("Normality Checks:")
+    }
+  })
   output$SWtest.cmp1<-renderTable({
     if(Test()[["test.type"]] == "t.test"){
       df<-Data2()[[1]][,c(input$targetAttr,"cmp.class")]
@@ -1143,6 +1173,12 @@ shinyServer(function(input,output,session){
       returnMe
     }
   })
+  #===#
+  output$text.Ftest<-renderText({
+    if(Test()[["test.type"]] == "t.test"){
+      return("Equal variance check:")
+    }
+  })
   output$Ftest<-renderTable({
     if(Test()[["test.type"]] == "t.test"){
       df<-Data2()[[1]][,c(input$targetAttr,"cmp.class")]
@@ -1160,6 +1196,20 @@ shinyServer(function(input,output,session){
       rownames(returnMe)<-c("Method","Test statistic","p-value")
       colnames(returnMe)<-"F-test for equal variances"
       returnMe
+    }
+  })
+  #===#
+  output$text.MWtest<-renderText({
+    if(Test()[["test.type"]] == "t.test"){
+      
+      df<-Data2()[[1]][,c(input$targetAttr,"cmp.class")]
+      
+      if(var.test(df[which(df$cmp.class == "1"),input$targetAttr],
+                  df[which(df$cmp.class == "2"),input$targetAttr])$p.value <= p.significant ||
+           shapiro.test(df[which(df$cmp.class == "1"),input$targetAttr])$p.value <= p.significant ||
+           shapiro.test(df[which(df$cmp.class == "2"),input$targetAttr])$p.value <= p.significant){
+        return("Non-parametric test:")
+      }
     }
   })
   output$MWtest<-renderTable({
@@ -1186,6 +1236,12 @@ shinyServer(function(input,output,session){
         colnames(returnMe)<-"Non-parametric Wilcoxon rank sum test on means"
         returnMe
       }
+    }
+  })
+  #===#
+  output$text.MHtest.cont<-renderText({
+    if(Test()[["test.type"]] == "t.test"){
+      return("Cochran-Mantel-Haenszel test:")
     }
   })
   output$MHtest.cont<-renderTable({
@@ -1281,6 +1337,13 @@ shinyServer(function(input,output,session){
       return(MH.df)
     }
   })
+  #===#
+  output$text.flat.table.cont<-renderText({
+    if(Test()[["test.type"]] == "t.test"
+       && Test()[["second.test.type"]] == "collapsed.chi.sq"){
+      return("Flat contingency table:")
+    }
+  })
   output$flat.table.cont<-renderTable({
     if(Test()[["test.type"]] == "t.test"
        && Test()[["second.test.type"]] == "collapsed.chi.sq"){
@@ -1288,6 +1351,13 @@ shinyServer(function(input,output,session){
       tab<-table(tab.df)
       colnames(tab)<-Groupings()[["Atgt.names"]]
       return(tab)
+    }
+  })
+  #===#
+  output$text.flat.chi.sq.cont<-renderText({
+    if(Test()[["test.type"]] == "t.test"
+       && Test()[["second.test.type"]] == "collapsed.chi.sq"){
+      return("Chi-squared test on flat contingency table:")
     }
   })
   output$flat.chi.sq.cont<-renderTable({
@@ -1306,6 +1376,13 @@ shinyServer(function(input,output,session){
       rownames(returnMe)<-c("Method","Test statistic","p-value")
       colnames(returnMe)<-"Flat chi-squared test on discretized target attribute"
       returnMe
+    }
+  })
+  #===#
+  output$text.chi.sq.top.cont<-renderText({
+    if(Test()[["test.type"]] == "t.test"
+       && Test()[["second.test.type"]] == "collapsed.chi.sq"){
+      return("Chi-squared top contributor:")
     }
   })
   output$chi.sq.top.cont<-renderTable({
@@ -1334,6 +1411,12 @@ shinyServer(function(input,output,session){
   # -> display flat table
   # -> do flat chi-sq test, find top contributor
   # -> M-H test for 3rd attribute assoication (assumes no 3-way interaction)
+  
+  output$text.flat.table.cate<-renderText({
+    if(Test()[["test.type"]] == "collapsed.chi.sq"){
+      return("Flat contingency table:")
+    }
+  })
   output$flat.table.cate<-renderTable({
     if(Test()[["test.type"]] == "collapsed.chi.sq"){
       tab.df<-Table()[["tab.df"]][,c(2:3)] # ony Acmp and tgt.class
@@ -1341,6 +1424,12 @@ shinyServer(function(input,output,session){
       
       colnames(tab)<-Groupings()[["Atgt.names"]]
       return(tab)
+    }
+  })
+  #===#
+  output$text.flat.chi.sq.cate<-renderText({
+    if(Test()[["test.type"]] == "collapsed.chi.sq"){
+      return("Chi-squared test on flat contingency table:")
     }
   })
   output$flat.chi.sq.cate<-renderTable({
@@ -1361,6 +1450,12 @@ shinyServer(function(input,output,session){
       returnMe
     }
   })
+  #===#
+  output$text.chi.sq.top.cate<-renderText({
+    if(Test()[["test.type"]] == "collapsed.chi.sq"){
+      return("Chi-squared top contributor:")
+    }
+  })
   output$chi.sq.top.cate<-renderTable({
     if(Test()[["test.type"]] == "collapsed.chi.sq"){
       tab.df<-Table()[["tab.df"]][,c(2:3)] # only Acmp and tgt.class
@@ -1379,6 +1474,12 @@ shinyServer(function(input,output,session){
                                 "Expected",
                                 "Chi-squared contribution")
       return(chisq.contri)
+    }
+  })
+  #===#
+  output$text.MHtest.cate<-renderText({
+    if(Test()[["test.type"]] == "collapsed.chi.sq"){
+      return("Cochran-Mantel-Haenszel test:")
     }
   })
   output$MHtest.cate<-renderTable({
