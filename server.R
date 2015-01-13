@@ -1128,49 +1128,53 @@ shinyServer(function(input,output,session){
   output$SWtest.cmp1<-renderTable({
     if(Test()[["test.type"]] == "t.test"){
       df<-Data2()[[1]][,c(input$targetAttr,"cmp.class")]
-      
-      test<-shapiro.test(df[which(df$cmp.class == "1"),input$targetAttr])
-      
-      stats<-test$statistic
-      pvalue<-test$p.value
-      method<-test$method
-      
-      returnMe<-as.data.frame(c(as.character(method),
-                                as.character(round(stats,3)),
-                                as.character(pvalue)))
-      rownames(returnMe)<-c("Method","Test statistic","p-value")
-      colnames(returnMe)<-paste("Shapiro-Wilk test for normality of ",
-                                input$targetAttr,
-                                " in ",
-                                input$comparingAttr,
-                                " = {",
-                                Groupings()[["Acmp.names"]][1],
-                                "}",sep="")
-      returnMe
+      numSam<-length(which(df$cmp.class == "1"))
+      if(numSam >= 3 && numSam <=5000){
+        test<-shapiro.test(df[which(df$cmp.class == "1"),input$targetAttr])
+        
+        stats<-test$statistic
+        pvalue<-test$p.value
+        method<-test$method
+        
+        returnMe<-as.data.frame(c(as.character(method),
+                                  as.character(round(stats,3)),
+                                  as.character(pvalue)))
+        rownames(returnMe)<-c("Method","Test statistic","p-value")
+        colnames(returnMe)<-paste("Shapiro-Wilk test for normality of ",
+                                  input$targetAttr,
+                                  " in ",
+                                  input$comparingAttr,
+                                  " = {",
+                                  Groupings()[["Acmp.names"]][1],
+                                  "}",sep="")
+        returnMe
+      }
     }
   })
   output$SWtest.cmp2<-renderTable({
     if(Test()[["test.type"]] == "t.test"){
       df<-Data2()[[1]][,c(input$targetAttr,"cmp.class")]
-      
-      test<-shapiro.test(df[which(df$cmp.class == "2"),input$targetAttr])
-      
-      stats<-test$statistic
-      pvalue<-test$p.value
-      method<-test$method
-      
-      returnMe<-as.data.frame(c(as.character(method),
-                                as.character(round(stats,3)),
-                                as.character(pvalue)))
-      rownames(returnMe)<-c("Method","Test statistic","p-value")
-      colnames(returnMe)<-paste("Shapiro-Wilk test for normality of ",
-                                input$targetAttr,
-                                " in ",
-                                input$comparingAttr,
-                                " = {",
-                                Groupings()[["Acmp.names"]][2],
-                                "}",sep="")
-      returnMe
+      numSam<-length(which(df$cmp.class == "2"))
+      if(numSam >= 3 && numSam <= 5000){
+        test<-shapiro.test(df[which(df$cmp.class == "2"),input$targetAttr])
+        
+        stats<-test$statistic
+        pvalue<-test$p.value
+        method<-test$method
+        
+        returnMe<-as.data.frame(c(as.character(method),
+                                  as.character(round(stats,3)),
+                                  as.character(pvalue)))
+        rownames(returnMe)<-c("Method","Test statistic","p-value")
+        colnames(returnMe)<-paste("Shapiro-Wilk test for normality of ",
+                                  input$targetAttr,
+                                  " in ",
+                                  input$comparingAttr,
+                                  " = {",
+                                  Groupings()[["Acmp.names"]][2],
+                                  "}",sep="")
+        returnMe
+      }
     }
   })
   #===#
