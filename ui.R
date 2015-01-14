@@ -168,14 +168,14 @@ shinyUI(pageWithSidebar(
                           h5(textOutput("text.MWtest")),
                           tableOutput("MWtest"),
                           #tags$h6("Flat contingency table"),
-                          h5(textOutput("text.flat.table.cont")),
-                          tableOutput("flat.table.cont"),
-                          h5(textOutput("text.flat.chi.sq.cont")),
-                          tableOutput("flat.chi.sq.cont"),
-                          h5(textOutput("text.chi.sq.top.cont")),
-                          tableOutput("chi.sq.top.cont"),
-                          h5(textOutput("text.MHtest.cont")),
-                          tableOutput("MHtest.cont")),
+                          h5(textOutput("text.flat.table.num")),
+                          tableOutput("flat.table.num"),
+                          h5(textOutput("text.flat.chi.sq.num")),
+                          tableOutput("flat.chi.sq.num"),
+                          h5(textOutput("text.chi.sq.top.contributor")),
+                          tableOutput("chi.sq.top.contributor"),
+                          h5(textOutput("text.MHtest.num")),
+                          tableOutput("MHtest.num")),
                  tabPanel("Categorical target attribute",
                           h5(textOutput("text.flat.table.cate")),
                           tableOutput("flat.table.cate"),
@@ -221,24 +221,29 @@ shinyUI(pageWithSidebar(
                           plotOutput("mined.attr.viz")),
                  widths=c(3,9),selected="Attributes to exclude")),
       
+#       #=============================================#
+#       #===========7. Hypothesis mining==============#
+#       #=============================================#
+#       
+#       tabPanel("7. Hypothesis mining",
+#                tags$h4("Hypothesis mining"),
+#                tags$h6("From the mined context attributes, Redhyte considers every possible context item 
+#                        and includes each item in the initial hypothesis to form a mined hypothesis.
+#                        Each mined hypothesis is then evaluated using various metrics."),
+
+      
       #=============================================#
       #===========7. Hypothesis mining==============#
       #=============================================#
       
       tabPanel("7. Hypothesis mining",
-               tags$h4("Hypothesis mining"),
+               tags$h4("Analysis of mined hypotheses"),
                tags$h6("From the mined context attributes, Redhyte considers every possible context item 
-                       and includes each item in the initial hypothesis to form a mined hypothesis.
-                       Each mined hypothesis is then evaluated using various metrics."),
-               tableOutput("hypotheses")),
-      
-      #=============================================#
-      #===========8. Hypothesis analysis============#
-      #=============================================#
-      
-      tabPanel("8. Hypothesis analysis",
-               tags$h4("Hypothesis analysis"),
+                        and includes each item in the initial hypothesis to form mined hypotheses.
+                        Each mined hypothesis is then evaluated using various metrics."),
                navlistPanel(
+                 tabPanel("Mined hypotheses",
+                          tableOutput("hypotheses")),
                  tabPanel("Select context item",
                           sidebarPanel(
                             htmlOutput("analyse.sort.ctrl.one"),
@@ -263,10 +268,10 @@ shinyUI(pageWithSidebar(
                widths=c(3,9))),
       
       #=============================================#
-      #=============9. Session log==================#
+      #=============8. Session log==================#
       #=============================================#
       
-      tabPanel("9. Session log",
+      tabPanel("8. Session log",
                downloadButton("log.download","Download session log"),
                tableOutput("session.log"))
       

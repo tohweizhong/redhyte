@@ -27,8 +27,8 @@ shinyServer(function(input,output,session){
   
   #Data() consists of *THREE* things at the moment
   # 1. Data()[[1]] is the data itself
-  # 2. Data()[[2]] is the type of variable: continuous or categorical
-  # 3. Data()[[3]] is the number of classes for categorical attributes, NA for cont.
+  # 2. Data()[[2]] is the type of variable: numerical or categorical
+  # 3. Data()[[3]] is the number of classes for categorical attributes, NA for num.
   
   #here begins the real work..
   
@@ -48,7 +48,7 @@ shinyServer(function(input,output,session){
     
     #is apparently the property of print.default()
 
-    #checking the variable type of the attributes: continuous or categorical
+    #checking the variable type of the attributes: numerical or categorical
     #and number of classes for cate. attr.
     
     if(input$datTranspose == TRUE) df<-t(df)
@@ -57,7 +57,7 @@ shinyServer(function(input,output,session){
     numCl<-NULL
     for(i in seq(ncol(df))){
       if(is.numeric(df[,i]) && length(unique(df[,i]))>5){
-        typ<-c(typ,"Cont")
+        typ<-c(typ,"Num")
         numCl<-c(numCl,NA)
       }
       else{
@@ -88,7 +88,7 @@ shinyServer(function(input,output,session){
   #=============================================#
   
   #create two dropdown boxes to choose two attributes, display:
-  # 1. Type of attribute (continuous or categorical)
+  # 1. Type of attribute (numerical or categorical)
   # 2. Tukey's five number summary or counts
   # 3. histogram or barplot
   # 4. boxplots
@@ -102,24 +102,24 @@ shinyServer(function(input,output,session){
     selectizeInput("viz.which.attr2","Select another attribute to visualize",colnames(Data()[[1]]))
   })
   
-  #display type of attribute: continuous or categorical
+  #display type of attribute: numerical r categorical
   output$viz.type1<-renderText({
-    if(Data()[[2]][input$viz.which.attr1]=="Cont")
-      type<-"Type: Continuous"
+    if(Data()[[2]][input$viz.which.attr1]=="Num")
+      type<-"Type: Numerical"
     else type<-"Type: Categorical"
     type
   })
   output$viz.type2<-renderText({
-    if(Data()[[2]][input$viz.which.attr2]=="Cont")
-      type<-"Type: Continuous"
+    if(Data()[[2]][input$viz.which.attr2]=="Num")
+      type<-"Type: Numerical"
     else type<-"Type: Categorical"
     type
   })
   
-  #display boxplot stats (Tukey's five) if cont,
+  #display boxplot stats (Tukey's five) if num,
   #else display frequencies
   output$viz.tukeyfive1<-renderTable({
-    if(Data()[[2]][input$viz.which.attr1]=="Cont"){
+    if(Data()[[2]][input$viz.which.attr1]=="Num"){
       qt<-as.data.frame(fivenum(Data()[[1]][,input$viz.which.attr1]))
       rownames(qt)<-c("Min","25%","Median","75%","Max")
       colnames(qt)<-input$viz.which.attr1
@@ -133,7 +133,7 @@ shinyServer(function(input,output,session){
 
   })
   output$viz.tukeyfive2<-renderTable({
-    if(Data()[[2]][input$viz.which.attr2]=="Cont"){
+    if(Data()[[2]][input$viz.which.attr2]=="Num"){
       qt<-as.data.frame(fivenum(Data()[[1]][,input$viz.which.attr2]))
       rownames(qt)<-c("Min","25%","Median","75%","Max")
       colnames(qt)<-input$viz.which.attr2
@@ -148,7 +148,7 @@ shinyServer(function(input,output,session){
   
   #plotting histograms or barcharts
   output$viz.hist1<-renderPlot({
-    if(Data()[[2]][input$viz.which.attr1]=="Cont")
+    if(Data()[[2]][input$viz.which.attr1]=="Num")
       hist(Data()[[1]][,input$viz.which.attr1],main=input$viz.which.attr1,xlab="")
     else{
       tb<-data.frame(table(Data()[[1]][,input$viz.which.attr1]))
@@ -162,7 +162,7 @@ shinyServer(function(input,output,session){
       
   })
   output$viz.hist2<-renderPlot({
-    if(Data()[[2]][input$viz.which.attr2]=="Cont")
+    if(Data()[[2]][input$viz.which.attr2]=="Num")
       hist(Data()[[1]][,input$viz.which.attr2],main=input$viz.which.attr2,xlab="")
     else{
       tb<-data.frame(table(Data()[[1]][,input$viz.which.attr2]))
@@ -177,11 +177,11 @@ shinyServer(function(input,output,session){
   
   # plotting boxplots
   output$viz.boxplot1<-renderPlot({
-    if(Data()[[2]][input$viz.which.attr1]=="Cont")
+    if(Data()[[2]][input$viz.which.attr1]=="Num")
       boxplot(Data()[[1]][,input$viz.which.attr1])
   }) # not used
   output$viz.boxplot2<-renderPlot({
-    if(Data()[[2]][input$viz.which.attr2]=="Cont")
+    if(Data()[[2]][input$viz.which.attr2]=="Num")
       boxplot(Data()[[1]][,input$viz.which.attr2])
   }) # not used
   
@@ -190,18 +190,18 @@ shinyServer(function(input,output,session){
     type1<-Data()[[2]][input$viz.which.attr1]
     type2<-Data()[[2]][input$viz.which.attr2]
     
-    if(type1 == "Cont" && type2 == "Cont")
+    if(type1 == "Num" && type2 == "Num")
     plot(Data()[[1]][,input$viz.which.attr2]~
            Data()[[1]][,input$viz.which.attr1],
          xlab=input$viz.which.attr1,
          ylab=input$viz.which.attr2)
-    else if(type1 == "Cont" && type2 =="Cate")
+    else if(type1 == "Num" && type2 =="Cate")
       boxplot(Data()[[1]][,input$viz.which.attr1]~
                 Data()[[1]][,input$viz.which.attr2],
               las=2,
               xlab=input$viz.which.attr2,
               ylab=input$viz.which.attr1)
-    else if(type1 == "Cate" && type2 == "Cont")
+    else if(type1 == "Cate" && type2 == "Num")
       boxplot(Data()[[1]][,input$viz.which.attr2]~
                 Data()[[1]][,input$viz.which.attr1],
               las=2,
@@ -223,7 +223,7 @@ shinyServer(function(input,output,session){
   #dropdown boxes to select Atgt and Acmp
   output$test.tgt.ctrl<-renderUI({
     selectizeInput("targetAttr",
-                   "Indicate target attribute (May be continuous or categorical)",
+                   "Indicate target attribute (May be numerical or categorical)",
                    colnames(Data()[[1]]))
   }) #return: input$targetAttr
   output$test.cmp.ctrl<-renderUI({
@@ -234,16 +234,16 @@ shinyServer(function(input,output,session){
                    colnames(Data()[[1]])[which.are.cate])
   }) #return: input$comparingAttr
   
-  #display type of attribute: continuous or categorical
+  #display type of attribute: numerical or categorical
   output$test.tgt.type<-renderText({
-    if(Data()[[2]][input$targetAttr]=="Cont")
-      type<-"Type: Continuous"
+    if(Data()[[2]][input$targetAttr]=="Num")
+      type<-"Type: Numerical"
     else type<-"Type: Categorical"
     type
   })
   output$test.cmp.type<-renderText({
-    if(Data()[[2]][input$comparingAttr]=="Cont")
-      type<-"Type: Continuous"
+    if(Data()[[2]][input$comparingAttr]=="Num")
+      type<-"Type: Numerical"
     else type<-"Type: Categorical"
     type
   })
@@ -481,7 +481,7 @@ shinyServer(function(input,output,session){
   #*********************************************#
 
   # Groupings() is a simple reactive module to
-  # -> Keep track of type of Atgt (cont or cate)
+  # -> Keep track of type of Atgt (numerical or cate)
   # -> keep track of tgt.class and cmp.class groupings
   # mainly for displaying the correct context in the UI
   
@@ -491,8 +491,8 @@ shinyServer(function(input,output,session){
   # 3. Groupings()[[3]] is Acmp.names
   
   Groupings<-reactive({
-    if(Data()[[2]][input$targetAttr] == "Cont")
-      return(list(Atgt.type="Cont",
+    if(Data()[[2]][input$targetAttr] == "Num")
+      return(list(Atgt.type="Num",
                   Atgt.names=c(paste(input$targetAttr," above/equal mean",sep=""), # <----
                                paste(input$targetAttr," below mean",sep="")),
                   Acmp.names=c(paste(input$whichcmpclassesX,collapse="&"),
@@ -515,7 +515,7 @@ shinyServer(function(input,output,session){
   
   # The objectives of Data2() are:
   #  -> subsetting the data based on the user's initial context
-  #  -> if Atgt is continuous, include a binary attribute based on
+  #  -> if Atgt is numerical, include a binary attribute based on
   #     mean(Atgt). This is done because it will speed up the
   #     construction of the RF models later. (Regression RF is
   #     apparently slower than classification RF.)
@@ -528,21 +528,21 @@ shinyServer(function(input,output,session){
   # 030914: will return Data()[[[3]]] as it is anyway for now.
 
   # Data2() consists of *THREE* things at the moment
-  #  1. Data2()[[1]] is the data itself, including the mean cutoff attribute if Atgt is cont
-  #  2. Data2()[[2]] is the type of variable: continuous or categorical
-  #  3. Data2()[[3]] is the number of classes for categorical attributes, NA for cont.
+  #  1. Data2()[[1]] is the data itself, including the mean cutoff attribute if Atgt is num
+  #  2. Data2()[[2]] is the type of variable: numerical or categorical
+  #  3. Data2()[[3]] is the number of classes for categorical attributes, NA for numerical.
   
   Data2<-reactive({
     
     # three steps:
-    # 1. if Atgt is cont, add the tgt.class attribute based on mean first
+    # 1. if Atgt is numerical, add the tgt.class attribute based on mean first
     # 2. subset the data to include the required rows, based on tgt, cmp and ctx items
     # 3. finally, add tgt.class for cate Atgt and cmp.class based on tgt and cmp items
     
     dfWithCtx<-Data()[[1]]
     
     #retrieve all elements of initial context first
-    grpA.classes<-input$whichtgtclassesA # <--- could be NULL if Atgt is cont
+    grpA.classes<-input$whichtgtclassesA # <--- could be NULL if Atgt is numerical
     grpB.classes<-input$whichtgtclassesB # <--- could be NULL
     grpX.classes<-input$whichcmpclassesX
     grpY.classes<-input$whichcmpclassesY
@@ -553,8 +553,8 @@ shinyServer(function(input,output,session){
     rowsToUse.tgt<-seq(nrow(dfWithCtx))
     rowsToUse.ctx<-NULL
     
-    # step one: if Atgt is cont, add the tgt.class attribute based on mean first
-    if(Groupings()[[1]] == "Cont"){
+    # step one: if Atgt is numerical, add the tgt.class attribute based on mean first
+    if(Groupings()[[1]] == "Num"){
       m<-mean(dfWithCtx[,input$targetAttr])
       #using mean instead of median,
       #because median cannot handle extremely skewed data
@@ -639,7 +639,7 @@ shinyServer(function(input,output,session){
     numCl<-NULL
     for(j in seq(ncol(dfWithCtx))){
       if(attr.type[j] == "Cate") numCl<-c(numCl,length(unique(dfWithCtx[,j])))
-      else if(attr.type[j] == "Cont") numCl<-c(numCl,NA)
+      else if(attr.type[j] == "Num") numCl<-c(numCl,NA)
     }
     
     return(list(dfWithCtx,attr.type,numCl))
@@ -655,8 +655,8 @@ shinyServer(function(input,output,session){
   #*********************************************#
   
   # Table() consists of *THREE OR FOUR* things at the moment
-  #  1. Table()[["means.df"]] is the comparison table for cont Atgt
-  #  2. Table()[["cont.tab"]]] is the contingency table, for both cont or cate Atgt
+  #  1. Table()[["means.df"]] is the comparison table for num Atgt
+  #  2. Table()[["cont.tab"]]] is the contingency table, for both num or cate Atgt
   #  3. Table()[["tab.type"]] is the type of (primary) table
   #  4. Table()[["tab.df"]] is the data.frame that was tabulated with 4 columns: Atgt, Acmp, tgt.class, cmp.class
   
@@ -669,7 +669,7 @@ shinyServer(function(input,output,session){
     
     df<-Data2()[[1]][c(input$targetAttr,input$comparingAttr,"tgt.class","cmp.class")]
     
-    #is the target attribute continuous or categorical?
+    #is the target attribute numerical or categorical?
     if(Data2()[[2]][input$targetAttr] == "Cate"){
       tab<-table(df[,c("cmp.class","tgt.class")])
       # cmp.class is rows, tgt.class is columns
@@ -695,7 +695,7 @@ shinyServer(function(input,output,session){
       }
     }
     
-    else{ #target attribute is continuous
+    else{ #target attribute is numerical
       
       # want to return both the data.frame of means and
       # the contingency table based on tgt.class = {"above/equal mean", "below mean"}
@@ -824,7 +824,7 @@ shinyServer(function(input,output,session){
       colnames(returnMe)<-"Initial chi-squared test on contingency table"
       returnMe
     }
-    else if(Groupings()[[1]] == "Cont" && Table()[["sufficient"]] == "Sufficient"){
+    else if(Groupings()[[1]] == "Num" && Table()[["sufficient"]] == "Sufficient"){
       #t-test
       test<-t.test(Data2()[[1]][,input$targetAttr]~Data2()[[1]]$cmp.class) #t-test bug resolved
       stats<-test$statistic
@@ -840,7 +840,7 @@ shinyServer(function(input,output,session){
     }
   })
 
-  # render contingency table for continuous Atgt as well
+  # render contingency table for numerical Atgt as well
   output$text.comp.or.cont2<-renderText({
     if(Table()[["tab.type"]] == "Comparison")
       return(paste("Contingency table on discretized ",
@@ -884,7 +884,7 @@ shinyServer(function(input,output,session){
   })
   output$initialTest2<-renderTable({
     
-    if(Groupings()[[1]] == "Cont"){
+    if(Groupings()[[1]] == "Num"){
       test<-chisq.test(Table()[["cont.tab"]]) #chisq.test() works on the table itself
       stats<-test$statistic
       pvalue<-test$p.value
@@ -906,7 +906,7 @@ shinyServer(function(input,output,session){
     tgt.attr<-input$targetAttr
     cmp.attr<-input$comparingAttr
     
-    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is cont
+    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is numerical
     tgt.class2<-input$whichtgtclassesB # <--- could be NULL
     cmp.class1<-input$whichcmpclassesX
     cmp.class2<-input$whichcmpclassesY
@@ -937,7 +937,7 @@ shinyServer(function(input,output,session){
                        cmp.class2.text,
                        "}?",
                        sep="")
-    else if(Groupings()[[1]] == "Cont")
+    else if(Groupings()[[1]] == "Num")
       statement<-paste("In the context of {",
                        ctx.items.text,
                        "}, is there a difference in ",
@@ -958,7 +958,7 @@ shinyServer(function(input,output,session){
     tgt.attr<-input$targetAttr
     cmp.attr<-input$comparingAttr
     
-    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is cont
+    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is numerical
     tgt.class2<-input$whichtgtclassesB # <--- could be NULL
     cmp.class1<-input$whichcmpclassesX
     cmp.class2<-input$whichcmpclassesY
@@ -989,7 +989,7 @@ shinyServer(function(input,output,session){
                        cmp.class2.text,
                        "}?",
                        sep="")
-    else if(Groupings()[[1]] == "Cont")
+    else if(Groupings()[[1]] == "Num")
       statement<-paste("In the context of {",
                        ctx.items.text,
                        "}, is there a difference in ",
@@ -1011,7 +1011,7 @@ shinyServer(function(input,output,session){
     tgt.attr<-input$targetAttr
     cmp.attr<-input$comparingAttr
     
-    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is cont
+    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is numerical
     tgt.class2<-input$whichtgtclassesB # <--- could be NULL
     cmp.class1<-input$whichcmpclassesX
     cmp.class2<-input$whichcmpclassesY
@@ -1042,7 +1042,7 @@ shinyServer(function(input,output,session){
                        cmp.class2.text,
                        "}?",
                        sep="")
-    else if(Groupings()[[1]] == "Cont")
+    else if(Groupings()[[1]] == "Num")
       statement<-paste("In the context of {",
                        ctx.items.text,
                        "}, is there a difference in ",
@@ -1111,7 +1111,7 @@ shinyServer(function(input,output,session){
   #***************END REACTIVE******************#
   #*********************************************#
   
-  # Test diagnostics for continuous Atgt:
+  # Test diagnostics for numerical Atgt:
   # -> S-W test for normality of group 1 of Acmp
   # -> S-W test for normality of group 2 of Acmp
   # -> F-test for equal variances
@@ -1243,18 +1243,18 @@ shinyServer(function(input,output,session){
     }
   })
   #===#
-  output$text.MHtest.cont<-renderText({
+  output$text.MHtest.num<-renderText({
     if(Test()[["test.type"]] == "t.test"){
       return("Cochran-Mantel-Haenszel test:")
     }
   })
-  output$MHtest.cont<-renderTable({
-    if(Groupings()[["Atgt.type"]] == "Cont"){
+  output$MHtest.num<-renderTable({
+    if(Groupings()[["Atgt.type"]] == "Num"){
       
       df<-Data2()[[1]]
       attr.type<-Data2()[[2]]
       
-      #change all continuous attributes to categorical before hypothesis mining
+      #change all numerical attributes to categorical before hypothesis mining
       #discretise by the mean
       mean.discre<-function(an.attr){
         m<-mean(df[,an.attr])
@@ -1265,8 +1265,8 @@ shinyServer(function(input,output,session){
         return(new.col)
       }
       
-      which.are.cont<-which(attr.type == "Cont")
-      for(an.attr in which.are.cont)
+      which.are.num<-which(attr.type == "Num")
+      for(an.attr in which.are.num)
         df[,an.attr]<-mean.discre(an.attr)
       
       df.dis<-df # discretized
@@ -1342,13 +1342,13 @@ shinyServer(function(input,output,session){
     }
   })
   #===#
-  output$text.flat.table.cont<-renderText({
+  output$text.flat.table.num<-renderText({
     if(Test()[["test.type"]] == "t.test"
        && Test()[["second.test.type"]] == "collapsed.chi.sq"){
       return("Flat contingency table:")
     }
   })
-  output$flat.table.cont<-renderTable({
+  output$flat.table.num<-renderTable({
     if(Test()[["test.type"]] == "t.test"
        && Test()[["second.test.type"]] == "collapsed.chi.sq"){
       tab.df<-Table()[["tab.df"]][,c(2:3)] # ony Acmp and tgt.class, no cmp.class
@@ -1358,13 +1358,13 @@ shinyServer(function(input,output,session){
     }
   })
   #===#
-  output$text.flat.chi.sq.cont<-renderText({
+  output$text.flat.chi.sq.num<-renderText({
     if(Test()[["test.type"]] == "t.test"
        && Test()[["second.test.type"]] == "collapsed.chi.sq"){
       return("Chi-squared test on flat contingency table:")
     }
   })
-  output$flat.chi.sq.cont<-renderTable({
+  output$flat.chi.sq.num<-renderTable({
     if(Test()[["test.type"]] == "t.test"
        && Test()[["second.test.type"]] == "collapsed.chi.sq"){
       tab.df<-Table()[["tab.df"]][,c(2:3)] # ony Acmp and tgt.class, no cmp.class
@@ -1383,13 +1383,13 @@ shinyServer(function(input,output,session){
     }
   })
   #===#
-  output$text.chi.sq.top.cont<-renderText({
+  output$text.chi.sq.top.contributor<-renderText({
     if(Test()[["test.type"]] == "t.test"
        && Test()[["second.test.type"]] == "collapsed.chi.sq"){
       return("Chi-squared top contributor:")
     }
   })
-  output$chi.sq.top.cont<-renderTable({
+  output$chi.sq.top.contributor<-renderTable({
     if(Test()[["test.type"]] == "t.test"
        && Test()[["second.test.type"]] == "collapsed.chi.sq"){
       tab.df<-Table()[["tab.df"]][,c(2:3)] # only Acmp and tgt.class
@@ -1403,10 +1403,10 @@ shinyServer(function(input,output,session){
       # for vtgt only
       chisq.contri<-cbind(o[,1],
                           e[,1],
-                          (((o-e)^2)/e)[,1])
+                          ((((o-e)^2)/e)[,1])/test$statistic * 100)
       colnames(chisq.contri)<-c("Observed",
                                 "Expected",
-                                "Chi-squared contribution")
+                                "Chi-squared contribution (%)")
       return(chisq.contri)
     }
   })
@@ -1473,16 +1473,16 @@ shinyServer(function(input,output,session){
       # for vtgt only
       chisq.contri<-cbind(o[,1],
                           e[,1],
-                          (((o-e)^2)/e)[,1])
+                          ((((o-e)^2)/e)[,1])/test$statistic * 100)
       colnames(chisq.contri)<-c("Observed",
                                 "Expected",
-                                "Chi-squared contribution")
+                                "Chi-squared contribution (%)")
       return(chisq.contri)
     }
   })
   #===#
   output$text.MHtest.cate<-renderText({
-    if(Test()[["test.type"]] == "collapsed.chi.sq"){
+    if(Test()[["test.type"]] == "collapsed.chi.sq" || Test()[["test.type"]] == "chi.sq"){
       return("Cochran-Mantel-Haenszel test:")
     }
   })
@@ -1492,7 +1492,7 @@ shinyServer(function(input,output,session){
       df<-Data2()[[1]]
       attr.type<-Data2()[[2]]
       
-      #change all continuous attributes to categorical before hypothesis mining
+      #change all numerical attributes to categorical before hypothesis mining
       #discretise by the mean
       mean.discre<-function(an.attr){
         m<-mean(df[,an.attr])
@@ -1503,8 +1503,8 @@ shinyServer(function(input,output,session){
         return(new.col)
       }
       
-      which.are.cont<-which(attr.type == "Cont")
-      for(an.attr in which.are.cont)
+      which.are.num<-which(attr.type == "Num")
+      for(an.attr in which.are.num)
         df[,an.attr]<-mean.discre(an.attr)
       
       df.dis<-df # discretized
@@ -1595,7 +1595,7 @@ shinyServer(function(input,output,session){
     df<-Data2()[[1]]
     attr.type<-Data2()[[2]]
     
-    #change all continuous attributes to categorical before hypothesis mining
+    #change all numerical attributes to categorical before hypothesis mining
     #discretise by the mean
     mean.discre<-function(an.attr){
       m<-mean(df[,an.attr])
@@ -1606,8 +1606,8 @@ shinyServer(function(input,output,session){
       return(new.col)
     }
     
-    which.are.cont<-which(attr.type == "Cont")
-    for(an.attr in which.are.cont)
+    which.are.num<-which(attr.type == "Num")
+    for(an.attr in which.are.num)
       df[,an.attr]<-mean.discre(an.attr)
     
     attr.type<-rep("Cate",length(attr.type))
@@ -1616,7 +1616,7 @@ shinyServer(function(input,output,session){
     numCl<-NULL
     for(j in seq(ncol(df))){
       if(attr.type[j] == "Cate") numCl<-c(numCl,length(unique(df[,j])))
-      else if(attr.type[j] == "Cont") numCl<-c(numCl,NA)
+      else if(attr.type[j] == "Num") numCl<-c(numCl,NA)
     }
     
     return(list(df,attr.type,numCl))
@@ -1716,7 +1716,7 @@ shinyServer(function(input,output,session){
       
       # now evaluate whether the models has been accurate
       # three things to consider:
-      #  @ whether Atgt is continous or categorical
+      #  @ whether Atgt is numerical or categorical
       #  @ if Atgt is categorical, whether Atgt is binary or multi-class
       #  @ if Atgt is categorical, whether Atgt has class-imbalance
       # the only piece of additional guiding input from the user is vtgt
@@ -2010,7 +2010,7 @@ shinyServer(function(input,output,session){
     print(paste("ncol(df.to.plot): ",ncol(df.to.plot)))
     par(mfrow=c(2,2))
 
-    #need to consider whether Atgt is continuous or categorical
+    #need to consider whether Atgt is numerical or categorical
     #check this using the Data()[[2]]
     for(j in seq(1:2)){
       for(i in seq(1,2)){
@@ -2023,7 +2023,7 @@ shinyServer(function(input,output,session){
             which(df.to.plot[,"tgt.class"] == i),
             which(df.to.plot[,"cmp.class"] == j))
         }
-        else if(Data2()[[2]][[tgt.attr]] == "Cont"){
+        else if(Data2()[[2]][[tgt.attr]] == "Num"){
           rows.to.plot<-intersect(
             which(df.to.plot[,"tgt.class"] == tgt.classes[i]),
             which(df.to.plot[,"cmp.class"] == j))
@@ -2041,7 +2041,7 @@ shinyServer(function(input,output,session){
                   cex.names=0.9,
                   main=paste(Groupings()[[2]][i], Groupings()[[3]][j], sep="&"))
         }
-        else if(Data()[[2]][mined.attr] == "Cont")
+        else if(Data()[[2]][mined.attr] == "Num")
           hist(plot.dat,main=paste(Groupings()[[2]][i], Groupings()[[3]][j], sep="&"))
       }
     }
@@ -2347,7 +2347,7 @@ shinyServer(function(input,output,session){
       prop.df<-prop.df[order(prop.df[,sort.first.by],prop.df[,then.by]),]
     
     colnames(prop.df)<-c("sufficient","Simpson's Reversal","difference lift",
-                         "contribution","independence lift","p-value","adjusted p-lvaue")
+                         "contribution","independence lift","p-value","adjusted p-value")
     
     return(prop.df)
   })
@@ -2427,7 +2427,7 @@ shinyServer(function(input,output,session){
       colnames(returnMe)<-"Initial chi-squared test on contingency table"
       returnMe
     }
-    else if(Groupings()[[1]] == "Cont"){
+    else if(Groupings()[[1]] == "Num"){
       test<-chisq.test(Table()[["cont.tab"]]) #chisq.test() works on the table itself
       stats<-test$statistic
       pvalue<-test$p.value
@@ -2447,7 +2447,7 @@ shinyServer(function(input,output,session){
     tgt.attr<-input$targetAttr
     cmp.attr<-input$comparingAttr
     
-    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is cont
+    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is num
     tgt.class2<-input$whichtgtclassesB # <--- could be NULL
     cmp.class1<-input$whichcmpclassesX
     cmp.class2<-input$whichcmpclassesY
@@ -2478,7 +2478,7 @@ shinyServer(function(input,output,session){
                        cmp.class2.text,
                        "}?",
                        sep="")
-    else if(Groupings()[[1]] == "Cont")
+    else if(Groupings()[[1]] == "Num")
       statement<-paste("In the context of {",
                        ctx.items.text,
                        "}, is there a difference in ",
@@ -2566,7 +2566,7 @@ shinyServer(function(input,output,session){
     tgt.attr<-input$targetAttr
     cmp.attr<-input$comparingAttr
     
-    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is cont
+    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is num
     tgt.class2<-input$whichtgtclassesB # <--- could be NULL
     cmp.class1<-input$whichcmpclassesX
     cmp.class2<-input$whichcmpclassesY
@@ -2601,7 +2601,7 @@ shinyServer(function(input,output,session){
                        cmp.class2.text,
                        "}?",
                        sep="")
-    else if(Groupings()[[1]] == "Cont")
+    else if(Groupings()[[1]] == "Num")
       statement<-paste("In the context of {",
                        ctx.items.text,
                        "}, is there a difference in ",
@@ -2743,8 +2743,31 @@ shinyServer(function(input,output,session){
     log.quote<-input$datQuote
     
     # initial test
-    log.Atgt<-input$targetAttr
-    log.Acmp<-input$comparingAttr
+    if(Groupings()[["Atgt.type"]] == "Cate"){
+      log.Atgt.type<-"Categorical"
+      log.Atgt<-paste("{",
+                      input$targetAttr,
+                      "=",
+                      Groupings()[["Atgt.names"]][1],
+                      "} vs. {",
+                      input$targetAttr,
+                      "=",
+                      Groupings()[["Atgt.names"]][2],
+                      "}",sep="")
+    }
+    else if(Groupings()[["Atgt.type"]] == "Num"){
+      log.Atgt.type<-"Numerical"
+      log.Atgt<-input$targetAttr
+    }
+    log.Acmp<-paste("{",
+                    input$comparingAttr,
+                    "=",
+                    Groupings()[["Acmp.names"]][1],
+                    "} vs. {",
+                    input$comparingAttr,
+                    "=",
+                    Groupings()[["Acmp.names"]][2],
+                    "}",sep="")
     if(!is.null(input$ctxItems)) log.Actx<-paste(input$ctxItems,collapse=", ")
     else log.Actx<-""
     
@@ -2762,7 +2785,7 @@ shinyServer(function(input,output,session){
     
     col1<-c("Session",
             rep("Data",4),
-            rep("Initial test",3),
+            rep("Initial test",4),
             rep("Test diagnostics",1),
             rep("Context mining",4),
             rep("Hypothesis mining",1))
@@ -2772,6 +2795,7 @@ shinyServer(function(input,output,session){
             "Separator",
             "Quotes",
             "Target attribute",
+            "Target attribute type",
             "Comparing attribute",
             "Context items",
             "p-value threshold",
@@ -2786,6 +2810,7 @@ shinyServer(function(input,output,session){
             log.sep,
             log.quote,
             log.Atgt,
+            log.Atgt.type,
             log.Acmp,
             log.Actx,
             log.p.significant,
