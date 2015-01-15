@@ -1,5 +1,5 @@
 require(randomForest)
-source("related_codes/settings.R")
+source("settings.R")
 
 shinyServer(function(input,output,session){
   
