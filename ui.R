@@ -204,6 +204,7 @@ shinyUI(pageWithSidebar(
                  tabPanel("Attributes to exclude",
                           htmlOutput("attr.to.exclude")),
                  tabPanel("Mined context attributes",
+                          checkboxInput("start.ctx.mining", label = "Start context mining?", value = FALSE),
                           progressInit(),
                           verbatimTextOutput("run.time.tgt"),
                           verbatimTextOutput("run.time.cmp"),
