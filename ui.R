@@ -42,7 +42,7 @@ shinyUI(pageWithSidebar(
   #main panel
   mainPanel(
     
-    tabsetPanel(
+    tabsetPanel(id="theTabs",
       #=============================================#
       #=============0. Getting started==============#
       #=============================================#
@@ -65,7 +65,7 @@ shinyUI(pageWithSidebar(
       
       tabPanel("2. Data visualization",
                tags$h4("Simple exploratory data analysis"),
-               navlistPanel(
+               navlistPanel(id="viz",
                  tabPanel("Select attributes",
                           sidebarPanel(
                             htmlOutput("viz.ctrl1"),
@@ -94,7 +94,7 @@ shinyUI(pageWithSidebar(
                tags$h4("Set up your initial hypothesis and test"),
                tags$h5("Your hypothesis:"),
                verbatimTextOutput("hypothesis.statement.it"),
-               navlistPanel(
+               navlistPanel(id="initial",
                  tabPanel("Target attribute",
                           sidebarPanel(
                             htmlOutput("test.tgt.ctrl"),
@@ -158,7 +158,7 @@ shinyUI(pageWithSidebar(
                tags$h6("-> for both t-test and collapsed chi-squared test, use Cochran-Mantel-Haenszel Chi-Squared Test to identify potential confounders"),
                tags$h5("Your hypothesis:"),
                verbatimTextOutput("hypothesis.statement.td"),
-               navlistPanel(
+               navlistPanel(id="diag",
                  tabPanel("Continuous target attribute",
                           h5(textOutput("text.SWtest")),
                           tableOutput("SWtest.cmp1"),
@@ -200,11 +200,11 @@ shinyUI(pageWithSidebar(
                        and stratified histograms of the mined context attributes are displayed after mining."),
                tags$h5("Initial hypothesis: "),
                verbatimTextOutput("hypothesis.statement.cm"),
-               navlistPanel(
+               navlistPanel(id="ctx",
                  tabPanel("Attributes to exclude",
                           htmlOutput("attr.to.exclude")),
                  tabPanel("Mined context attributes",
-                          checkboxInput("start.ctx.mining", label = "Start context mining?", value = FALSE),
+                          #checkboxInput("start.ctx.mining", label = "Start context mining?", value = FALSE),
                           progressInit(),
                           verbatimTextOutput("run.time.tgt"),
                           verbatimTextOutput("run.time.cmp"),
@@ -242,7 +242,7 @@ shinyUI(pageWithSidebar(
                tags$h6("From the mined context attributes, Redhyte considers every possible context item 
                         and includes each item in the initial hypothesis to form mined hypotheses.
                         Each mined hypothesis is then evaluated using various metrics."),
-               navlistPanel(
+               navlistPanel(id="hypo",
                  tabPanel("Mined hypotheses",
                           tableOutput("hypotheses")),
                  tabPanel("Select context item",

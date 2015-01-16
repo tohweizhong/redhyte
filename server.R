@@ -1649,8 +1649,8 @@ shinyServer(function(input,output,session){
   #*********************************************#
   
   minedAttributes<-reactive({
-    
-    if(input$start.ctx.mining == TRUE){
+    #isolate({start.mining<-input$start.ctx.mining}) #isolate was here
+    #if(start.mining == TRUE){
       df<-Data3()[[1]]
       
       #need to convert the character attributes to factors first before building models
@@ -1877,13 +1877,8 @@ shinyServer(function(input,output,session){
                          mod.cmp=mod.cmp))
         
       })
-    }
+    #}
   })
-  
-#   minedAttributes<-reactive({
-#     results<-CtxMining()
-#     
-#   })
   
   #*********************************************#
   #***************END REACTIVE******************#
@@ -2850,13 +2845,18 @@ shinyServer(function(input,output,session){
     }
   )
   
-#   observe({
-#     print("observing now...")
-#     print(input$start.ctx.mining)
-#     if(input$start.ctx.mining==TRUE)
-#       updateCheckboxInput(session,"start.ctx.mining", value = FALSE)
-#     print(input$start.ctx.mining)
-#     print("end observe...")
-#   })
-  
+  # observer to update all the navlistPanel selection
+  observe({
+    print(input$theTabs)
+    if(input$theTabs != "2. Data visualization")
+      updateTabsetPanel(session,"viz",selected="Select attributes")
+    if(input$theTabs != "3. Initial test")
+      updateTabsetPanel(session,"initial",selected="Target attribute")
+    if(input$theTabs != "5. Test diagnostics")
+      updateTabsetPanel(session,"diag",selected="Continuous target attribute")
+    if(input$theTabs != "6. Context mining")
+      updateTabsetPanel(session,"ctx",selected="Attributes to exclude")
+    if(input$theTabs != "7. Hypothesis mining")
+      updateTabsetPanel(session,"hypo",selected="Mined hypotheses")
+  })
 }) #end shinyServer
