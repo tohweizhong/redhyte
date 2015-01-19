@@ -2707,10 +2707,10 @@ shinyServer(function(input,output,session){
       # for vtgt only
       chisq.contri<-cbind(o[,1],
                           e[,1],
-                          (((o-e)^2)/e)[,1])
+                          ((((o-e)^2)/e)[,1])/test$statistic * 100)
       colnames(chisq.contri)<-c("Observed",
                                 "Expected",
-                                "Chi-squared contribution")
+                                "Chi-squared contribution (%)")
       return(chisq.contri)
     }
   })
