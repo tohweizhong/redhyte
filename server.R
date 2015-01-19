@@ -2295,7 +2295,6 @@ shinyServer(function(input,output,session){
   output$analyse.ctrl<-renderUI({
     selectizeInput("analyse.which.item","Select context item to analyse",rownames(Hypotheses()))
   }) # return: input$analyse.which.item
-  
   output$analyse.sort.ctrl.one<-renderUI({
     selectizeInput("analyse.sort.one","Sort first by?",
                    c("sufficient","SR","difflift","contri","indplift","pvalue","pvalue.adj"))
@@ -2622,6 +2621,12 @@ shinyServer(function(input,output,session){
   })
   
   # chi-sq top contribution
+  output$text.analyse.flat.table<-renderText({
+    if((Test()[["test.type"]] == "t.test" && Test()[["second.test.type"]] == "collapsed.chi.sq")
+       || Test()[["test.type"]] == "collapsed.chi.sq"){
+      return("Flat contingency table of mined hypothesis:")
+    }
+  })
   output$analyse.flat.table<-renderTable({
     if((Test()[["test.type"]] == "t.test" && Test()[["second.test.type"]] == "collapsed.chi.sq")
         || Test()[["test.type"]] == "collapsed.chi.sq"){
@@ -2638,6 +2643,12 @@ shinyServer(function(input,output,session){
       
       colnames(tab)<-Groupings()[["Atgt.names"]]
       return(tab)
+    }
+  })
+  output$text.analyse.flat.chi.sq<-renderText({
+    if((Test()[["test.type"]] == "t.test" && Test()[["second.test.type"]] == "collapsed.chi.sq")
+       || Test()[["test.type"]] == "collapsed.chi.sq"){
+      return("Chi-squared test on flat contingency table:")
     }
   })
   output$analyse.flat.chi.sq<-renderTable({
@@ -2666,6 +2677,12 @@ shinyServer(function(input,output,session){
       rownames(returnMe)<-c("Method","Test statistic","p-value")
       colnames(returnMe)<-paste("Flat chi-squared test on mined hypothesis: ",item,sep="")
       returnMe
+    }
+  })
+  output$text.analyse.chi.sq.top.cont<-renderText({
+    if((Test()[["test.type"]] == "t.test" && Test()[["second.test.type"]] == "collapsed.chi.sq")
+       || Test()[["test.type"]] == "collapsed.chi.sq"){
+      return("Chi-squared top contributor:")
     }
   })
   output$analyse.chi.sq.top.cont<-renderTable({
@@ -2839,7 +2856,7 @@ shinyServer(function(input,output,session){
   })
   
   output$log.download<-downloadHandler(
-    filename = function(){paste("session_log_", date(), '.txt',sep='')},
+    filename = function(){paste("session_log_", date(), '.csv',sep='')},
     content = function(file){
       write.table(Settings(),file,quote=FALSE,row.names=FALSE,na="NA",sep=" :: ",col.names=FALSE)
     }

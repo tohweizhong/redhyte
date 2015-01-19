@@ -2,8 +2,6 @@ WISHLIST
 
 #===CRUCIAL===#
 
--> able to reset panels?
-
 -> play around with RF parameters
 
 -> find classic use-cases and examples datasets
