@@ -10,9 +10,9 @@ if(!require(shinyIncubator)) devtools::install_github("shiny-incubator", "rstudi
 p.significant<-0.05
 
 # for context mining
-acc.rf.default<-.55
+acc.rf.default<-.7
 top.k<-5
-class.ratio<-3 # class-imbalance learning
+class.ratio<-2 # class-imbalance learning
 
 # for hypothesis mining
 min.sup.cij<-10

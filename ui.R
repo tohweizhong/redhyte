@@ -276,7 +276,17 @@ shinyUI(pageWithSidebar(
       
       tabPanel("8. Session log",
                downloadButton("log.download","Download session log"),
-               tableOutput("session.log"))
+               tableOutput("session.log")),
+
+      tabPanel("9. About Redhyte",
+               tags$h6("Redhyte is a hypothesis mining system developed by Weizhong Toh, Limsoon Wong, and Kwok Pui Choi,
+                       at the"),
+               tags$a(href="nus.edu.sg","National University of Singapore"),
+               tags$h6(", Faculty of Science and School of Computing.
+                       Users start off with an initial domain knowledge-driven hypothesis, and Redhyte proceeds to 
+                       mine for relevant and interesting hypotheses that deepens the user's understanding of his or her data."),
+               tags$h6("In addition, Redhyte provides basic functionalities for data visualizations, checking of parametric test 
+                       assumptions and data manipulation."))
       
     )#end tabset panel
   ) #end main panel
