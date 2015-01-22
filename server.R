@@ -2113,15 +2113,15 @@ shinyServer(function(input,output,session){
       return(c(c11=c11,c12=c12,c21=c21,c22=c22,n1=n1,n2=n2))
     }
     
-    # function to compute i, given a 2x2 table
+    # function to compute indp factor, given a 2x2 table
     compute.indp<-function(tab){
      sum<-sum(tab)
      c11<-tab[1,1]
      c12<-tab[1,2]
      c21<-tab[2,1]
      c22<-tab[2,2]
-     i1<-(c11/((c11+c12)*(c11+c21)))/sum
-     i2<-(c21/((c11+c21)*(c21+c22)))/sum
+     i1<-(c11/((c11+c12)*(c11+c21)))*sum
+     i2<-(c21/((c11+c21)*(c21+c22)))*sum
      return(c(i1,i2))
     }
     
@@ -2254,13 +2254,12 @@ shinyServer(function(input,output,session){
                       MARGIN=1,
                       FUN=compute.il)
     
-    # 210115: amending definition of indplift: indplift-adjusted
+    # 210115: including new version of indplift: adjusted indplift
     tmp<-compute.sup(cont.tab)
     prob.T1<-(tmp[["c11"]]+tmp[["c21"]])/(tmp[["n1"]]+tmp[["n2"]])
     
-    prop.df$indplift.adj<-with(prop.df,
+    prop.df$adj.indplift<-with(prop.df,
                                difflift
-                               *(n1prime+n2prime)/(initial.n1+initial.n2)
                                *abs(1-(prob.T1/((c11+c21)/(n1prime+n2prime)))))
     print(prop.df$indplift.adj)
     
@@ -2301,9 +2300,9 @@ shinyServer(function(input,output,session){
     }
     
     #correct for multiple testing using Bonferroni correction
-    prop.df$pvalue.adj<-p.adjust(prop.df$pvalue, method = "bonferroni")
+    prop.df$adj.pvalue<-p.adjust(prop.df$pvalue, method = "bonferroni")
     # sort
-    prop.df<-prop.df[with(prop.df,order(-sufficient,difflift,contri,indplift.adj,pvalue.adj)),]
+    # prop.df<-prop.df[with(prop.df,order(-sufficient,difflift,contri,adj.indplift,indplift,adj.pvalue)),]
     
     #print(prop.df$i1prime)
     #print(prop.df$i2prime)
@@ -2322,8 +2321,8 @@ shinyServer(function(input,output,session){
                                      n1prime,n2prime,
                                      p1prime,p2prime,
                                      i1prime,i2prime,
-                                     difflift,contri,indplift,indplift.adj,SR,
-                                     stats,pvalue,pvalue.adj))
+                                     difflift,contri,indplift,adj.indplift,SR,
+                                     stats,pvalue,adj.pvalue))
   },digits=3)
   
   #=============================================#
@@ -2335,16 +2334,16 @@ shinyServer(function(input,output,session){
   }) # return: input$analyse.which.item
   output$analyse.sort.ctrl.one<-renderUI({
     selectizeInput("analyse.sort.one","Sort first by?",
-                   c("sufficient","SR","difflift","contri","indplift","indplift.adj","pvalue","pvalue.adj"))
+                   c("sufficient","SR","difflift","contri","indplift","adj.indplift","pvalue","adj.pvalue"))
   }) # return: input$analyse.sort.one
   output$analyse.sort.ctrl.two<-renderUI({
     selectizeInput("analyse.sort.two","Then by?",
-                   c("sufficient","SR","difflift","contri","indplift","indplift.adj","pvalue","pvalue.adj"))
+                   c("sufficient","SR","difflift","contri","indplift","adj.indplift","pvalue","adj.pvalue"))
   }) # return: input$analyse.sort.two
   
   # render the Hypotheses master data frame, sorted according to user
   output$analyse.hypothesis<-renderTable({
-    prop.df<-subset(Hypotheses(),select=c(sufficient,SR,difflift,contri,indplift,indplift.adj,pvalue,pvalue.adj))
+    prop.df<-subset(Hypotheses(),select=c(sufficient,SR,difflift,contri,indplift,adj.indplift,pvalue,adj.pvalue))
     
     sort.first.by<-which(colnames(prop.df) == input$analyse.sort.one)
     then.by<-which(colnames(prop.df) == input$analyse.sort.two)
@@ -2388,10 +2387,10 @@ shinyServer(function(input,output,session){
       prop.df<-prop.df[order(prop.df[,sort.first.by],prop.df[,then.by]),]
     
     prop.df<-subset(prop.df,
-                    select=c(sufficient,SR,difflift,contri,indplift.adj,pvalue,pvalue.adj,indplift))
+                    select=c(sufficient,SR,difflift,contri,indplift,adj.indplift,pvalue,adj.pvalue))
     
-    colnames(prop.df)<-c("sufficient","Simpson's Reversal","difference lift",
-                         "contribution","Adjusted independence lift","p-value","adjusted p-value","independence lift")
+    colnames(prop.df)<-c("Sufficient","Simpson's Reversal","Difference lift",
+                         "Contribution","Independence lift","Adjusted independence lift","p-value","Adjusted p-value")
     
     return(prop.df)
   })
@@ -2789,12 +2788,12 @@ shinyServer(function(input,output,session){
   output$analyse.plot.metric.ctrl.one<-renderUI({
     selectizeInput("plot.what.metric.one",
                    "Select a hypothesis mining metric to plot",
-                   c("difflift","contri","indplift","indplift.adj","pvalue","pvalue.adj","stats"))
+                   c("difflift","contri","indplift","adj.indplift","stats","pvalue","adj.pvalue"))
   }) # return: input$plot.what.metric.one
   output$analyse.plot.metric.ctrl.two<-renderUI({
     selectizeInput("plot.what.metric.two",
                    "Select another",
-                   c("difflift","contri","indplift","indplift.adj","pvalue","pvalue.adj","stats"))
+                   c("difflift","contri","indplift","adj.indplift","stats","pvalue","adj.pvalue"))
   }) # return: input$plot.what.metric.two
   output$analyse.metric.plot<-renderPlot({
     prop.df<-Hypotheses()
