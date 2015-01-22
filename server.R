@@ -2254,6 +2254,16 @@ shinyServer(function(input,output,session){
                       MARGIN=1,
                       FUN=compute.il)
     
+    # 210115: amending definition of indplift: indplift-adjusted
+    tmp<-compute.sup(cont.tab)
+    prob.T1<-(tmp[["c11"]]+tmp[["c21"]])/(tmp[["n1"]]+tmp[["n2"]])
+    
+    prop.df$indplift.adj<-with(prop.df,
+                               difflift
+                               *(n1prime+n2prime)/(initial.n1+initial.n2)
+                               *abs(1-(prob.T1/((c11+c21)/(n1prime+n2prime)))))
+    print(prop.df$indplift.adj)
+    
     # now, append the chi-squared test stats and p-values
     
     for(i in seq(nrow(prop.df))){
@@ -2293,7 +2303,7 @@ shinyServer(function(input,output,session){
     #correct for multiple testing using Bonferroni correction
     prop.df$pvalue.adj<-p.adjust(prop.df$pvalue, method = "bonferroni")
     # sort
-    prop.df<-prop.df[with(prop.df,order(-sufficient,difflift,contri,indplift,pvalue.adj)),]
+    prop.df<-prop.df[with(prop.df,order(-sufficient,difflift,contri,indplift.adj,pvalue.adj)),]
     
     #print(prop.df$i1prime)
     #print(prop.df$i2prime)
@@ -2312,7 +2322,7 @@ shinyServer(function(input,output,session){
                                      n1prime,n2prime,
                                      p1prime,p2prime,
                                      i1prime,i2prime,
-                                     difflift,contri,indplift,SR,
+                                     difflift,contri,indplift,indplift.adj,SR,
                                      stats,pvalue,pvalue.adj))
   },digits=3)
   
@@ -2325,16 +2335,16 @@ shinyServer(function(input,output,session){
   }) # return: input$analyse.which.item
   output$analyse.sort.ctrl.one<-renderUI({
     selectizeInput("analyse.sort.one","Sort first by?",
-                   c("sufficient","SR","difflift","contri","indplift","pvalue","pvalue.adj"))
+                   c("sufficient","SR","difflift","contri","indplift","indplift.adj","pvalue","pvalue.adj"))
   }) # return: input$analyse.sort.one
   output$analyse.sort.ctrl.two<-renderUI({
     selectizeInput("analyse.sort.two","Then by?",
-                   c("sufficient","SR","difflift","contri","indplift","pvalue","pvalue.adj"))
+                   c("sufficient","SR","difflift","contri","indplift","indplift.adj","pvalue","pvalue.adj"))
   }) # return: input$analyse.sort.two
   
   # render the Hypotheses master data frame, sorted according to user
   output$analyse.hypothesis<-renderTable({
-    prop.df<-subset(Hypotheses(),select=c(sufficient,SR,difflift,contri,indplift,pvalue,pvalue.adj))
+    prop.df<-subset(Hypotheses(),select=c(sufficient,SR,difflift,contri,indplift,indplift.adj,pvalue,pvalue.adj))
     
     sort.first.by<-which(colnames(prop.df) == input$analyse.sort.one)
     then.by<-which(colnames(prop.df) == input$analyse.sort.two)
@@ -2377,8 +2387,11 @@ shinyServer(function(input,output,session){
     else
       prop.df<-prop.df[order(prop.df[,sort.first.by],prop.df[,then.by]),]
     
+    prop.df<-subset(prop.df,
+                    select=c(sufficient,SR,difflift,contri,indplift.adj,pvalue,pvalue.adj,indplift))
+    
     colnames(prop.df)<-c("sufficient","Simpson's Reversal","difference lift",
-                         "contribution","independence lift","p-value","adjusted p-value")
+                         "contribution","Adjusted independence lift","p-value","adjusted p-value","independence lift")
     
     return(prop.df)
   })
@@ -2773,6 +2786,24 @@ shinyServer(function(input,output,session){
     
   })
   
+  output$analyse.plot.metric.ctrl.one<-renderUI({
+    selectizeInput("plot.what.metric.one",
+                   "Select a hypothesis mining metric to plot",
+                   c("difflift","contri","indplift","indplift.adj","pvalue","pvalue.adj","stats"))
+  }) # return: input$plot.what.metric.one
+  output$analyse.plot.metric.ctrl.two<-renderUI({
+    selectizeInput("plot.what.metric.two",
+                   "Select another",
+                   c("difflift","contri","indplift","indplift.adj","pvalue","pvalue.adj","stats"))
+  }) # return: input$plot.what.metric.two
+  output$analyse.metric.plot<-renderPlot({
+    prop.df<-Hypotheses()
+    plot(prop.df[,input$plot.what.metric.one]~prop.df[,input$plot.what.metric.two],
+         ylab=input$plot.what.metric.one,xlab=input$plot.what.metric.two)
+    abline(h=0)
+    abline(v=0)
+  })
+  
   #=============================================#
   #============9. Session log===================#
   #=============================================#
@@ -2889,6 +2920,85 @@ shinyServer(function(input,output,session){
       write.table(Settings(),file,quote=FALSE,row.names=FALSE,na="NA",sep=" :: ",col.names=FALSE)
     }
   )
+  
+  #=============================================#
+  #============9. About Redhyte=================#
+  #=============================================#
+  
+  #*********************************************#
+  #***************REACTIVE**********************#
+  #*********************************************#
+  
+  output$about.text<-reactive({
+    htmlCode<-paste("
+      <h4>What?</h4>
+      <h6>
+          Redhyte is a hypothesis mining system where users start off with an initial domain knowledge-driven hypothesis,
+          and Redhyte proceeds to mine for relevant and interesting hypotheses that deepens the user's understanding of his or her data.
+      </h6>
+      <h6>
+        In addition, Redhyte provides basic functionalities for data visualizations, checking of parametric test, assumptions and data manipulation.
+      </h6>
+
+      <h4>How?</h4>
+      <h6>
+        As the term suggests, hypothesis mining is concerned with the search of interesting hypotheses from a given dataset. 
+        In order to do so, Redhyte puts together the user's domain knowledge, the well-established framework of statistical hypothesis testing,
+        and classification techniques from data mining.
+        To evaluate the interestingness of mined hypothesis, Redhyte utilises a set of hypothesis mining metrics 
+        so as to divert the user's attention to the most interesting collection of hypotheses mined by Redhyte.
+      </h6>
+      
+      <h4>Why?</h4>
+      <h6>
+        Hypothesis testing is a well-developed and understood technique, used by many non-statistician data analysts. 
+        The idea of comparing lung cancer incidence between two subpopulations, say smokers and non-smokers, is intuitive and easy to understand. 
+        It is also easy to search through a small dataset of, say, 10 variables (e.g. in an epidemiological study) 
+        and identify any existing statistically and practically significant phenomena and trends. 
+        However in the current Big Data era, the search for statistical and practical significance becomes a non-trivial task. 
+        Formulating a small hypothesis in a large dataset and then testing it is both wasteful and flawed.
+      </h6>
+      <h6>
+        Using data mining techniques, Redhyte aims to regard hypothesis testing in a more comprehensive manner. 
+        The objective of Redhyte is to identify, based on the initial domain knowledge-driven question that the user had in mind, 
+        practical and insightful hypotheses.
+      </h6>
+      <h6>
+        Redhyte was developed using the statistical programming language 
+        <a href=http://www.r-project.org/ target=_blank>R</a>, and the R <a href=http://shiny.rstudio.com/ target=_blank>shiny</a> package .
+      </h6>
+
+      <h4>Who?</h4>
+      <h6>Redhyte was developed by 
+          <a href=http://sg.linkedin.com/in/tohweizhong target=_blank>Wei Zhong Toh</a>, 
+          <a href=http://www.comp.nus.edu.sg/~wongls/ target=_blank>Limsoon Wong</a>, and 
+          <a href=http://www.stat.nus.edu.sg/~stackp/ target=_blank>Kwok Pui Choi</a> at the 
+          <a href=http://www.nus.edu.sg/ target=_blank>National University of Singapore</a>, 
+          <a href=http://www.science.nus.edu.sg target=_blank>Faculty of Science</a> and 
+          <a href=http://www.comp.nus.edu.sg/ target=_blank>School of Computing</a>, 
+          and is part of Toh's undergraduate Honours requirements.
+      </h6>
+
+      <h4>Where?</h4>
+      <ul>
+        <li><a href=https://tohweizhong.shinyapps.io/redhyte/ target=_blank>Redhyte web app</a></li>
+        <li><a href=https://github.com/tohweizhong/redhyte target=_blank>Source code on Github</a></li>
+        <li>Example datasets to try out Redhyte with:</li>
+        <ul>
+          <li><a href=https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/adult.txt target=_blank>Adult dataset by UCI Machine Learning Repo</a>
+              (<a href=https://archive.ics.uci.edu/ml/datasets/Adult target=_blank>Description of dataset</a>)</li>
+          <li><a href=https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/mushroom_expanded.txt target=_blank>Mushroom dataset by UCI Machine Learning Repo</a>
+              (<a href=https://archive.ics.uci.edu/ml/datasets/mushroom target=_blank>Description of dataset</a>)</li>
+          <li><a href=https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/titanicMelted.csv target=_blank>Titanic dataset</a>, distributed with R
+              (<a href=http://stat.ethz.ch/R-manual/R-devel/library/datasets/html/Titanic.html target=_blank>Description of dataset</a>, some prior data cleaning was done)</li>
+          <li><a href=https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/ucbMelted.csv target=_blank>UC Berkeley Admission Bias dataset</a>, distributed with R
+              (<a href=http://stat.ethz.ch/R-manual/R-devel/library/datasets/html/UCBAdmissions.html target=_blank>Description of dataset</a>, some prior data cleaning was done)</li>
+        </ul>
+      </ul> 
+
+      "
+      ,sep="")
+  })
   
   # observer to update all the navlistPanel selection
   observe({

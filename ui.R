@@ -268,6 +268,11 @@ shinyUI(pageWithSidebar(
                           tableOutput("analyse.flat.chi.sq"),
                           h5(textOutput("text.analyse.chi.sq.top.cont")),
                           tableOutput("analyse.chi.sq.top.cont")),
+                 "-----",
+                 tabPanel("Hypothesis mining metrics",
+                          htmlOutput("analyse.plot.metric.ctrl.one"),
+                          htmlOutput("analyse.plot.metric.ctrl.two"),
+                          plotOutput("analyse.metric.plot")),
                widths=c(3,9))),
       
       #=============================================#
@@ -279,15 +284,7 @@ shinyUI(pageWithSidebar(
                tableOutput("session.log")),
 
       tabPanel("9. About Redhyte",
-               tags$h6("Redhyte is a hypothesis mining system developed by Weizhong Toh, Limsoon Wong, and Kwok Pui Choi,
-                       at the"),
-               tags$a(href="nus.edu.sg","National University of Singapore"),
-               tags$h6(", Faculty of Science and School of Computing.
-                       Users start off with an initial domain knowledge-driven hypothesis, and Redhyte proceeds to 
-                       mine for relevant and interesting hypotheses that deepens the user's understanding of his or her data."),
-               tags$h6("In addition, Redhyte provides basic functionalities for data visualizations, checking of parametric test 
-                       assumptions and data manipulation."))
-      
+               uiOutput("about.text"))
     )#end tabset panel
   ) #end main panel
 ))#end shiny app
