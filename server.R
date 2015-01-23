@@ -15,6 +15,9 @@ shinyServer(function(input,output,session){
     list(src="images/redhyte algo.png",alt=NULL)
   },deleteFile=FALSE)
   
+  # Settings
+  
+  
   #=============================================#
   #=============================================#
   #=============================================#
@@ -33,6 +36,7 @@ shinyServer(function(input,output,session){
   #here begins the real work..
   
   Data<-reactive({
+    print(input$p.significant)
     datFile<-input$datFile
     path<-as.character(datFile$datapath)
     df<-read.csv(path,
@@ -717,7 +721,7 @@ shinyServer(function(input,output,session){
         
         means.df<-cbind(means.df,c(sd1,sd2))
         
-        colnames(means.df)<-c(paste("means of ",input$targetAttr,sep=""),
+        colnames(means.df)<-c(paste("Means of ",input$targetAttr,sep=""),
                               paste("sd of ",input$targetAttr,sep=""))
         
         # next, the contingency table
@@ -1209,9 +1213,9 @@ shinyServer(function(input,output,session){
       df<-Data2()[[1]][,c(input$targetAttr,"cmp.class")]
       
       if(var.test(df[which(df$cmp.class == "1"),input$targetAttr],
-                  df[which(df$cmp.class == "2"),input$targetAttr])$p.value <= p.significant ||
-           shapiro.test(df[which(df$cmp.class == "1"),input$targetAttr])$p.value <= p.significant ||
-           shapiro.test(df[which(df$cmp.class == "2"),input$targetAttr])$p.value <= p.significant){
+                  df[which(df$cmp.class == "2"),input$targetAttr])$p.value <= input$p.significant ||
+           shapiro.test(df[which(df$cmp.class == "1"),input$targetAttr])$p.value <= input$p.significant ||
+           shapiro.test(df[which(df$cmp.class == "2"),input$targetAttr])$p.value <= input$p.significant){
         return("Non-parametric test:")
       }
     }
@@ -1222,9 +1226,9 @@ shinyServer(function(input,output,session){
       df<-Data2()[[1]][,c(input$targetAttr,"cmp.class")]
       
       if(var.test(df[which(df$cmp.class == "1"),input$targetAttr],
-                  df[which(df$cmp.class == "2"),input$targetAttr])$p.value <= p.significant ||
-           shapiro.test(df[which(df$cmp.class == "1"),input$targetAttr])$p.value <= p.significant ||
-           shapiro.test(df[which(df$cmp.class == "2"),input$targetAttr])$p.value <= p.significant){
+                  df[which(df$cmp.class == "2"),input$targetAttr])$p.value <= input$p.significant ||
+           shapiro.test(df[which(df$cmp.class == "1"),input$targetAttr])$p.value <= input$p.significant ||
+           shapiro.test(df[which(df$cmp.class == "2"),input$targetAttr])$p.value <= input$p.significant){
         
         test<-wilcox.test(df[which(df$cmp.class == "1"),input$targetAttr],
                           df[which(df$cmp.class == "2"),input$targetAttr])
@@ -1695,10 +1699,10 @@ shinyServer(function(input,output,session){
     #print(fm.cmp)
     
     # take the first k attributes, consider them shortlisted
-    if(length(predictors) < top.k)
+    if(length(predictors) < input$top.k)
       k<-length(predictors)
     else
-      k<-top.k
+      k<-input$top.k
     
     #print(k)
     
@@ -1747,7 +1751,7 @@ shinyServer(function(input,output,session){
       # mod.tgt first
       sup.tgt1<-tmp.cm.tgt[1,1]+tmp.cm.tgt[1,2]
       sup.tgt2<-tmp.cm.tgt[2,1]+tmp.cm.tgt[2,2]
-      if(sup.tgt1/sup.tgt2 >= class.ratio){ # class.ratio defined in settings.R
+      if(sup.tgt1/sup.tgt2 >= input$class.ratio){
         # tgt1 is more abundant => tgt1 is -ve
         # tgt2 is less abundant => tgt2 is +ve
         se<-tmp.cm.tgt[2,2]/(tmp.cm.tgt[2,2]+tmp.cm.tgt[2,1])
@@ -1756,7 +1760,7 @@ shinyServer(function(input,output,session){
         nn<-sup.tgt1/(sup.tgt1+sup.tgt2)
         acc.tgt<-(gm+sp*nn)/(1+nn)
       }
-      else if(sup.tgt2/sup.tgt1 >= class.ratio){
+      else if(sup.tgt2/sup.tgt1 >= input$class.ratio){
         # tgt2 is more abundant => tgt2 is -ve
         # tgt1 is less abundant => tgt1 is +ve
         sp<-tmp.cm.tgt[2,2]/(tmp.cm.tgt[2,2]+tmp.cm.tgt[2,1])
@@ -1771,7 +1775,7 @@ shinyServer(function(input,output,session){
       print(sup.cmp1)
       sup.cmp2<-tmp.cm.cmp[2,1]+tmp.cm.cmp[2,2]
       print(sup.cmp2)
-      if(sup.cmp1/sup.cmp2 >= class.ratio){ # class.ratio defined in settings.R
+      if(sup.cmp1/sup.cmp2 >= input$class.ratio){
         print("class1")
         # cmp1 is more abundant => cmp1 is -ve
         # cmp2 is less abundant => cmp2 is +ve
@@ -1781,7 +1785,7 @@ shinyServer(function(input,output,session){
         nn<-sup.cmp1/(sup.cmp1+sup.cmp2)
         acc.cmp<-(gm+sp*nn)/(1+nn)
       }
-      else if(sup.cmp2/sup.cmp1 >= class.ratio){
+      else if(sup.cmp2/sup.cmp1 >= input$class.ratio){
         print("class2")
         # cmp2 is more abundant => cmp2 is -ve
         # cmp1 is less abundant => cmp1 is +ve
@@ -1804,17 +1808,17 @@ shinyServer(function(input,output,session){
       
       mined.attr<-NULL
       
-      if(acc.tgt >= acc.rf.default && acc.cmp < acc.rf.default){
+      if(acc.tgt >= input$acc.rf.default && acc.cmp < input$acc.rf.default){
         print("foo")
         mined.attr<-rownames(mod.tgt$importance)[seq(k)]        
         names(mined.attr)<-paste(mined.attr,".tgt",sep="") # adding a tail ".tgt" or ".cmp"
       }
-      else if(acc.tgt < acc.rf.default && acc.cmp >= acc.rf.default){
+      else if(acc.tgt < input$acc.rf.default && acc.cmp >= input$acc.rf.default){
         print("bar")
         mined.attr<-rownames(mod.cmp$importance)[seq(k)]
         names(mined.attr)<-paste(mined.attr,".cmp",sep="")
       }
-      else if(acc.tgt >= acc.rf.default && acc.cmp >= acc.rf.default){
+      else if(acc.tgt >= input$acc.rf.default && acc.cmp >= input$acc.rf.default){
         print("foobar")
         # both models are accurate; extract top k attributes
         # from the intersection of the top attributes in
@@ -2293,7 +2297,7 @@ shinyServer(function(input,output,session){
     for(i in seq(nrow(prop.df))){
       sup<-prop.df[i,c("c11","c12","c21","c22")]
       
-      if(any(sup < min.sup.cij) == TRUE ||
+      if(any(sup < input$min.sup.cij) == TRUE ||
            any(is.na(sup)) == TRUE)
         prop.df$sufficient[i]<-FALSE
       else prop.df$sufficient[i]<-TRUE
@@ -2776,11 +2780,13 @@ shinyServer(function(input,output,session){
       if(any(all.dl > 0)) SP.vec<-c(SP.vec,FALSE)
       else SP.vec<-c(SP.vec,TRUE)
       
+      if(is.nan(dl)) SP.vec[length(SP.vec)]<-FALSE
+      
       summary.df<-rbind(summary.df,c(dl,contri))
     }
     summary.df<-cbind(summary.df,SP.vec)
     rownames(summary.df)<-actx
-    colnames(summary.df)<-c("mean difference lift","mean contribution","Simpson's paradox")
+    colnames(summary.df)<-c("Mean difference lift","Mean contribution","Simpson's paradox")
     return(summary.df)
     
   })
@@ -2801,6 +2807,11 @@ shinyServer(function(input,output,session){
          ylab=input$plot.what.metric.one,xlab=input$plot.what.metric.two)
     abline(h=0)
     abline(v=0)
+    
+    if(input$plot.what.metric.one == "pvalue" || input$plot.what.metric.one == "adj.pvalue")
+      abline(h=0.05)
+    if(input$plot.what.metric.two == "pvalue" || input$plot.what.metric.two == "adj.pvalue")
+      abline(v=0.05)
   })
   
   #=============================================#
@@ -2851,16 +2862,16 @@ shinyServer(function(input,output,session){
     else log.Actx<-""
     
     # test diagnostics
-    log.p.significant<-p.significant
+    log.p.significant<-input$p.significant
     
     # context mining
-    log.acc.rf.default<-acc.rf.default
-    log.top.k<-top.k
-    log.class.ratio<-class.ratio
+    log.acc.rf.default<-input$acc.rf.default
+    log.top.k<-input$top.k
+    log.class.ratio<-input$class.ratio
     log.mined.attr<-paste(minedAttributes()[[3]],collapse=", ")
     
     # hypothesis mining
-    log.min.sup.cij<-min.sup.cij
+    log.min.sup.cij<-input$min.sup.cij
     
     col1<-c("Session",
             rep("Data",4),
@@ -2936,7 +2947,7 @@ shinyServer(function(input,output,session){
           and Redhyte proceeds to mine for relevant and interesting hypotheses that deepens the user's understanding of his or her data.
       </h6>
       <h6>
-        In addition, Redhyte provides basic functionalities for data visualizations, checking of parametric test, assumptions and data manipulation.
+        In addition, Redhyte provides basic functionalities for data visualizations, checking of parametric test assumptions and data manipulation.
       </h6>
 
       <h4>How?</h4>
@@ -2944,27 +2955,27 @@ shinyServer(function(input,output,session){
         As the term suggests, hypothesis mining is concerned with the search of interesting hypotheses from a given dataset. 
         In order to do so, Redhyte puts together the user's domain knowledge, the well-established framework of statistical hypothesis testing,
         and classification techniques from data mining.
-        To evaluate the interestingness of mined hypothesis, Redhyte utilises a set of hypothesis mining metrics 
+        To evaluate the interestingness of mined hypotheses, Redhyte utilises a set of hypothesis mining metrics 
         so as to divert the user's attention to the most interesting collection of hypotheses mined by Redhyte.
       </h6>
-      
+      <h6>
+        Redhyte was developed using the statistical programming language 
+        <a href=http://www.r-project.org/ target=_blank>R</a>, and the R <a href=http://shiny.rstudio.com/ target=_blank>shiny</a> package .
+      </h6>
+
       <h4>Why?</h4>
       <h6>
         Hypothesis testing is a well-developed and understood technique, used by many non-statistician data analysts. 
         The idea of comparing lung cancer incidence between two subpopulations, say smokers and non-smokers, is intuitive and easy to understand. 
         It is also easy to search through a small dataset of, say, 10 variables (e.g. in an epidemiological study) 
         and identify any existing statistically and practically significant phenomena and trends. 
-        However in the current Big Data era, the search for statistical and practical significance becomes a non-trivial task. 
-        Formulating a small hypothesis in a large dataset and then testing it is both wasteful and flawed.
+        However in the current Big Data era, the search for statistical and practical significance becomes a non-trivial task - 
+        formulating and testing a small hypothesis in a large dataset is both wasteful and flawed.
       </h6>
       <h6>
         Using data mining techniques, Redhyte aims to regard hypothesis testing in a more comprehensive manner. 
         The objective of Redhyte is to identify, based on the initial domain knowledge-driven question that the user had in mind, 
         practical and insightful hypotheses.
-      </h6>
-      <h6>
-        Redhyte was developed using the statistical programming language 
-        <a href=http://www.r-project.org/ target=_blank>R</a>, and the R <a href=http://shiny.rstudio.com/ target=_blank>shiny</a> package .
       </h6>
 
       <h4>Who?</h4>

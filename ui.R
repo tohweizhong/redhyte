@@ -46,8 +46,20 @@ shinyUI(pageWithSidebar(
       #=============================================#
       #=============0. Getting started==============#
       #=============================================#
-      tabPanel("0. Overview of algorithm",
-               imageOutput("algoPNG",height="700px")),
+      tabPanel("Overview of algorithm",imageOutput("algoPNG",height="700px")),
+      tabPanel("0. Settings",
+               tags$h4("Settings used in Redhyte"),
+               tags$h6("Default settings are suitable for most purposes"),
+               sliderInput("p.significant",label ="p-value for test diagnostics",
+                           min=0,max=0.15,value=0.05,step=0.05),
+               sliderInput("acc.rf.default",label="Classification accuracy for context mining",
+                           min=0,max=1,value=0.7,step=0.05),
+               sliderInput("top.k",label="Number of mined context attributes to shortlist",
+                           min=1,max=10,value=5,step=1),
+               sliderInput("class.ratio",label="Class ratio threshold for class-imbalance learning",
+                           min=2,max=5,value=3,step=1),
+               sliderInput("min.sup.cij",label="Minimum cell support for mined hypotheses",
+                           min=5,max=10,value=10,step=1)),
       
       #=============================================#
       #==============1. Data preview================#
