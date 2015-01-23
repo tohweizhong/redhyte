@@ -1,5 +1,7 @@
-require(randomForest)
 source("settings.R")
+library(shiny)
+library(shinyIncubator)
+library(randomForest)
 
 shinyServer(function(input,output,session){
   
@@ -14,10 +16,7 @@ shinyServer(function(input,output,session){
   output$algoPNG<-renderImage({
     list(src="images/redhyte algo.png",alt=NULL)
   },deleteFile=FALSE)
-  
-  # Settings
-  
-  
+    
   #=============================================#
   #=============================================#
   #=============================================#
@@ -98,6 +97,9 @@ shinyServer(function(input,output,session){
   # 4. boxplots
   # 5. scatterplot for simple eda
   
+  
+  # === Select attributes === #
+  
   #selecting which attributes to visualise
   output$viz.ctrl1<-renderUI({
     selectizeInput("viz.which.attr1","Select an attribute to visualize",colnames(Data()[[1]]))
@@ -119,6 +121,8 @@ shinyServer(function(input,output,session){
     else type<-"Type: Categorical"
     type
   })
+  
+  # === Distributions === #
   
   #display boxplot stats (Tukey's five) if num,
   #else display frequencies
@@ -179,6 +183,8 @@ shinyServer(function(input,output,session){
     }
   })
   
+  # === Relationship === #
+  
   # plotting boxplots
   output$viz.boxplot1<-renderPlot({
     if(Data()[[2]][input$viz.which.attr1]=="Num")
@@ -223,6 +229,9 @@ shinyServer(function(input,output,session){
   #=============================================#
   #==============3. Initial test================#
   #=============================================#
+  
+  # === Target attribute === #
+  # === Comparing attribute === #
   
   #dropdown boxes to select Atgt and Acmp
   output$test.tgt.ctrl<-renderUI({
@@ -444,6 +453,8 @@ shinyServer(function(input,output,session){
     }
   }) #return: input$whichcmpclassesY
 
+  # === Initial context === #
+  
   #context control
   output$test.ctx.ctrl<-renderUI({
     tmp.choices<-colnames(Data()[[1]])[intersect(
@@ -751,11 +762,14 @@ shinyServer(function(input,output,session){
   #***************END REACTIVE******************#
   #*********************************************#
 
+  # === Table(s) & test(s) === #
+  
   # for the next 4 output objects:
   # -> render text for comparison or contingency table
   # -> render the comparison or contingency table
   # -> render text for initial test
   # -> initial parametric test
+  
   output$text.comp.or.cont<-renderText({
     if(Table()[["tab.type"]] == "Contingency" && Table()[["sufficient"]] == "Sufficient")
       return("Contingency table:")
@@ -805,7 +819,7 @@ shinyServer(function(input,output,session){
     }
     return(Table()[["cont.tab"]])
   })
-  
+  #===#
   output$text.initial.test<-renderText({
     return("Initial test:")
   })
@@ -843,7 +857,7 @@ shinyServer(function(input,output,session){
       returnMe
     }
   })
-
+  #===#
   # render contingency table for numerical Atgt as well
   output$text.comp.or.cont2<-renderText({
     if(Table()[["tab.type"]] == "Comparison")
@@ -881,7 +895,7 @@ shinyServer(function(input,output,session){
       return(tab)
     }
   })
-  
+  #===#
   output$text.initial.test2<-renderText({
     if(Table()[["tab.type"]] == "Comparison")
       return("Chi-squared test on contingency table:")
@@ -903,7 +917,7 @@ shinyServer(function(input,output,session){
     }
   })
 
-  # hypothesis statements
+  # hypothesis statement
   output$hypothesis.statement.it<-renderText({
     if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
     
@@ -946,112 +960,6 @@ shinyServer(function(input,output,session){
                        ctx.items.text,
                        "}, is there a difference in ",
                        toupper(tgt.attr),
-                       " when comparing the samples on ",
-                       toupper(cmp.attr),
-                       " between {",
-                       cmp.class1.text,
-                       "} vs. {",
-                       cmp.class2.text,
-                       "}?",
-                       sep="")
-    return(statement)
-  })
-  output$hypothesis.statement.td<-renderText({
-    if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
-    
-    tgt.attr<-input$targetAttr
-    cmp.attr<-input$comparingAttr
-    
-    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is numerical
-    tgt.class2<-input$whichtgtclassesB # <--- could be NULL
-    cmp.class1<-input$whichcmpclassesX
-    cmp.class2<-input$whichcmpclassesY
-      
-    ctx.attr    <-input$ctxAttr
-    ctx.items   <-input$ctxItems # in the format of Actx = vctx
-    
-    ctx.items.text<-paste(ctx.items, collapse=" & ")
-    tgt.class1.text<-paste(tgt.class1,collapse=" & ")
-    tgt.class2.text<-paste(tgt.class2,collapse=" & ")
-    cmp.class1.text<-paste(cmp.class1,collapse=" & ")
-    cmp.class2.text<-paste(cmp.class2,collapse=" & ")
-      
-    if(Groupings()[[1]] == "Cate")
-      statement<-paste("In the context of {",
-                       ctx.items.text,
-                       "},is there a difference in ",
-                       toupper(tgt.attr),
-                       " between {",
-                       tgt.class1.text,
-                       "} vs. {",
-                       tgt.class2.text,
-                       "} when comparing the samples on ",
-                       toupper(cmp.attr),
-                       " between {",
-                       cmp.class1.text,
-                       "} vs. {",
-                       cmp.class2.text,
-                       "}?",
-                       sep="")
-    else if(Groupings()[[1]] == "Num")
-      statement<-paste("In the context of {",
-                       ctx.items.text,
-                       "}, is there a difference in ",
-                       toupper(tgt.attr),
-                       " when comparing the samples on ",
-                       toupper(cmp.attr),
-                       " between {",
-                       cmp.class1.text,
-                       "} vs. {",
-                       cmp.class2.text,
-                       "}?",
-                       sep="")
-    return(statement)
-  })
-  output$hypothesis.statement.cm<-renderText({
-    
-    if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
-    
-    tgt.attr<-input$targetAttr
-    cmp.attr<-input$comparingAttr
-    
-    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is numerical
-    tgt.class2<-input$whichtgtclassesB # <--- could be NULL
-    cmp.class1<-input$whichcmpclassesX
-    cmp.class2<-input$whichcmpclassesY
-    
-    ctx.attr    <-input$ctxAttr
-    ctx.items   <-input$ctxItems # in the format of Actx = vctx
-    
-    ctx.items.text<-paste(ctx.items, collapse=" & ")
-    tgt.class1.text<-paste(tgt.class1,collapse=" & ")
-    tgt.class2.text<-paste(tgt.class2,collapse=" & ")
-    cmp.class1.text<-paste(cmp.class1,collapse=" & ")
-    cmp.class2.text<-paste(cmp.class2,collapse=" & ")
-    
-    if(Groupings()[[1]] == "Cate")
-      statement<-paste("In the context of {",
-                       ctx.items.text,
-                       "}, is there a difference in ",
-                       toupper(tgt.attr),
-                       " between {",
-                       tgt.class1.text,
-                       "} vs. {",
-                       tgt.class2.text,
-                       "} when comparing the samples on ",
-                       toupper(cmp.attr),
-                       " between {",
-                       cmp.class1.text,
-                       "} vs. {",
-                       cmp.class2.text,
-                       "}?",
-                       sep="")
-    else if(Groupings()[[1]] == "Num")
-      statement<-paste("In the context of {",
-                       ctx.items.text,
-                       "}, is there a difference in ",
-                       toupper(tgt.attr),
-                       #" between {above/equal mean} vs. {below mean}",
                        " when comparing the samples on ",
                        toupper(cmp.attr),
                        " between {",
@@ -1115,6 +1023,59 @@ shinyServer(function(input,output,session){
   #***************END REACTIVE******************#
   #*********************************************#
   
+  output$hypothesis.statement.td<-renderText({
+    if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
+    
+    tgt.attr<-input$targetAttr
+    cmp.attr<-input$comparingAttr
+    
+    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is numerical
+    tgt.class2<-input$whichtgtclassesB # <--- could be NULL
+    cmp.class1<-input$whichcmpclassesX
+    cmp.class2<-input$whichcmpclassesY
+    
+    ctx.attr    <-input$ctxAttr
+    ctx.items   <-input$ctxItems # in the format of Actx = vctx
+    
+    ctx.items.text<-paste(ctx.items, collapse=" & ")
+    tgt.class1.text<-paste(tgt.class1,collapse=" & ")
+    tgt.class2.text<-paste(tgt.class2,collapse=" & ")
+    cmp.class1.text<-paste(cmp.class1,collapse=" & ")
+    cmp.class2.text<-paste(cmp.class2,collapse=" & ")
+    
+    if(Groupings()[[1]] == "Cate")
+      statement<-paste("In the context of {",
+                       ctx.items.text,
+                       "},is there a difference in ",
+                       toupper(tgt.attr),
+                       " between {",
+                       tgt.class1.text,
+                       "} vs. {",
+                       tgt.class2.text,
+                       "} when comparing the samples on ",
+                       toupper(cmp.attr),
+                       " between {",
+                       cmp.class1.text,
+                       "} vs. {",
+                       cmp.class2.text,
+                       "}?",
+                       sep="")
+    else if(Groupings()[[1]] == "Num")
+      statement<-paste("In the context of {",
+                       ctx.items.text,
+                       "}, is there a difference in ",
+                       toupper(tgt.attr),
+                       " when comparing the samples on ",
+                       toupper(cmp.attr),
+                       " between {",
+                       cmp.class1.text,
+                       "} vs. {",
+                       cmp.class2.text,
+                       "}?",
+                       sep="")
+    return(statement)
+  })
+  
   # Test diagnostics for numerical Atgt:
   # -> S-W test for normality of group 1 of Acmp
   # -> S-W test for normality of group 2 of Acmp
@@ -1124,6 +1085,8 @@ shinyServer(function(input,output,session){
   # -> do flat chi-sq test, find top contributor
   # -> M-H test for 3rd attribute association (assumes no 3-way interaction)
 
+  # === Continuous target attribute === #
+  
   output$text.SWtest<-renderText({
     if(Test()[["test.type"]] == "t.test"){
       return("Normality Checks:")
@@ -1415,6 +1378,8 @@ shinyServer(function(input,output,session){
     }
   })
 
+  # === Categorical target attribute === #
+  
   # Test diagnostics for categorical Acmp, collapsed chi-sq
   # -> display flat table
   # -> do flat chi-sq test, find top contributor
@@ -1633,6 +1598,63 @@ shinyServer(function(input,output,session){
   #=============================================#
   #============6. Context mining================#
   #=============================================#
+  
+  output$hypothesis.statement.cm<-renderText({
+    
+    if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
+    
+    tgt.attr<-input$targetAttr
+    cmp.attr<-input$comparingAttr
+    
+    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is numerical
+    tgt.class2<-input$whichtgtclassesB # <--- could be NULL
+    cmp.class1<-input$whichcmpclassesX
+    cmp.class2<-input$whichcmpclassesY
+    
+    ctx.attr    <-input$ctxAttr
+    ctx.items   <-input$ctxItems # in the format of Actx = vctx
+    
+    ctx.items.text<-paste(ctx.items, collapse=" & ")
+    tgt.class1.text<-paste(tgt.class1,collapse=" & ")
+    tgt.class2.text<-paste(tgt.class2,collapse=" & ")
+    cmp.class1.text<-paste(cmp.class1,collapse=" & ")
+    cmp.class2.text<-paste(cmp.class2,collapse=" & ")
+    
+    if(Groupings()[[1]] == "Cate")
+      statement<-paste("In the context of {",
+                       ctx.items.text,
+                       "}, is there a difference in ",
+                       toupper(tgt.attr),
+                       " between {",
+                       tgt.class1.text,
+                       "} vs. {",
+                       tgt.class2.text,
+                       "} when comparing the samples on ",
+                       toupper(cmp.attr),
+                       " between {",
+                       cmp.class1.text,
+                       "} vs. {",
+                       cmp.class2.text,
+                       "}?",
+                       sep="")
+    else if(Groupings()[[1]] == "Num")
+      statement<-paste("In the context of {",
+                       ctx.items.text,
+                       "}, is there a difference in ",
+                       toupper(tgt.attr),
+                       #" between {above/equal mean} vs. {below mean}",
+                       " when comparing the samples on ",
+                       toupper(cmp.attr),
+                       " between {",
+                       cmp.class1.text,
+                       "} vs. {",
+                       cmp.class2.text,
+                       "}?",
+                       sep="")
+    return(statement)
+  })
+  
+  # === Attribute to exclude === #
   
   output$attr.to.exclude<-renderUI({
     cinitial.attr<-c(input$targetAttr,
@@ -1916,6 +1938,8 @@ shinyServer(function(input,output,session){
   #***************END REACTIVE******************#
   #*********************************************#
   
+  # === Mined context attributes === #
+  
   output$run.time.tgt<-renderText({
     return(paste("Run time for target model: ",round(minedAttributes()[["run.time.tgt"]],3),sep=""))
   })
@@ -1923,12 +1947,15 @@ shinyServer(function(input,output,session){
     return(paste("Run time for comparing model: ",round(minedAttributes()[["run.time.cmp"]],3),sep=""))
   })
 
+  # confusion matrices
   output$cm.tgt<-renderTable({
     minedAttributes()[[1]]
   })
   output$cm.cmp<-renderTable({
     minedAttributes()[[2]]
   })
+  
+  # list of mined attributes
   output$minedAttr<-renderTable({
     if(is.null(minedAttributes()[[3]])){
       tmp<-data.frame("No significant context attributes were found")
@@ -1939,14 +1966,9 @@ shinyServer(function(input,output,session){
     colnames(df)<-"Mined context attributes"
     df
   })
-
-  #visualization of the mined context attrtibutes
-  output$minedAttrCtrl<-renderUI({
-    selectizeInput("mined.attr",
-                   "Which mined attribute?",
-                   minedAttributes()[[3]])
-  }) #return: input$mined.attr
-
+  
+  # === Variable importance === #
+  
   # variable importance plot of RF models
   output$VIplot.tgt<-renderPlot({
     varImpPlot(minedAttributes()[["mod.tgt"]],main="Variable Importance for Target Model")
@@ -1954,7 +1976,16 @@ shinyServer(function(input,output,session){
   output$VIplot.cmp<-renderPlot({
     varImpPlot(minedAttributes()[["mod.cmp"]],main="Variable Importance for Comparing Model")
   })
-
+  
+  # === Visualization === #
+  
+  #visualization of the mined context attrtibutes
+  output$minedAttrCtrl<-renderUI({
+    selectizeInput("mined.attr",
+                   "Which mined attribute?",
+                   minedAttributes()[[3]])
+  }) #return: input$mined.attr
+  
   # contingency table of initial hypothesis in viz of mined attributes
   output$contTable.ctx<-renderTable({
     tab<-Table()[[1]]
@@ -2317,6 +2348,9 @@ shinyServer(function(input,output,session){
   #***************END REACTIVE******************#
   #*********************************************#
   
+  # === Mined hypotheses === #
+  
+  # render the Hypotheses master data frame
   output$hypotheses<-renderTable({
     prop.df<-Hypotheses()
     prop.df<-subset(prop.df,select=c(Actx,vctx,
@@ -2329,9 +2363,39 @@ shinyServer(function(input,output,session){
                                      stats,pvalue,adj.pvalue))
   },digits=3)
   
-  #=============================================#
-  #============8. Hypothesis analysis===========#
-  #=============================================#
+  # === Select context item === #
+  
+  # summary of difflift and contribution for attributes as a whole
+  output$analyse.summary<-renderTable({
+    prop.df<-Hypotheses()
+    actx<-unique(prop.df$Actx)
+    summary.df<-data.frame(difflift=numeric(),
+                           contri=numeric())
+    SP.vec<-NULL
+    for(a.ctx.attr in actx){
+      # extract the difflift's and contributions
+      all.dl<-prop.df$difflift[which(prop.df$Actx == a.ctx.attr)]
+      all.contri<-prop.df$contri[which(prop.df$Actx == a.ctx.attr)]
+      
+      # find the mean for each Actx
+      dl<-mean(abs(all.dl),na.rm=TRUE)
+      contri<-mean(abs(all.contri),na.rm=TRUE)
+      
+      # remove NAs, look for Simpson's Paradox
+      all.dl[is.na(dl)]<-0
+      if(any(all.dl > 0)) SP.vec<-c(SP.vec,FALSE)
+      else SP.vec<-c(SP.vec,TRUE)
+      
+      if(is.nan(dl)) SP.vec[length(SP.vec)]<-FALSE
+      
+      summary.df<-rbind(summary.df,c(dl,contri))
+    }
+    summary.df<-cbind(summary.df,SP.vec)
+    rownames(summary.df)<-actx
+    colnames(summary.df)<-c("Mean difference lift","Mean contribution","Simpson's paradox")
+    return(summary.df)
+    
+  })
   
   output$analyse.ctrl<-renderUI({
     selectizeInput("analyse.which.item","Select context item to analyse",rownames(Hypotheses()))
@@ -2398,6 +2462,8 @@ shinyServer(function(input,output,session){
     
     return(prop.df)
   })
+  
+  # === Hypothesis analysis === #
   
   # display initial hypothesis and test
   output$analyse.contTable<-renderTable({
@@ -2689,6 +2755,7 @@ shinyServer(function(input,output,session){
       return(tab)
     }
   })
+  #===#
   output$text.analyse.flat.chi.sq<-renderText({
     if((Test()[["test.type"]] == "t.test" && Test()[["second.test.type"]] == "collapsed.chi.sq")
        || Test()[["test.type"]] == "collapsed.chi.sq"){
@@ -2723,6 +2790,7 @@ shinyServer(function(input,output,session){
       returnMe
     }
   })
+  #===#
   output$text.analyse.chi.sq.top.cont<-renderText({
     if((Test()[["test.type"]] == "t.test" && Test()[["second.test.type"]] == "collapsed.chi.sq")
        || Test()[["test.type"]] == "collapsed.chi.sq"){
@@ -2759,37 +2827,7 @@ shinyServer(function(input,output,session){
     }
   })
   
-  # summary of difflift and contribution for attributes as a whole
-  output$analyse.summary<-renderTable({
-    prop.df<-Hypotheses()
-    actx<-unique(prop.df$Actx)
-    summary.df<-data.frame(difflift=numeric(),
-                           contri=numeric())
-    SP.vec<-NULL
-    for(a.ctx.attr in actx){
-      # extract the difflift's and contributions
-      all.dl<-prop.df$difflift[which(prop.df$Actx == a.ctx.attr)]
-      all.contri<-prop.df$contri[which(prop.df$Actx == a.ctx.attr)]
-      
-      # find the mean for each Actx
-      dl<-mean(abs(all.dl),na.rm=TRUE)
-      contri<-mean(abs(all.contri),na.rm=TRUE)
-      
-      # remove NAs, look for Simpson's Paradox
-      all.dl[is.na(dl)]<-0
-      if(any(all.dl > 0)) SP.vec<-c(SP.vec,FALSE)
-      else SP.vec<-c(SP.vec,TRUE)
-      
-      if(is.nan(dl)) SP.vec[length(SP.vec)]<-FALSE
-      
-      summary.df<-rbind(summary.df,c(dl,contri))
-    }
-    summary.df<-cbind(summary.df,SP.vec)
-    rownames(summary.df)<-actx
-    colnames(summary.df)<-c("Mean difference lift","Mean contribution","Simpson's paradox")
-    return(summary.df)
-    
-  })
+  # === Hypothesis mining metrics === #
   
   output$analyse.plot.metric.ctrl.one<-renderUI({
     selectizeInput("plot.what.metric.one",
@@ -2815,7 +2853,7 @@ shinyServer(function(input,output,session){
   })
   
   #=============================================#
-  #============9. Session log===================#
+  #============8. Session log===================#
   #=============================================#
   
   #*********************************************#
@@ -3010,6 +3048,10 @@ shinyServer(function(input,output,session){
       ,sep="")
   })
   
+  #*********************************************#
+  #***************END REACTIVE******************#
+  #*********************************************#
+  
   # observer to update all the navlistPanel selection
   observe({
     print(input$theTabs)
@@ -3024,4 +3066,5 @@ shinyServer(function(input,output,session){
     if(input$theTabs != "7. Hypothesis mining")
       updateTabsetPanel(session,"hypo",selected="Mined hypotheses")
   })
+  
 }) #end shinyServer

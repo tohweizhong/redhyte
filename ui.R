@@ -1,6 +1,3 @@
-require(shinyIncubator)
-require(shiny)
-
 shinyUI(pageWithSidebar(
   
   titlePanel(imageOutput("logoPNG",width="180px",height="50px"),
@@ -44,9 +41,15 @@ shinyUI(pageWithSidebar(
     
     tabsetPanel(id="theTabs",
       #=============================================#
-      #=============0. Getting started==============#
+      #=============Overview of algorithm===========#
       #=============================================#
+      
       tabPanel("Overview of algorithm",imageOutput("algoPNG",height="700px")),
+      
+      #=============================================#
+      #=============0. Settings=====================#
+      #=============================================#
+      
       tabPanel("0. Settings",
                tags$h4("Settings used in Redhyte"),
                tags$h6("Default settings are suitable for most purposes"),
@@ -179,7 +182,6 @@ shinyUI(pageWithSidebar(
                           tableOutput("Ftest"),
                           h5(textOutput("text.MWtest")),
                           tableOutput("MWtest"),
-                          #tags$h6("Flat contingency table"),
                           h5(textOutput("text.flat.table.num")),
                           tableOutput("flat.table.num"),
                           h5(textOutput("text.flat.chi.sq.num")),
@@ -234,17 +236,6 @@ shinyUI(pageWithSidebar(
                           plotOutput("mined.attr.viz")),
                  widths=c(3,9),selected="Attributes to exclude")),
       
-#       #=============================================#
-#       #===========7. Hypothesis mining==============#
-#       #=============================================#
-#       
-#       tabPanel("7. Hypothesis mining",
-#                tags$h4("Hypothesis mining"),
-#                tags$h6("From the mined context attributes, Redhyte considers every possible context item 
-#                        and includes each item in the initial hypothesis to form a mined hypothesis.
-#                        Each mined hypothesis is then evaluated using various metrics."),
-
-      
       #=============================================#
       #===========7. Hypothesis mining==============#
       #=============================================#
@@ -294,6 +285,10 @@ shinyUI(pageWithSidebar(
       tabPanel("8. Session log",
                downloadButton("log.download","Download session log"),
                tableOutput("session.log")),
+      
+      #=============================================#
+      #=============9. About Redhyte================#
+      #=============================================#
 
       tabPanel("9. About Redhyte",
                uiOutput("about.text"))
