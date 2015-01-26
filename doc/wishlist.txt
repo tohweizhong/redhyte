@@ -21,8 +21,6 @@ WISHLIST
 
 -> flowchart/UML
 
--> ship/deploy (gist, shinyapps.io, package)
-
 #===OPTIONAL===#
 
 -> user i/p discretization and discretization algorithm

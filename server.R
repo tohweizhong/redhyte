@@ -1,8 +1,3 @@
-source("settings.R")
-library(shiny)
-library(shinyIncubator)
-library(randomForest)
-
 shinyServer(function(input,output,session){
   
   #fancy work here
@@ -35,7 +30,6 @@ shinyServer(function(input,output,session){
   #here begins the real work..
   
   Data<-reactive({
-    print(input$p.significant)
     datFile<-input$datFile
     path<-as.character(datFile$datapath)
     df<-read.csv(path,
@@ -96,7 +90,6 @@ shinyServer(function(input,output,session){
   # 3. histogram or barplot
   # 4. boxplots
   # 5. scatterplot for simple eda
-  
   
   # === Select attributes === #
   
@@ -275,8 +268,6 @@ shinyServer(function(input,output,session){
     cmp.attr<-input$comparingAttr
     ctx.attr<-input$ctxAttr
     
-    
-    
     grpA.classes<-input$whichtgtclassesA
     grpB.classes<-input$whichtgtclassesB
     grpX.classes<-input$whichcmpclassesX
@@ -287,8 +278,6 @@ shinyServer(function(input,output,session){
     rowsToUse.cmp<-seq(nrow(dfWithCtx))
     rowsToUse.tgt<-seq(nrow(dfWithCtx))
     rowsToUse.ctx<-NULL
-    
-    
     
     if(!is.null(cmp.attr)){
       rowsToUse.cmp<-which(dfWithCtx[,input$comparingAttr] %in% input$whichcmpclassesX == TRUE) #only X
@@ -648,7 +637,7 @@ shinyServer(function(input,output,session){
     attr.type<-c(attr.type,"Cate","Cate")
     
     #**console**#
-    print(paste("nrow(dfWithCtx): ",nrow(dfWithCtx)))
+    #print(paste("nrow(dfWithCtx): ",nrow(dfWithCtx)))
     
     # number of classes
     numCl<-NULL
@@ -1735,7 +1724,7 @@ shinyServer(function(input,output,session){
         mod.tgt<-randomForest(formula=fm.tgt,
                               data=df,
                               importance=TRUE))[3]
-      setProgress(message="Target model constructed.",detail = "Constructing comparing model...")
+      setProgress(message="Target model constructed!",detail = "Constructing comparing model...")
       run.time.cmp<-system.time(
         mod.cmp<-randomForest(formula=fm.cmp,
                               data=df,
@@ -1794,11 +1783,11 @@ shinyServer(function(input,output,session){
       
       # now for mod.cmp
       sup.cmp1<-tmp.cm.cmp[1,1]+tmp.cm.cmp[1,2]
-      print(sup.cmp1)
+      #print(sup.cmp1)
       sup.cmp2<-tmp.cm.cmp[2,1]+tmp.cm.cmp[2,2]
-      print(sup.cmp2)
+      #print(sup.cmp2)
       if(sup.cmp1/sup.cmp2 >= input$class.ratio){
-        print("class1")
+        #print("class1")
         # cmp1 is more abundant => cmp1 is -ve
         # cmp2 is less abundant => cmp2 is +ve
         se<-tmp.cm.cmp[2,2]/(tmp.cm.cmp[2,2]+tmp.cm.cmp[2,1])
@@ -1808,7 +1797,7 @@ shinyServer(function(input,output,session){
         acc.cmp<-(gm+sp*nn)/(1+nn)
       }
       else if(sup.cmp2/sup.cmp1 >= input$class.ratio){
-        print("class2")
+        #print("class2")
         # cmp2 is more abundant => cmp2 is -ve
         # cmp1 is less abundant => cmp1 is +ve
         sp<-tmp.cm.cmp[2,2]/(tmp.cm.cmp[2,2]+tmp.cm.cmp[2,1])
@@ -1831,17 +1820,14 @@ shinyServer(function(input,output,session){
       mined.attr<-NULL
       
       if(acc.tgt >= input$acc.rf.default && acc.cmp < input$acc.rf.default){
-        print("foo")
         mined.attr<-rownames(mod.tgt$importance)[seq(k)]        
         names(mined.attr)<-paste(mined.attr,".tgt",sep="") # adding a tail ".tgt" or ".cmp"
       }
       else if(acc.tgt < input$acc.rf.default && acc.cmp >= input$acc.rf.default){
-        print("bar")
         mined.attr<-rownames(mod.cmp$importance)[seq(k)]
         names(mined.attr)<-paste(mined.attr,".cmp",sep="")
       }
       else if(acc.tgt >= input$acc.rf.default && acc.cmp >= input$acc.rf.default){
-        print("foobar")
         # both models are accurate; extract top k attributes
         # from the intersection of the top attributes in
         # both models based on variable importance (VI)
@@ -1884,7 +1870,7 @@ shinyServer(function(input,output,session){
       }
       
       #**console**#
-      #print(paste("mined.attr: ",names(mined.attr)))
+      print(paste("mined.attr: ",names(mined.attr)))
       
       cm.tgt<-mod.tgt$confusion
       cm.cmp<-mod.cmp$confusion
@@ -1907,7 +1893,7 @@ shinyServer(function(input,output,session){
                                 return(paste("Predicted: ",x,sep=""))
                               })
       
-      print(rownames.cm.tgt)
+      #print(rownames.cm.tgt)
       rownames(cm.tgt)<-rownames.cm.tgt
       colnames(cm.tgt)[1:2]<-colnames.cm.tgt
       rownames(cm.cmp)<-rownames.cm.cmp
@@ -2296,7 +2282,7 @@ shinyServer(function(input,output,session){
     prop.df$adj.indplift<-with(prop.df,
                                difflift
                                *abs(1-(prob.T1/((c11+c21)/(n1prime+n2prime)))))
-    print(prop.df$indplift.adj)
+    #print(prop.df$indplift.adj)
     
     # now, append the chi-squared test stats and p-values
     
@@ -2980,55 +2966,56 @@ shinyServer(function(input,output,session){
   output$about.text<-reactive({
     htmlCode<-paste("
       <h4>What?</h4>
-      <h6>
+      <h5><strong>
           Redhyte is a hypothesis mining system where users start off with an initial domain knowledge-driven hypothesis,
-          and Redhyte proceeds to mine for relevant and interesting hypotheses that deepens the user's understanding of his or her data.
-      </h6>
-      <h6>
+          which Redhyte uses to mine for relevant and interesting hypotheses that deepens the user's understanding of his or her data.
+      </strong></h5>
+      <h5><strong>
         In addition, Redhyte provides basic functionalities for data visualizations, checking of parametric test assumptions and data manipulation.
-      </h6>
+      </strong></h5>
 
       <h4>How?</h4>
-      <h6>
+      <h5><strong>
         As the term suggests, hypothesis mining is concerned with the search of interesting hypotheses from a given dataset. 
         In order to do so, Redhyte puts together the user's domain knowledge, the well-established framework of statistical hypothesis testing,
         and classification techniques from data mining.
         To evaluate the interestingness of mined hypotheses, Redhyte utilises a set of hypothesis mining metrics 
         so as to divert the user's attention to the most interesting collection of hypotheses mined by Redhyte.
-      </h6>
-      <h6>
+      </strong></h5>
+      <h5><strong>
         Redhyte was developed using the statistical programming language 
         <a href=http://www.r-project.org/ target=_blank>R</a>, and the R <a href=http://shiny.rstudio.com/ target=_blank>shiny</a> package .
-      </h6>
+      </strong></h5>
 
       <h4>Why?</h4>
-      <h6>
+      <h5><strong>
         Hypothesis testing is a well-developed and understood technique, used by many non-statistician data analysts. 
         The idea of comparing lung cancer incidence between two subpopulations, say smokers and non-smokers, is intuitive and easy to understand. 
         It is also easy to search through a small dataset of, say, 10 variables (e.g. in an epidemiological study) 
         and identify any existing statistically and practically significant phenomena and trends. 
         However in the current Big Data era, the search for statistical and practical significance becomes a non-trivial task - 
         formulating and testing a small hypothesis in a large dataset is both wasteful and flawed.
-      </h6>
-      <h6>
+      </strong></h5>
+      <h5><strong>
         Using data mining techniques, Redhyte aims to regard hypothesis testing in a more comprehensive manner. 
         The objective of Redhyte is to identify, based on the initial domain knowledge-driven question that the user had in mind, 
         practical and insightful hypotheses.
-      </h6>
+      </strong></h5>
 
       <h4>Who?</h4>
-      <h6>Redhyte was developed by 
+      <h5><strong>
+          Redhyte was developed by 
           <a href=http://sg.linkedin.com/in/tohweizhong target=_blank>Wei Zhong Toh</a>, 
           <a href=http://www.comp.nus.edu.sg/~wongls/ target=_blank>Limsoon Wong</a>, and 
           <a href=http://www.stat.nus.edu.sg/~stackp/ target=_blank>Kwok Pui Choi</a> at the 
           <a href=http://www.nus.edu.sg/ target=_blank>National University of Singapore</a>, 
           <a href=http://www.science.nus.edu.sg target=_blank>Faculty of Science</a> and 
           <a href=http://www.comp.nus.edu.sg/ target=_blank>School of Computing</a>, 
-          and is part of Toh's undergraduate Honours requirements.
-      </h6>
+          and is part of Toh's undergraduate Honours work.
+      </strong></h5>
 
       <h4>Where?</h4>
-      <ul>
+      <font size=3><ul>
         <li><a href=https://tohweizhong.shinyapps.io/redhyte/ target=_blank>Redhyte web app</a></li>
         <li><a href=https://github.com/tohweizhong/redhyte target=_blank>Source code on Github</a></li>
         <li>Example datasets to try out Redhyte with:</li>
@@ -3042,7 +3029,7 @@ shinyServer(function(input,output,session){
           <li><a href=https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/ucbMelted.csv target=_blank>UC Berkeley Admission Bias dataset</a>, distributed with R
               (<a href=http://stat.ethz.ch/R-manual/R-devel/library/datasets/html/UCBAdmissions.html target=_blank>Description of dataset</a>, some prior data cleaning was done)</li>
         </ul>
-      </ul> 
+      </ul></font>
 
       "
       ,sep="")
@@ -3055,7 +3042,7 @@ shinyServer(function(input,output,session){
   # observer to update all the navlistPanel selection
   observe({
     print(input$theTabs)
-    if(input$theTabs != "2. Data visualization")
+    if(input$theTabs != "2. Data viz")
       updateTabsetPanel(session,"viz",selected="Select attributes")
     if(input$theTabs != "3. Initial test")
       updateTabsetPanel(session,"initial",selected="Target attribute")
@@ -3066,5 +3053,4 @@ shinyServer(function(input,output,session){
     if(input$theTabs != "7. Hypothesis mining")
       updateTabsetPanel(session,"hypo",selected="Mined hypotheses")
   })
-  
 }) #end shinyServer
