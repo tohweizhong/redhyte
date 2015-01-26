@@ -1105,6 +1105,29 @@ shinyServer(function(input,output,session){
                                   "}",sep="")
         returnMe
       }
+      else if(numSam < 3){
+        returnMe<-data.frame("Insufficient support for Shapiro Wilk test")
+        colnames(returnMe)<-paste("Shapiro-Wilk test for normality of ",
+                                  input$targetAttr,
+                                  " in ",
+                                  input$comparingAttr,
+                                  " = {",
+                                  Groupings()[["Acmp.names"]][1],
+                                  "}",sep="")
+        returnMe
+        
+      }
+      else if(numSam > 5000){
+        returnMe<-data.frame("Subpopulation too large for Shapiro Wilk test")
+        colnames(returnMe)<-paste("Shapiro-Wilk test for normality of ",
+                                  input$targetAttr,
+                                  " in ",
+                                  input$comparingAttr,
+                                  " = {",
+                                  Groupings()[["Acmp.names"]][1],
+                                  "}",sep="")
+        returnMe
+      }
     }
   })
   output$SWtest.cmp2<-renderTable({
@@ -1129,6 +1152,28 @@ shinyServer(function(input,output,session){
                                   " = {",
                                   Groupings()[["Acmp.names"]][2],
                                   "}",sep="")
+        returnMe
+      }
+      else if(numSam < 3){
+        returnMe<-data.frame("Insufficient support for Shapiro Wilk test")
+        colnames(returnMe)<-paste("Shapiro-Wilk test for normality of ",
+                             input$targetAttr,
+                             " in ",
+                             input$comparingAttr,
+                             " = {",
+                             Groupings()[["Acmp.names"]][2],
+                             "}",sep="")
+        returnMe
+      }
+      else if(numSam > 5000){
+        returnMe<-data.frame("Subpopulation too large for Shapiro Wilk test")
+        colnames(returnMe)<-paste("Shapiro-Wilk test for normality of ",
+                             input$targetAttr,
+                             " in ",
+                             input$comparingAttr,
+                             " = {",
+                             Groupings()[["Acmp.names"]][2],
+                             "}",sep="")
         returnMe
       }
     }
@@ -1293,7 +1338,7 @@ shinyServer(function(input,output,session){
         }
       }
       
-      colnames(MH.df)<-c("Attribute","Stratified by","Mantel-Haenszel Chi-squared","p-value")
+      colnames(MH.df)<-c("Attribute","Stratified by","Cochran-Mantel-Haenszel Chi-squared","p-value")
       return(MH.df)
     }
   })
@@ -1664,6 +1709,7 @@ shinyServer(function(input,output,session){
   #*********************************************#
   
   minedAttributes<-reactive({
+    set.seed(1234)
     #isolate({start.mining<-input$start.ctx.mining}) #isolate was here
     #if(start.mining == TRUE){
     df<-Data3()[[1]]
@@ -2095,7 +2141,8 @@ shinyServer(function(input,output,session){
                   main=paste(Groupings()[[2]][i], Groupings()[[3]][j], sep="&"))
         }
         else if(Data()[[2]][mined.attr] == "Num")
-          hist(plot.dat,main=paste(Groupings()[[2]][i], Groupings()[[3]][j], sep="&"))
+          hist(plot.dat,main=paste(Groupings()[[2]][i], Groupings()[[3]][j], sep="&"),
+               xlab=mined.attr)
       }
     }
   })
@@ -3020,7 +3067,7 @@ shinyServer(function(input,output,session){
         <li><a href=https://github.com/tohweizhong/redhyte target=_blank>Source code on Github</a></li>
         <li>Example datasets to try out Redhyte with:</li>
         <ul>
-          <li><a href=https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/adult.txt target=_blank>Adult dataset by UCI Machine Learning Repo</a>
+          <li><a href=https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/adult.txt target=_blank>US Census dataset by UCI Machine Learning Repo</a>
               (<a href=https://archive.ics.uci.edu/ml/datasets/Adult target=_blank>Description of dataset</a>)</li>
           <li><a href=https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/mushroom_expanded.txt target=_blank>Mushroom dataset by UCI Machine Learning Repo</a>
               (<a href=https://archive.ics.uci.edu/ml/datasets/mushroom target=_blank>Description of dataset</a>)</li>

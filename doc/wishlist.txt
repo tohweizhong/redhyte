@@ -23,6 +23,12 @@ WISHLIST
 
 #===OPTIONAL===#
 
+-> user tutorial
+
+-> check for sufficient in mined hypothesis analysis
+
+-> QQ-plot for SW-test
+
 -> user i/p discretization and discretization algorithm
 
 -> vtgt for cont. Atgt, >= mean always?
