@@ -1927,10 +1927,10 @@ shinyServer(function(input,output,session){
   # === Mined context attributes === #
   
   output$run.time.tgt<-renderText({
-    return(paste("Run time for target model: ",round(minedAttributes()[["run.time.tgt"]],3),sep=""))
+    return(paste("Runtime for target model: ",round(minedAttributes()[["run.time.tgt"]],3),sep=""))
   })
   output$run.time.cmp<-renderText({
-    return(paste("Run time for comparing model: ",round(minedAttributes()[["run.time.cmp"]],3),sep=""))
+    return(paste("Runtime for comparing model: ",round(minedAttributes()[["run.time.cmp"]],3),sep=""))
   })
 
   # confusion matrices
@@ -2989,7 +2989,7 @@ shinyServer(function(input,output,session){
 
       <h4>Why?</h4>
       <h5><strong>
-        Hypothesis testing is a well-developed and understood technique, used by many non-statistician data analysts. 
+        Hypothesis testing is a well-developed and well-understood technique, used by many non-statistician data analysts. 
         The idea of comparing lung cancer incidence between two subpopulations, say smokers and non-smokers, is intuitive and easy to understand. 
         It is also easy to search through a small dataset of, say, 10 variables (e.g. in an epidemiological study) 
         and identify any existing statistically and practically significant phenomena and trends. 

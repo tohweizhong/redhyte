@@ -32,6 +32,9 @@ shinyUI(fluidPage(
                              fileInput('datFile',
                                        tags$h5(tags$strong('Choose file to analyse')),
                                        accept=c('text/csv', 'text/comma-separated-values,text/plain')),
+                             tags$h5("Example dataset to try out Redhyte with:"),
+                             tags$a(href="https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/adult.txt",
+                                    "US Census dataset",target="_blank"),
                              tags$hr(),
                              #checkbox to indicate header == true or false
                              checkboxInput('datHeader','Header contains attribute names', TRUE),
@@ -68,7 +71,7 @@ shinyUI(fluidPage(
                              sliderInput("class.ratio",label="Class ratio threshold for class-imbalance learning",
                                          min=2,max=5,value=3,step=1),
                              sliderInput("min.sup.cij",label="Minimum cell support for mined hypotheses",
-                                         min=5,max=10,value=10,step=1)))),
+                                         min=5,max=20,value=10,step=1)))),
                 
                 #=============================================#
                 #==============1. Data preview================#
