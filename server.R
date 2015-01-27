@@ -1866,11 +1866,11 @@ shinyServer(function(input,output,session){
       mined.attr<-NULL
       
       if(acc.tgt >= input$acc.rf.default && acc.cmp < input$acc.rf.default){
-        mined.attr<-rownames(mod.tgt$importance)[seq(k)]        
+        mined.attr<-names(sort(mod.tgt$importance[,"MeanDecreaseAccuracy"],decreasing=TRUE))[seq(k)]        
         names(mined.attr)<-paste(mined.attr,".tgt",sep="") # adding a tail ".tgt" or ".cmp"
       }
       else if(acc.tgt < input$acc.rf.default && acc.cmp >= input$acc.rf.default){
-        mined.attr<-rownames(mod.cmp$importance)[seq(k)]
+        mined.attr<-names(sort(mod.cmp$importance[,"MeanDecreaseAccuracy"],decreasing=TRUE))[seq(k)]
         names(mined.attr)<-paste(mined.attr,".cmp",sep="")
       }
       else if(acc.tgt >= input$acc.rf.default && acc.cmp >= input$acc.rf.default){
