@@ -3014,10 +3014,9 @@ shinyServer(function(input,output,session){
     htmlCode<-paste("
       <h4>What?</h4>
       <h5><strong>
-          Redhyte is a hypothesis mining system where users start off with an initial domain knowledge-driven question,
-          which Redhyte uses to mine for relevant and interesting hypotheses that deepens the user's understanding of his or her data.
-      </strong></h5>
-      <h5><strong>
+        Redhyte is short for <q>An Interactive Platform for <em>R</em>apid <em>E</em>xploration of <em>D</em>ata and <em>Hy</em>pothesis <em>Te</em>sting</q>.
+        Fundamentally, Redhyte is a hypothesis mining system where users start off with an initial domain knowledge-driven question,
+        which Redhyte uses to mine for relevant and interesting hypotheses that deepens the user's understanding of his or her data.
         In addition, Redhyte provides basic functionalities for data visualizations, checking of parametric test assumptions and data manipulation.
       </strong></h5>
 
@@ -3030,8 +3029,9 @@ shinyServer(function(input,output,session){
         so as to divert the user's attention to the most interesting collection of hypotheses mined by Redhyte.
       </strong></h5>
       <h5><strong>
-        Redhyte was developed using the statistical programming language 
-        <a href=http://www.r-project.org/ target=_blank>R</a>, and the R <a href=http://shiny.rstudio.com/ target=_blank>shiny</a> package.
+        Redhyte was developed using and powered by the statistical programming language 
+        <a href=http://www.r-project.org/ target=_blank>R</a>, with the actualization of this user interface made possible
+        by the R <a href=http://shiny.rstudio.com/ target=_blank>shiny</a> package.
       </strong></h5>
 
       <h4>Why?</h4>
