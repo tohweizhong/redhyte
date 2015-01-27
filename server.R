@@ -3014,7 +3014,7 @@ shinyServer(function(input,output,session){
     htmlCode<-paste("
       <h4>What?</h4>
       <h5><strong>
-          Redhyte is a hypothesis mining system where users start off with an initial domain knowledge-driven hypothesis,
+          Redhyte is a hypothesis mining system where users start off with an initial domain knowledge-driven question,
           which Redhyte uses to mine for relevant and interesting hypotheses that deepens the user's understanding of his or her data.
       </strong></h5>
       <h5><strong>
@@ -3031,13 +3031,13 @@ shinyServer(function(input,output,session){
       </strong></h5>
       <h5><strong>
         Redhyte was developed using the statistical programming language 
-        <a href=http://www.r-project.org/ target=_blank>R</a>, and the R <a href=http://shiny.rstudio.com/ target=_blank>shiny</a> package .
+        <a href=http://www.r-project.org/ target=_blank>R</a>, and the R <a href=http://shiny.rstudio.com/ target=_blank>shiny</a> package.
       </strong></h5>
 
       <h4>Why?</h4>
       <h5><strong>
-        Hypothesis testing is a well-developed and well-understood technique, used by many non-statistician data analysts. 
-        The idea of comparing lung cancer incidence between two subpopulations, say smokers and non-smokers, is intuitive and easy to understand. 
+        Hypothesis testing is a technique used by many non-statistician data analysts -  
+        the idea of comparing lung cancer incidence between two subpopulations, say smokers and non-smokers, is intuitive and easy to understand. 
         It is also easy to search through a small dataset of, say, 10 variables (e.g. in an epidemiological study) 
         and identify any existing statistically and practically significant phenomena and trends. 
         However in the current Big Data era, the search for statistical and practical significance becomes a non-trivial task - 
@@ -3064,7 +3064,6 @@ shinyServer(function(input,output,session){
       <h4>Where?</h4>
       <font size=3><ul>
         <li><a href=https://tohweizhong.shinyapps.io/redhyte/ target=_blank>Redhyte web app</a></li>
-        <li><a href=https://github.com/tohweizhong/redhyte target=_blank>Source code on Github</a></li>
         <li>Example datasets to try out Redhyte with:</li>
         <ul>
           <li><a href=https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/adult.txt target=_blank>US Census dataset by UCI Machine Learning Repo</a>

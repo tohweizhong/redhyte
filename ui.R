@@ -66,7 +66,7 @@ shinyUI(fluidPage(
                                          min=0,max=0.15,value=0.05,step=0.05),
                              sliderInput("acc.rf.default",label="Classification accuracy for context mining",
                                          min=0,max=1,value=0.7,step=0.05),
-                             sliderInput("top.k",label="Number of mined context attributes to shortlist",
+                             sliderInput("top.k",label="Number of context attributes to mine",
                                          min=1,max=10,value=5,step=1),
                              sliderInput("class.ratio",label="Class ratio threshold for class-imbalance learning",
                                          min=2,max=5,value=3,step=1),
