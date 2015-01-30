@@ -25,8 +25,9 @@ shinyUI(fluidPage(
                 tabPanel("0. Settings",
                          sidebarLayout(
                            sidebarPanel(
-                             imageOutput("titlePNG",
-                                         height="70px"),
+                             #imageOutput("titlePNG",
+                                        # height="70px"),
+                             uiOutput("title.text"),
                              tags$hr(),
                              #data input
                              fileInput('datFile',
@@ -246,7 +247,7 @@ shinyUI(fluidPage(
                                                sidebarPanel(
                                                  htmlOutput("minedAttrCtrl")),
                                                plotOutput("mined.attr.viz")),
-                                      widths=c(2,10),selected="Attributes to exclude")),
+                                      widths=c(3,9),selected="Attributes to exclude")),
                 
                 #=============================================#
                 #===========7. Hypothesis mining==============#
@@ -258,8 +259,6 @@ shinyUI(fluidPage(
                         and includes each item in the initial hypothesis to form mined hypotheses.
                         Each mined hypothesis is then evaluated using various metrics."),
                          navlistPanel(id="hypo",
-                                      tabPanel("Mined hypotheses",
-                                               tableOutput("hypotheses")),
                                       tabPanel("Select context item",
                                                sidebarPanel(
                                                  htmlOutput("analyse.sort.ctrl.one"),
@@ -283,6 +282,8 @@ shinyUI(fluidPage(
                                                tableOutput("analyse.flat.chi.sq"),
                                                h5(textOutput("text.analyse.chi.sq.top.cont")),
                                                tableOutput("analyse.chi.sq.top.cont")),
+                                      tabPanel("Mined hypotheses",
+                                               tableOutput("hypotheses")),
                                       tabPanel("Hypothesis mining metrics",
                                                htmlOutput("analyse.plot.metric.ctrl.one"),
                                                htmlOutput("analyse.plot.metric.ctrl.two"),

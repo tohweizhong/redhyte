@@ -11,7 +11,16 @@ shinyServer(function(input,output,session){
   output$algoPNG<-renderImage({
     list(src="images/redhyte algo.png",alt=NULL)
   },deleteFile=FALSE)
-    
+  
+  output$title.text<-reactive({
+    htmlCode<-"
+      <h4><strong><font color=red face=Arial Black>
+          An Interactive Platform for 
+          Rapid Exploration of Data and Hypothesis Testing
+      </font></strong></h4>
+    "
+  })
+  
   #=============================================#
   #=============================================#
   #=============================================#
@@ -1255,7 +1264,7 @@ shinyServer(function(input,output,session){
       df<-Data2()[[1]]
       attr.type<-Data2()[[2]]
       
-      #change all numerical attributes to categorical before hypothesis mining
+      #change all numerical attributes to categorical
       #discretise by the mean
       mean.discre<-function(an.attr){
         m<-mean(df[,an.attr])
@@ -1271,11 +1280,11 @@ shinyServer(function(input,output,session){
         df[,an.attr]<-mean.discre(an.attr)
       
       df.dis<-df # discretized
-
+      
       # now, for each attribute that is not the Atgt or Acmp,
-      # use Atgt or Acmp as 3rd attribute
+      # use that attribute to be 3rd attribute
       # stratify the data according to the classes of the 3rd attribute
-      # and create a 2 x K x 2 table for each attribute
+      # and create a 2 x 2 x K table for each attribute
       # finally, do a MH-test
       
       MH.df<-NULL
@@ -1285,44 +1294,15 @@ shinyServer(function(input,output,session){
            && colnames(df.dis)[j] != input$targetAttr
            && colnames(df.dis)[j] != input$comparingAttr){
           
-          # firstly, for Acmp as 3rd attribute
-          
           df.tmp<-df.dis[,"tgt.class"]
-          df.tmp<-cbind(df.tmp,df.dis[,j])
           df.tmp<-cbind(df.tmp,df.dis[,"cmp.class"])
-          
-          df.tmp<-data.frame(df.tmp)
-          tab<-table(df.tmp)
-          
-          sup<-as.vector(tab)
-          if(any(sup <= 0) || length(sup) < 6)
-            MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
-                                 input$comparingAttr,
-                                 "Insufficient",
-                                 "Insufficient"))
-          else{
-            test<-mantelhaen.test(tab)
-            stats<-test$statistic
-            pvalue<-test$p.value
-            
-            MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
-                                 input$comparingAttr,
-                                 round(stats,3),
-                                 round(pvalue,3)))
-          }
-          
-          # now for Atgt as 3rd attribute
-          df.tmp<-df.dis[,"cmp.class"]
           df.tmp<-cbind(df.tmp,df.dis[,j])
-          df.tmp<-cbind(df.tmp,df.dis[,"tgt.class"])
           
           df.tmp<-data.frame(df.tmp)
           tab<-table(df.tmp)
-          
           sup<-as.vector(tab)
-          if(any(sup <= 0) || length(sup) < 6)
+          if(any(sup <= 0) || length(sup) %% 4 != 0) # should be multiples of 4
             MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
-                                 input$targetAttr,
                                  "Insufficient",
                                  "Insufficient"))
           else{
@@ -1331,15 +1311,14 @@ shinyServer(function(input,output,session){
             pvalue<-test$p.value
             
             MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
-                                 input$targetAttr,
                                  round(stats,3),
                                  round(pvalue,3)))
           }
         }
       }
-      
-      colnames(MH.df)<-c("Attribute","Stratified by","Cochran-Mantel-Haenszel Chi-squared","p-value")
-      return(MH.df)
+    
+    colnames(MH.df)<-c("3rd attribute","Cochran-Mantel-Haenszel Chi-squared","p-value")
+    return(MH.df)
     }
   })
   #===#
@@ -1495,7 +1474,7 @@ shinyServer(function(input,output,session){
       df<-Data2()[[1]]
       attr.type<-Data2()[[2]]
       
-      #change all numerical attributes to categorical before hypothesis mining
+      #change all numerical attributes to categorical
       #discretise by the mean
       mean.discre<-function(an.attr){
         m<-mean(df[,an.attr])
@@ -1513,9 +1492,9 @@ shinyServer(function(input,output,session){
       df.dis<-df # discretized
       
       # now, for each attribute that is not the Atgt or Acmp,
-      # use Atgt or Acmp as 3rd attribute
+      # use that attribute to be the 3rd attribute
       # stratify the data according to the classes of the 3rd attribute
-      # and create a 2 x K x 2 table for each attribute
+      # and create a 2 x 2 x K table for each attribute
       # finally, do a MH-test
       
       MH.df<-NULL
@@ -1525,49 +1504,17 @@ shinyServer(function(input,output,session){
            && colnames(df.dis)[j] != input$targetAttr
            && colnames(df.dis)[j] != input$comparingAttr){
           
-          # firstly, for Acmp as 3rd attribute
-          
           df.tmp<-df.dis[,"tgt.class"]
-          df.tmp<-cbind(df.tmp,df.dis[,j])
           df.tmp<-cbind(df.tmp,df.dis[,"cmp.class"])
-          
-          #str(df.tmp)
-          
-          df.tmp<-data.frame(df.tmp)
-          tab<-table(df.tmp)
-          
-          #str(tab)
-          
-          sup<-as.vector(tab)
-          
-          if(any(sup <= 0) || length(sup) < 6)
-            MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
-                                 input$comparingAttr,
-                                 "Insufficient",
-                                 "Insufficient"))
-          else{
-            test<-mantelhaen.test(tab)
-            stats<-test$statistic
-            pvalue<-test$p.value
-            
-            MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
-                                 input$comparingAttr,
-                                 round(stats,3),
-                                 round(pvalue,3)))
-          }
-          
-          # now for Atgt as 3rd attribute
-          df.tmp<-df.dis[,"cmp.class"]
           df.tmp<-cbind(df.tmp,df.dis[,j])
-          df.tmp<-cbind(df.tmp,df.dis[,"tgt.class"])
           
           df.tmp<-data.frame(df.tmp)
           tab<-table(df.tmp)
           
           sup<-as.vector(tab)
-          if(any(sup <= 0 || length(sup) < 6))
+          
+          if(any(sup <= 0) || length(sup) %% 4 != 0)
             MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
-                                 input$targetAttr,
                                  "Insufficient",
                                  "Insufficient"))
           else{
@@ -1576,14 +1523,12 @@ shinyServer(function(input,output,session){
             pvalue<-test$p.value
             
             MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
-                                 input$targetAttr,
                                  round(stats,3),
                                  round(pvalue,3)))
           }
         }
       }
-      
-      colnames(MH.df)<-c("Attribute","Stratified by","Mantel-Haenszel Chi-squared","p-value")
+      colnames(MH.df)<-c("3rd attribute","Cochran-Mantel-Haenszel Chi-squared","p-value")
       return(MH.df)
     }
   })
@@ -1947,7 +1892,7 @@ shinyServer(function(input,output,session){
       
       if(!is.null(mined.attr)) return(list(cm.tgt,
                                            cm.cmp,
-                                           mined.attr,
+                                           mined.attr=mined.attr,
                                            run.time.tgt=run.time.tgt,
                                            run.time.cmp=run.time.cmp,
                                            mod.tgt=mod.tgt,
@@ -1956,7 +1901,7 @@ shinyServer(function(input,output,session){
       #both mod.tgt and mod.cmp are inaccurate, therefore no mined attributes
       else return(list(cm.tgt,
                        cm.cmp,
-                       NULL,
+                       mined.attr=NULL,
                        run.time.tgt=run.time.tgt,
                        run.time.cmp=run.time.cmp,
                        mod.tgt=mod.tgt,
@@ -2385,115 +2330,126 @@ shinyServer(function(input,output,session){
   
   # render the Hypotheses master data frame
   output$hypotheses<-renderTable({
-    prop.df<-Hypotheses()
-    prop.df<-subset(prop.df,select=c(Actx,vctx,
-                                     sufficient,
-                                     c11,c12,c21,c22,
-                                     n1prime,n2prime,
-                                     p1prime,p2prime,
-                                     i1prime,i2prime,
-                                     difflift,contri,indplift,adj.indplift,SR,
-                                     stats,pvalue,adj.pvalue))
+    if(!is.null(minedAttributes()[["mined.attr"]])){
+      prop.df<-Hypotheses()
+      prop.df<-subset(prop.df,select=c(Actx,vctx,
+                                       sufficient,
+                                       c11,c12,c21,c22,
+                                       n1prime,n2prime,
+                                       p1prime,p2prime,
+                                       i1prime,i2prime,
+                                       difflift,contri,indplift,adj.indplift,SR,
+                                       stats,pvalue,adj.pvalue))
+    }
   },digits=3)
   
   # === Select context item === #
   
   # summary of difflift and contribution for attributes as a whole
   output$analyse.summary<-renderTable({
-    prop.df<-Hypotheses()
-    actx<-unique(prop.df$Actx)
-    summary.df<-data.frame(difflift=numeric(),
-                           contri=numeric())
-    SP.vec<-NULL
-    for(a.ctx.attr in actx){
-      # extract the difflift's and contributions
-      all.dl<-prop.df$difflift[which(prop.df$Actx == a.ctx.attr)]
-      all.contri<-prop.df$contri[which(prop.df$Actx == a.ctx.attr)]
-      
-      # find the mean for each Actx
-      dl<-mean(abs(all.dl),na.rm=TRUE)
-      contri<-mean(abs(all.contri),na.rm=TRUE)
-      
-      # remove NAs, look for Simpson's Paradox
-      all.dl[is.na(dl)]<-0
-      if(any(all.dl > 0)) SP.vec<-c(SP.vec,FALSE)
-      else SP.vec<-c(SP.vec,TRUE)
-      
-      if(is.nan(dl)) SP.vec[length(SP.vec)]<-FALSE
-      
-      summary.df<-rbind(summary.df,c(dl,contri))
+    if(!is.null(minedAttributes()[["mined.attr"]])){
+      prop.df<-Hypotheses()
+      actx<-unique(prop.df$Actx)
+      summary.df<-data.frame(difflift=numeric(),
+                             contri=numeric())
+      SP.vec<-NULL
+      for(a.ctx.attr in actx){
+        # extract the difflift's and contributions
+        all.dl<-prop.df$difflift[which(prop.df$Actx == a.ctx.attr)]
+        all.contri<-prop.df$contri[which(prop.df$Actx == a.ctx.attr)]
+        
+        # find the mean for each Actx
+        dl<-mean(abs(all.dl),na.rm=TRUE)
+        contri<-mean(abs(all.contri),na.rm=TRUE)
+        
+        # remove NAs, look for Simpson's Paradox
+        all.dl[is.na(dl)]<-0
+        if(any(all.dl > 0)) SP.vec<-c(SP.vec,FALSE)
+        else SP.vec<-c(SP.vec,TRUE)
+        
+        if(is.nan(dl)) SP.vec[length(SP.vec)]<-FALSE
+        
+        summary.df<-rbind(summary.df,c(dl,contri))
+      }
+      summary.df<-cbind(summary.df,SP.vec)
+      rownames(summary.df)<-actx
+      colnames(summary.df)<-c("Mean difference lift","Mean contribution","Simpson's paradox")
+      return(summary.df)
     }
-    summary.df<-cbind(summary.df,SP.vec)
-    rownames(summary.df)<-actx
-    colnames(summary.df)<-c("Mean difference lift","Mean contribution","Simpson's paradox")
-    return(summary.df)
-    
   })
   
   output$analyse.ctrl<-renderUI({
-    selectizeInput("analyse.which.item","Select context item to analyse",rownames(Hypotheses()))
+    if(!is.null(minedAttributes()[["mined.attr"]])){
+      selectizeInput("analyse.which.item","Select context item to analyse",rownames(Hypotheses()))
+    }
   }) # return: input$analyse.which.item
   output$analyse.sort.ctrl.one<-renderUI({
-    selectizeInput("analyse.sort.one","Sort first by?",
-                   c("sufficient","SR","difflift","contri","indplift","adj.indplift","pvalue","adj.pvalue"))
+    if(!is.null(minedAttributes()[["mined.attr"]])){
+      selectizeInput("analyse.sort.one","Sort first by?",
+                     c("sufficient","SR","difflift","contri","indplift","adj.indplift","pvalue","adj.pvalue"))
+    }
   }) # return: input$analyse.sort.one
   output$analyse.sort.ctrl.two<-renderUI({
-    selectizeInput("analyse.sort.two","Then by?",
-                   c("sufficient","SR","difflift","contri","indplift","adj.indplift","pvalue","adj.pvalue"))
+    if(!is.null(minedAttributes()[["mined.attr"]])){
+      selectizeInput("analyse.sort.two","Then by?",
+                     c("sufficient","SR","difflift","contri","indplift","adj.indplift","pvalue","adj.pvalue"))
+    }
   }) # return: input$analyse.sort.two
   
   # render the Hypotheses master data frame, sorted according to user
   output$analyse.hypothesis<-renderTable({
-    prop.df<-subset(Hypotheses(),select=c(sufficient,SR,difflift,contri,indplift,adj.indplift,pvalue,adj.pvalue))
-    
-    sort.first.by<-which(colnames(prop.df) == input$analyse.sort.one)
-    then.by<-which(colnames(prop.df) == input$analyse.sort.two)
-    
-    # sort descendingly for sufficient and SR only
-    # 1: sufficient
-    # 2: SR
-    # 5: indplift
-    
-    # first case: {1 or 2, 1 or 2}
-    if((sort.first.by == 1 || sort.first.by == 2) && (then.by == 1 || then.by == 2))
-      prop.df<-prop.df[order(-prop.df[,sort.first.by],-prop.df[,then.by]),]
-    
-    # second case: {1 or 2, not 1 and 2}
-    else if((sort.first.by == 1 || sort.first.by == 2) && (then.by != 1 && then.by != 2)){
-     if(then.by != 5) 
-       prop.df<-prop.df[order(-prop.df[,sort.first.by],prop.df[,then.by]),]
-     else if(then.by == 5)
-       prop.df<-prop.df[order(-prop.df[,sort.first.by],abs(prop.df[,then.by])),]
-    }
-    
-    # third case: {not 1 and 2, 1 or 2}
-    else if((sort.first.by != 1 && sort.first.by != 2) && (then.by == 1 && then.by == 2)){
-      if(sort.first.by != 5)
-        prop.df<-prop.df[order(prop.df[,sort.first.by],-prop.df[,then.by]),]
-      else (sort.first.by == 5)
+    if(!is.null(minedAttributes()[["mined.attr"]])){
+      prop.df<-subset(Hypotheses(),select=c(sufficient,SR,difflift,contri,indplift,adj.indplift,pvalue,adj.pvalue))
+      
+      sort.first.by<-which(colnames(prop.df) == input$analyse.sort.one)
+      then.by<-which(colnames(prop.df) == input$analyse.sort.two)
+      
+      # sort descendingly for sufficient and SR only
+      # 1: sufficient
+      # 2: SR
+      # 5: indplift
+      
+      # first case: {1 or 2, 1 or 2}
+      if((sort.first.by == 1 || sort.first.by == 2) && (then.by == 1 || then.by == 2))
+        prop.df<-prop.df[order(-prop.df[,sort.first.by],-prop.df[,then.by]),]
+      
+      # second case: {1 or 2, not 1 and 2}
+      else if((sort.first.by == 1 || sort.first.by == 2) && (then.by != 1 && then.by != 2)){
+        if(then.by != 5) 
+          prop.df<-prop.df[order(-prop.df[,sort.first.by],prop.df[,then.by]),]
+        else if(then.by == 5)
+          prop.df<-prop.df[order(-prop.df[,sort.first.by],abs(prop.df[,then.by])),]
+      }
+      
+      # third case: {not 1 and 2, 1 or 2}
+      else if((sort.first.by != 1 && sort.first.by != 2) && (then.by == 1 && then.by == 2)){
+        if(sort.first.by != 5)
+          prop.df<-prop.df[order(prop.df[,sort.first.by],-prop.df[,then.by]),]
+        else (sort.first.by == 5)
         prop.df<-prop.df[order(abs(prop.df[,sort.first.by]),-prop.df[,then.by]),]
+      }
+      
+      # at this point, both must be neither 1 or 2
+      # fourth case: {5, not 1 and 2}
+      else if(sort.first.by == 5)
+        prop.df<-prop.df[order(abs(prop.df[,sort.first.by]),prop.df[,then.by]),]
+      
+      # fifth case: {not 1 and 2, 5}
+      else if(then.by == 5)
+        prop.df<-prop.df[order(prop.df[,sort.first.by],abs(prop.df[,then.by])),]
+      
+      # sixth case: {not 1 and 2 and 5, not 1 and 2 and 5}
+      else
+        prop.df<-prop.df[order(prop.df[,sort.first.by],prop.df[,then.by]),]
+      
+      prop.df<-subset(prop.df,
+                      select=c(sufficient,SR,difflift,contri,indplift,adj.indplift,pvalue,adj.pvalue))
+      
+      colnames(prop.df)<-c("Sufficient","Simpson's Reversal","Difference lift",
+                           "Contribution","Independence lift","Adjusted independence lift","p-value","Adjusted p-value")
+      
+      return(prop.df)
     }
-    
-    # at this point, both must be neither 1 or 2
-    # fourth case: {5, not 1 and 2}
-    else if(sort.first.by == 5)
-      prop.df<-prop.df[order(abs(prop.df[,sort.first.by]),prop.df[,then.by]),]
-    
-    # fifth case: {not 1 and 2, 5}
-    else if(then.by == 5)
-      prop.df<-prop.df[order(prop.df[,sort.first.by],abs(prop.df[,then.by])),]
-    
-    # sixth case: {not 1 and 2 and 5, not 1 and 2 and 5}
-    else
-      prop.df<-prop.df[order(prop.df[,sort.first.by],prop.df[,then.by]),]
-    
-    prop.df<-subset(prop.df,
-                    select=c(sufficient,SR,difflift,contri,indplift,adj.indplift,pvalue,adj.pvalue))
-    
-    colnames(prop.df)<-c("Sufficient","Simpson's Reversal","Difference lift",
-                         "Contribution","Independence lift","Adjusted independence lift","p-value","Adjusted p-value")
-    
-    return(prop.df)
   })
   
   # === Hypothesis analysis === #
@@ -2642,174 +2598,59 @@ shinyServer(function(input,output,session){
   
   # display mined hypothesis and test based on selected item
   output$analyse.cont.tab<-renderTable({
-    
-    item<-input$analyse.which.item
-    Actx<-unlist(strsplit(item,"="))[1]
-    vctx<-unlist(strsplit(item,"="))[2]
-    
-    df<-Data3()[[1]][,c("tgt.class","cmp.class",Actx)]
-    
-    rows.to.prop<-which(df[,Actx] == vctx)
-    df.to.prop<-df[rows.to.prop,c("cmp.class","tgt.class")]
-    tab<-table(df.to.prop)
-    
-    rownames(tab)<-Groupings()[[3]]
-    colnames(tab)<-Groupings()[[2]]
-    
-    append.col<-c((tab[1,1]+tab[1,2]),
-                  (tab[2,1]+tab[2,2]))
-    append.row<-c((tab[1,1]+tab[2,1]),
-                  (tab[1,2]+tab[2,2]),
-                  sum(tab))
-    
-    append.col<-round(append.col,2)
-    append.row<-round(append.row,2)
-    
-    # include cell proportions in rendered table
-    cell.proportions<-c(tab[1,1]/(tab[1,1]+tab[1,2]),
-                        tab[1,2]/(tab[1,1]+tab[1,2]),
-                        tab[2,1]/(tab[2,1]+tab[2,2]),
-                        tab[2,2]/(tab[2,1]+tab[2,2]))
-    cell.proportions<-round(cell.proportions,2)
-    
-    tab[1,1]<-paste(tab[1,1]," (",cell.proportions[1],")",sep="")
-    tab[1,2]<-paste(tab[1,2]," (",cell.proportions[2],")",sep="")
-    tab[2,1]<-paste(tab[2,1]," (",cell.proportions[3],")",sep="")
-    tab[2,2]<-paste(tab[2,2]," (",cell.proportions[4],")",sep="")
-    
-    tab<-cbind(tab,append.col)
-    tab<-rbind(tab,append.row)
-    colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Total"
-    return(tab)
-  })
-  output$analyse.test<-renderTable({
-    item<-input$analyse.which.item
-    Actx<-unlist(strsplit(item,"="))[1]
-    vctx<-unlist(strsplit(item,"="))[2]
-    
-    df<-Data3()[[1]][,c("tgt.class","cmp.class",Actx)]
-    
-    rows.to.prop<-which(df[,Actx] == vctx)
-    df.to.prop<-df[rows.to.prop,c("cmp.class","tgt.class")]
-    tab<-table(df.to.prop)
-    
-    test<-chisq.test(tab)
-    stats<-test$statistic
-    pvalue<-test$p.value
-    method<-test$method
-    
-    returnMe<-as.data.frame(c(as.character(method),
-                              as.character(round(stats,3)),
-                              as.character(pvalue)))
-    
-    rownames(returnMe)<-c("Method","Test statistic","p-value")
-    colnames(returnMe)<-paste("Chi-squared test on mined hypothesis: ",item,sep="")
-    return(returnMe)
-  })
-  output$analyse.hypothesis.statement<-renderText({
-    if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
-    
-    tgt.attr<-input$targetAttr
-    cmp.attr<-input$comparingAttr
-    
-    tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is num
-    tgt.class2<-input$whichtgtclassesB # <--- could be NULL
-    cmp.class1<-input$whichcmpclassesX
-    cmp.class2<-input$whichcmpclassesY
-    
-    ctx.attr    <-input$ctxAttr
-    ctx.items   <-input$ctxItems # in the format of Actx = vctx
-    
-    ctx.items.text<-paste(ctx.items, collapse=" & ")
-    tgt.class1.text<-paste(tgt.class1,collapse=" & ")
-    tgt.class2.text<-paste(tgt.class2,collapse=" & ")
-    cmp.class1.text<-paste(cmp.class1,collapse=" & ")
-    cmp.class2.text<-paste(cmp.class2,collapse=" & ")
-    
-    # add in the ctx item to analyse
-    if(ctx.items.text == "") ctx.items.text<-paste(input$analyse.which.item, collapse=" & ")
-    else ctx.items.text<-paste(ctx.items.text,input$analyse.which.item, sep=" & ")
-    
-    if(Groupings()[[1]] == "Cate")
-      statement<-paste("In the context of {",
-                       ctx.items.text,
-                       "}, is there a difference in ",
-                       toupper(tgt.attr),
-                       " between {",
-                       tgt.class1.text,
-                       "} vs. {",
-                       tgt.class2.text,
-                       "} when comparing the samples on ",
-                       toupper(cmp.attr),
-                       " between {",
-                       cmp.class1.text,
-                       "} vs. {",
-                       cmp.class2.text,
-                       "}?",
-                       sep="")
-    else if(Groupings()[[1]] == "Num")
-      statement<-paste("In the context of {",
-                       ctx.items.text,
-                       "}, is there a difference in ",
-                       toupper(tgt.attr),
-                       " when comparing the samples on ",
-                       toupper(cmp.attr),
-                       " between {",
-                       cmp.class1.text,
-                       "} vs. {",
-                       cmp.class2.text,
-                       "}",
-                       sep="")
-    return(statement)
-  })
-  
-  # chi-sq top contribution
-  output$text.analyse.flat.table<-renderText({
-    if((Test()[["test.type"]] == "t.test" && Test()[["second.test.type"]] == "collapsed.chi.sq")
-       || Test()[["test.type"]] == "collapsed.chi.sq"){
-      return("Flat contingency table of mined hypothesis:")
-    }
-  })
-  output$analyse.flat.table<-renderTable({
-    if((Test()[["test.type"]] == "t.test" && Test()[["second.test.type"]] == "collapsed.chi.sq")
-        || Test()[["test.type"]] == "collapsed.chi.sq"){
-      
+    if(!is.null(minedAttributes()[["mined.attr"]])){
       item<-input$analyse.which.item
       Actx<-unlist(strsplit(item,"="))[1]
       vctx<-unlist(strsplit(item,"="))[2]
       
-      df<-Data3()[[1]][,c("tgt.class",input$comparingAttr,Actx)]
+      df<-Data3()[[1]][,c("tgt.class","cmp.class",Actx)]
       
       rows.to.prop<-which(df[,Actx] == vctx)
-      df.to.prop<-df[rows.to.prop,c(input$comparingAttr,"tgt.class")]
+      df.to.prop<-df[rows.to.prop,c("cmp.class","tgt.class")]
       tab<-table(df.to.prop)
       
-      colnames(tab)<-Groupings()[["Atgt.names"]]
+      rownames(tab)<-Groupings()[[3]]
+      colnames(tab)<-Groupings()[[2]]
+      
+      append.col<-c((tab[1,1]+tab[1,2]),
+                    (tab[2,1]+tab[2,2]))
+      append.row<-c((tab[1,1]+tab[2,1]),
+                    (tab[1,2]+tab[2,2]),
+                    sum(tab))
+      
+      append.col<-round(append.col,2)
+      append.row<-round(append.row,2)
+      
+      # include cell proportions in rendered table
+      cell.proportions<-c(tab[1,1]/(tab[1,1]+tab[1,2]),
+                          tab[1,2]/(tab[1,1]+tab[1,2]),
+                          tab[2,1]/(tab[2,1]+tab[2,2]),
+                          tab[2,2]/(tab[2,1]+tab[2,2]))
+      cell.proportions<-round(cell.proportions,2)
+      
+      tab[1,1]<-paste(tab[1,1]," (",cell.proportions[1],")",sep="")
+      tab[1,2]<-paste(tab[1,2]," (",cell.proportions[2],")",sep="")
+      tab[2,1]<-paste(tab[2,1]," (",cell.proportions[3],")",sep="")
+      tab[2,2]<-paste(tab[2,2]," (",cell.proportions[4],")",sep="")
+      
+      tab<-cbind(tab,append.col)
+      tab<-rbind(tab,append.row)
+      colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Total"
       return(tab)
     }
   })
-  #===#
-  output$text.analyse.flat.chi.sq<-renderText({
-    if((Test()[["test.type"]] == "t.test" && Test()[["second.test.type"]] == "collapsed.chi.sq")
-       || Test()[["test.type"]] == "collapsed.chi.sq"){
-      return("Chi-squared test on flat contingency table:")
-    }
-  })
-  output$analyse.flat.chi.sq<-renderTable({
-    if((Test()[["test.type"]] == "t.test" && Test()[["second.test.type"]] == "collapsed.chi.sq")
-       || Test()[["test.type"]] == "collapsed.chi.sq"){
-      
+  output$analyse.test<-renderTable({
+    if(!is.null(minedAttributes()[["mined.attr"]])){
       item<-input$analyse.which.item
       Actx<-unlist(strsplit(item,"="))[1]
       vctx<-unlist(strsplit(item,"="))[2]
       
-      df<-Data3()[[1]][,c("tgt.class",input$comparingAttr,Actx)]
+      df<-Data3()[[1]][,c("tgt.class","cmp.class",Actx)]
       
       rows.to.prop<-which(df[,Actx] == vctx)
-      df.to.prop<-df[rows.to.prop,c(input$comparingAttr,"tgt.class")]
+      df.to.prop<-df[rows.to.prop,c("cmp.class","tgt.class")]
       tab<-table(df.to.prop)
       
-      # flat chi-sq
       test<-chisq.test(tab)
       stats<-test$statistic
       pvalue<-test$p.value
@@ -2818,71 +2659,209 @@ shinyServer(function(input,output,session){
       returnMe<-as.data.frame(c(as.character(method),
                                 as.character(round(stats,3)),
                                 as.character(pvalue)))
+      
       rownames(returnMe)<-c("Method","Test statistic","p-value")
-      colnames(returnMe)<-paste("Flat chi-squared test on mined hypothesis: ",item,sep="")
-      returnMe
+      colnames(returnMe)<-paste("Chi-squared test on mined hypothesis: ",item,sep="")
+      return(returnMe)
+    }
+  })
+  output$analyse.hypothesis.statement<-renderText({
+    if(!is.null(minedAttributes()[["mined.attr"]])){
+      if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
+      
+      tgt.attr<-input$targetAttr
+      cmp.attr<-input$comparingAttr
+      
+      tgt.class1<-input$whichtgtclassesA # <--- could be NULL if Atgt is num
+      tgt.class2<-input$whichtgtclassesB # <--- could be NULL
+      cmp.class1<-input$whichcmpclassesX
+      cmp.class2<-input$whichcmpclassesY
+      
+      ctx.attr    <-input$ctxAttr
+      ctx.items   <-input$ctxItems # in the format of Actx = vctx
+      
+      ctx.items.text<-paste(ctx.items, collapse=" & ")
+      tgt.class1.text<-paste(tgt.class1,collapse=" & ")
+      tgt.class2.text<-paste(tgt.class2,collapse=" & ")
+      cmp.class1.text<-paste(cmp.class1,collapse=" & ")
+      cmp.class2.text<-paste(cmp.class2,collapse=" & ")
+      
+      # add in the ctx item to analyse
+      if(ctx.items.text == "") ctx.items.text<-paste(input$analyse.which.item, collapse=" & ")
+      else ctx.items.text<-paste(ctx.items.text,input$analyse.which.item, sep=" & ")
+      
+      if(Groupings()[[1]] == "Cate")
+        statement<-paste("In the context of {",
+                         ctx.items.text,
+                         "}, is there a difference in ",
+                         toupper(tgt.attr),
+                         " between {",
+                         tgt.class1.text,
+                         "} vs. {",
+                         tgt.class2.text,
+                         "} when comparing the samples on ",
+                         toupper(cmp.attr),
+                         " between {",
+                         cmp.class1.text,
+                         "} vs. {",
+                         cmp.class2.text,
+                         "}?",
+                         sep="")
+      else if(Groupings()[[1]] == "Num")
+        statement<-paste("In the context of {",
+                         ctx.items.text,
+                         "}, is there a difference in ",
+                         toupper(tgt.attr),
+                         " when comparing the samples on ",
+                         toupper(cmp.attr),
+                         " between {",
+                         cmp.class1.text,
+                         "} vs. {",
+                         cmp.class2.text,
+                         "}",
+                         sep="")
+      return(statement)
+    }
+  })
+  
+  # chi-sq top contribution
+  output$text.analyse.flat.table<-renderText({
+    if(!is.null(minedAttributes()[["mined.attr"]])){
+      if((Test()[["test.type"]] == "t.test" && Test()[["second.test.type"]] == "collapsed.chi.sq")
+         || Test()[["test.type"]] == "collapsed.chi.sq"){
+        return("Flat contingency table of mined hypothesis:")
+      }
+    }
+  })
+  output$analyse.flat.table<-renderTable({
+    if(!is.null(minedAttributes()[["mined.attr"]])){
+      if((Test()[["test.type"]] == "t.test" && Test()[["second.test.type"]] == "collapsed.chi.sq")
+         || Test()[["test.type"]] == "collapsed.chi.sq"){
+        
+        item<-input$analyse.which.item
+        Actx<-unlist(strsplit(item,"="))[1]
+        vctx<-unlist(strsplit(item,"="))[2]
+        
+        df<-Data3()[[1]][,c("tgt.class",input$comparingAttr,Actx)]
+        
+        rows.to.prop<-which(df[,Actx] == vctx)
+        df.to.prop<-df[rows.to.prop,c(input$comparingAttr,"tgt.class")]
+        tab<-table(df.to.prop)
+        
+        colnames(tab)<-Groupings()[["Atgt.names"]]
+        return(tab)
+      }
+    }
+  })
+  #===#
+  output$text.analyse.flat.chi.sq<-renderText({
+    if(!is.null(minedAttributes()[["mined.attr"]])){
+      if((Test()[["test.type"]] == "t.test" && Test()[["second.test.type"]] == "collapsed.chi.sq")
+         || Test()[["test.type"]] == "collapsed.chi.sq"){
+        return("Chi-squared test on flat contingency table:")
+      }
+    }
+  })
+  output$analyse.flat.chi.sq<-renderTable({
+    if(!is.null(minedAttributes()[["mined.attr"]])){
+      if((Test()[["test.type"]] == "t.test" && Test()[["second.test.type"]] == "collapsed.chi.sq")
+         || Test()[["test.type"]] == "collapsed.chi.sq"){
+        
+        item<-input$analyse.which.item
+        Actx<-unlist(strsplit(item,"="))[1]
+        vctx<-unlist(strsplit(item,"="))[2]
+        
+        df<-Data3()[[1]][,c("tgt.class",input$comparingAttr,Actx)]
+        
+        rows.to.prop<-which(df[,Actx] == vctx)
+        df.to.prop<-df[rows.to.prop,c(input$comparingAttr,"tgt.class")]
+        tab<-table(df.to.prop)
+        
+        # flat chi-sq
+        test<-chisq.test(tab)
+        stats<-test$statistic
+        pvalue<-test$p.value
+        method<-test$method
+        
+        returnMe<-as.data.frame(c(as.character(method),
+                                  as.character(round(stats,3)),
+                                  as.character(pvalue)))
+        rownames(returnMe)<-c("Method","Test statistic","p-value")
+        colnames(returnMe)<-paste("Flat chi-squared test on mined hypothesis: ",item,sep="")
+        returnMe
+      }
     }
   })
   #===#
   output$text.analyse.chi.sq.top.cont<-renderText({
-    if((Test()[["test.type"]] == "t.test" && Test()[["second.test.type"]] == "collapsed.chi.sq")
-       || Test()[["test.type"]] == "collapsed.chi.sq"){
-      return("Chi-squared top contributor:")
+    if(!is.null(minedAttributes()[["mined.attr"]])){
+      if((Test()[["test.type"]] == "t.test" && Test()[["second.test.type"]] == "collapsed.chi.sq")
+         || Test()[["test.type"]] == "collapsed.chi.sq"){
+        return("Chi-squared top contributor:")
+      }
     }
   })
   output$analyse.chi.sq.top.cont<-renderTable({
-    if((Test()[["test.type"]] == "t.test" && Test()[["second.test.type"]] == "collapsed.chi.sq")
-       || Test()[["test.type"]] == "collapsed.chi.sq"){
-      
-      item<-input$analyse.which.item
-      Actx<-unlist(strsplit(item,"="))[1]
-      vctx<-unlist(strsplit(item,"="))[2]
-      
-      df<-Data3()[[1]][,c("tgt.class",input$comparingAttr,Actx)]
-      
-      rows.to.prop<-which(df[,Actx] == vctx)
-      df.to.prop<-df[rows.to.prop,c(input$comparingAttr,"tgt.class")]
-      tab<-table(df.to.prop)
-      
-      test<-chisq.test(tab)
-      o<-test$observed
-      e<-test$expected
-      #vtgt<-colnames(o)[which(colnames(o) == "1")] # vtgt is tgt.class == 1
-      #cmp.classes<-rownames(e) # <--- want to compute top contributor for Acmp,
-      # for vtgt only
-      chisq.contri<-cbind(o[,1],
-                          e[,1],
-                          ((((o-e)^2)/e)[,1])/test$statistic * 100)
-      colnames(chisq.contri)<-c("Observed",
-                                "Expected",
-                                "Chi-squared contribution (%)")
-      return(chisq.contri)
+    if(!is.null(minedAttributes()[["mined.attr"]])){
+      if((Test()[["test.type"]] == "t.test" && Test()[["second.test.type"]] == "collapsed.chi.sq")
+         || Test()[["test.type"]] == "collapsed.chi.sq"){
+        
+        item<-input$analyse.which.item
+        Actx<-unlist(strsplit(item,"="))[1]
+        vctx<-unlist(strsplit(item,"="))[2]
+        
+        df<-Data3()[[1]][,c("tgt.class",input$comparingAttr,Actx)]
+        
+        rows.to.prop<-which(df[,Actx] == vctx)
+        df.to.prop<-df[rows.to.prop,c(input$comparingAttr,"tgt.class")]
+        tab<-table(df.to.prop)
+        
+        test<-chisq.test(tab)
+        o<-test$observed
+        e<-test$expected
+        #vtgt<-colnames(o)[which(colnames(o) == "1")] # vtgt is tgt.class == 1
+        #cmp.classes<-rownames(e) # <--- want to compute top contributor for Acmp,
+        # for vtgt only
+        chisq.contri<-cbind(o[,1],
+                            e[,1],
+                            ((((o-e)^2)/e)[,1])/test$statistic * 100)
+        colnames(chisq.contri)<-c("Observed",
+                                  "Expected",
+                                  "Chi-squared contribution (%)")
+        return(chisq.contri)
+      }
     }
   })
   
   # === Hypothesis mining metrics === #
   
   output$analyse.plot.metric.ctrl.one<-renderUI({
-    selectizeInput("plot.what.metric.one",
-                   "Select a hypothesis mining metric to plot",
-                   c("difflift","contri","indplift","adj.indplift","stats","pvalue","adj.pvalue"))
+    if(!is.null(minedAttributes()[["mined.attr"]])){
+      selectizeInput("plot.what.metric.one",
+                     "Select a hypothesis mining metric to plot",
+                     c("difflift","contri","indplift","adj.indplift","stats","pvalue","adj.pvalue"))
+    }
   }) # return: input$plot.what.metric.one
   output$analyse.plot.metric.ctrl.two<-renderUI({
-    selectizeInput("plot.what.metric.two",
-                   "Select another",
-                   c("difflift","contri","indplift","adj.indplift","stats","pvalue","adj.pvalue"))
+    if(!is.null(minedAttributes()[["mined.attr"]])){
+      selectizeInput("plot.what.metric.two",
+                     "Select another",
+                     c("difflift","contri","indplift","adj.indplift","stats","pvalue","adj.pvalue"))
+    }
   }) # return: input$plot.what.metric.two
   output$analyse.metric.plot<-renderPlot({
-    prop.df<-Hypotheses()
-    plot(prop.df[,input$plot.what.metric.one]~prop.df[,input$plot.what.metric.two],
-         ylab=input$plot.what.metric.one,xlab=input$plot.what.metric.two)
-    abline(h=0)
-    abline(v=0)
-    
-    if(input$plot.what.metric.one == "pvalue" || input$plot.what.metric.one == "adj.pvalue")
-      abline(h=0.05)
-    if(input$plot.what.metric.two == "pvalue" || input$plot.what.metric.two == "adj.pvalue")
-      abline(v=0.05)
+    if(!is.null(minedAttributes()[["mined.attr"]])){
+      prop.df<-Hypotheses()
+      plot(prop.df[,input$plot.what.metric.one]~prop.df[,input$plot.what.metric.two],
+           ylab=input$plot.what.metric.one,xlab=input$plot.what.metric.two)
+      abline(h=0)
+      abline(v=0)
+      
+      if(input$plot.what.metric.one == "pvalue" || input$plot.what.metric.one == "adj.pvalue")
+        abline(h=0.05)
+      if(input$plot.what.metric.two == "pvalue" || input$plot.what.metric.two == "adj.pvalue")
+        abline(v=0.05)
+    }
   })
   
   #=============================================#
@@ -3097,6 +3076,6 @@ shinyServer(function(input,output,session){
     if(input$theTabs != "6. Context mining")
       updateTabsetPanel(session,"ctx",selected="Attributes to exclude")
     if(input$theTabs != "7. Hypothesis mining")
-      updateTabsetPanel(session,"hypo",selected="Mined hypotheses")
+      updateTabsetPanel(session,"hypo",selected="Select context item")
   })
 }) #end shinyServer
