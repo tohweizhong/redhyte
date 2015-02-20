@@ -1280,7 +1280,7 @@ shinyServer(function(input,output,session){
         df[,an.attr]<-mean.discre(an.attr)
       
       df.dis<-df # discretized
-      
+      #str(df.dis)
       # now, for each attribute that is not the Atgt or Acmp,
       # use that attribute to be 3rd attribute
       # stratify the data according to the classes of the 3rd attribute
@@ -1293,30 +1293,36 @@ shinyServer(function(input,output,session){
            && colnames(df.dis)[j] != "cmp.class"
            && colnames(df.dis)[j] != input$targetAttr
            && colnames(df.dis)[j] != input$comparingAttr){
-          
-          df.tmp<-df.dis[,"tgt.class"]
-          df.tmp<-cbind(df.tmp,df.dis[,"cmp.class"])
-          df.tmp<-cbind(df.tmp,df.dis[,j])
-          
-          df.tmp<-data.frame(df.tmp)
-          tab<-table(df.tmp)
-          sup<-as.vector(tab)
-          if(any(sup <= 0) || length(sup) %% 4 != 0) # should be multiples of 4
-            MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
-                                 "Insufficient",
-                                 "Insufficient"))
-          else{
-            test<-mantelhaen.test(tab)
-            stats<-test$statistic
-            pvalue<-test$p.value
+          if(!any(colnames(df.dis)[j] == input$ctxAttr)){
             
-            MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
-                                 round(stats,3),
-                                 round(pvalue,3)))
+            df.tmp<-df.dis[,"tgt.class"]
+            df.tmp<-cbind(df.tmp,df.dis[,"cmp.class"])
+            df.tmp<-cbind(df.tmp,df.dis[,j])
+            
+            df.tmp<-data.frame(df.tmp)
+            tab<-table(df.tmp)
+            sup<-as.vector(tab)
+            
+            if(any(sup <= 0) || length(sup) %% 4 != 0) # should be multiples of 4
+              MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
+                                   "Insufficient",
+                                   "Insufficient"))
+            else if(length(sup) <= 4)
+              MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
+                                   "k = 1",
+                                   "k = 1"))
+            else{
+              test<-mantelhaen.test(tab)
+              stats<-test$statistic
+              pvalue<-test$p.value
+              
+              MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
+                                   round(stats,3),
+                                   round(pvalue,3)))
+            }
           }
         }
       }
-    
     colnames(MH.df)<-c("3rd attribute","Cochran-Mantel-Haenszel Chi-squared","p-value")
     return(MH.df)
     }
@@ -1503,28 +1509,34 @@ shinyServer(function(input,output,session){
            && colnames(df.dis)[j] != "cmp.class"
            && colnames(df.dis)[j] != input$targetAttr
            && colnames(df.dis)[j] != input$comparingAttr){
-          
-          df.tmp<-df.dis[,"tgt.class"]
-          df.tmp<-cbind(df.tmp,df.dis[,"cmp.class"])
-          df.tmp<-cbind(df.tmp,df.dis[,j])
-          
-          df.tmp<-data.frame(df.tmp)
-          tab<-table(df.tmp)
-          
-          sup<-as.vector(tab)
-          
-          if(any(sup <= 0) || length(sup) %% 4 != 0)
-            MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
-                                 "Insufficient",
-                                 "Insufficient"))
-          else{
-            test<-mantelhaen.test(tab)
-            stats<-test$statistic
-            pvalue<-test$p.value
+          if(!any(colnames(df.dis)[j] == input$ctxAttr)){
             
-            MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
-                                 round(stats,3),
-                                 round(pvalue,3)))
+            df.tmp<-df.dis[,"tgt.class"]
+            df.tmp<-cbind(df.tmp,df.dis[,"cmp.class"])
+            df.tmp<-cbind(df.tmp,df.dis[,j])
+            
+            df.tmp<-data.frame(df.tmp)
+            tab<-table(df.tmp)
+            
+            sup<-as.vector(tab)
+            
+            if(any(sup <= 0) || length(sup) %% 4 != 0)
+              MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
+                                   "Insufficient",
+                                   "Insufficient"))
+            else if(length(sup) <= 4)
+              MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
+                                   "k = 1",
+                                   "k = 1"))
+            else{
+              test<-mantelhaen.test(tab)
+              stats<-test$statistic
+              pvalue<-test$p.value
+              
+              MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
+                                   round(stats,3),
+                                   round(pvalue,3)))
+            }
           }
         }
       }
