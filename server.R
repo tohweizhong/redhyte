@@ -62,7 +62,7 @@ shinyServer(function(input,output,session){
     typ<-NULL
     numCl<-NULL
     for(i in seq(ncol(df))){
-      if(is.numeric(df[,i]) && length(unique(df[,i]))>5){
+      if(is.numeric(df[,i]) && length(unique(df[,i]))>input$maxClass){
         typ<-c(typ,"Num")
         numCl<-c(numCl,NA)
       }
@@ -2893,6 +2893,7 @@ shinyServer(function(input,output,session){
     log.header<-input$datHeader
     log.sep<-input$datSep
     log.quote<-input$datQuote
+    log.maxClass<-input$maxClass
     
     # initial test
     if(Groupings()[["Atgt.type"]] == "Cate"){
@@ -2936,7 +2937,7 @@ shinyServer(function(input,output,session){
     log.min.sup.cij<-input$min.sup.cij
     
     col1<-c("Session",
-            rep("Data",4),
+            rep("Data",5),
             rep("Initial test",4),
             rep("Test diagnostics",1),
             rep("Context mining",4),
@@ -2961,6 +2962,7 @@ shinyServer(function(input,output,session){
             log.header,
             log.sep,
             log.quote,
+            log.maxClass,
             log.Atgt,
             log.Atgt.type,
             log.Acmp,

@@ -63,6 +63,8 @@ shinyUI(fluidPage(
                              tags$h4("Settings used in Redhyte"),
                              tags$h5("Default settings are suitable for most purposes"),
                              tags$hr(),
+                             sliderInput("maxClass",label ="Maximum number of classes for all categorical attribute",
+                                         min=5,max=20,value=5,step=1),
                              sliderInput("p.significant",label ="p-value for test diagnostics",
                                          min=0,max=0.15,value=0.05,step=0.05),
                              sliderInput("acc.rf.default",label="Classification accuracy for context mining",
