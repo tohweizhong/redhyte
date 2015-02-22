@@ -1,3 +1,4 @@
+options(shiny.maxRequestSize=20*1024^2)
 shinyServer(function(input,output,session){
   
   #fancy work here

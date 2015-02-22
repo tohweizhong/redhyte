@@ -2,6 +2,8 @@ WISHLIST
 
 #===CRUCIAL===#
 
+-> mined context attributes table in context mining, name properly
+
 -> play around with RF parameters
 
 -> find classic use-cases and examples datasets
