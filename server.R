@@ -2948,6 +2948,7 @@ shinyServer(function(input,output,session){
             "Header has attribute names",
             "Separator",
             "Quotes",
+            "Maximum number of classes in categorical attributes",
             "Target attribute",
             "Target attribute type",
             "Comparing attribute",
