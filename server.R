@@ -1959,7 +1959,21 @@ shinyServer(function(input,output,session){
       return(tmp)
     }
     df<-data.frame(minedAttributes()[[3]])
-    colnames(df)<-"Mined context attributes"
+    
+    # function to retrieve which model did the attributes come from
+    remove.head<-function(s){
+      last.dot<-regexpr("\\.[^\\.]*$", s)
+      return(substr(s,last.dot+1,nchar(s)))
+    }
+    from.which.model<-sapply(rownames(df),FUN=remove.head)
+    for(i in 1:length(from.which.model)){
+      if(from.which.model[i] == "tgt") from.which.model[i]<-"Target"
+      else if(from.which.model[i] == "cmp") from.which.model[i]<-"Comparing"
+    }
+    
+    df<-cbind(df,from.which.model)
+    colnames(df)<-c("Mined context attributes","From which model?")
+    rownames(df)<-NULL
     df
   })
   
@@ -2352,12 +2366,12 @@ shinyServer(function(input,output,session){
     if(!is.null(minedAttributes()[["mined.attr"]])){
       prop.df<-Hypotheses()
       prop.df<-subset(prop.df,select=c(Actx,vctx,
-                                       sufficient,
+                                       sufficient,SR,
                                        c11,c12,c21,c22,
                                        n1prime,n2prime,
                                        p1prime,p2prime,
                                        i1prime,i2prime,
-                                       difflift,contri,indplift,adj.indplift,SR,
+                                       difflift,contri,indplift,adj.indplift,
                                        stats,pvalue,adj.pvalue))
     }
   },digits=3)
