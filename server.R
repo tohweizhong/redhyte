@@ -1373,7 +1373,7 @@ shinyServer(function(input,output,session){
   output$text.chi.sq.top.contributor<-renderText({
     if(Test()[["test.type"]] == "t.test"
        && Test()[["second.test.type"]] == "collapsed.chi.sq"){
-      return("Chi-squared top contributor:")
+      return("Chi-squared contributions:")
     }
   })
   output$chi.sq.top.contributor<-renderTable({
@@ -1393,7 +1393,7 @@ shinyServer(function(input,output,session){
                           ((((o-e)^2)/e)[,1])/test$statistic * 100)
       colnames(chisq.contri)<-c("Observed",
                                 "Expected",
-                                "Chi-squared contribution (%)")
+                                "Chi-squared contributions (%)")
       return(chisq.contri)
     }
   })
@@ -1446,7 +1446,7 @@ shinyServer(function(input,output,session){
   #===#
   output$text.chi.sq.top.cate<-renderText({
     if(Test()[["test.type"]] == "collapsed.chi.sq"){
-      return("Chi-squared top contributor:")
+      return("Chi-squared contributions:")
     }
   })
   output$chi.sq.top.cate<-renderTable({
@@ -1465,7 +1465,7 @@ shinyServer(function(input,output,session){
                           ((((o-e)^2)/e)[,1])/test$statistic * 100)
       colnames(chisq.contri)<-c("Observed",
                                 "Expected",
-                                "Chi-squared contribution (%)")
+                                "Chi-squared contributions (%)")
       return(chisq.contri)
     }
   })
@@ -2816,7 +2816,7 @@ shinyServer(function(input,output,session){
     if(!is.null(minedAttributes()[["mined.attr"]])){
       if((Test()[["test.type"]] == "t.test" && Test()[["second.test.type"]] == "collapsed.chi.sq")
          || Test()[["test.type"]] == "collapsed.chi.sq"){
-        return("Chi-squared top contributor:")
+        return("Chi-squared contributions:")
       }
     }
   })
@@ -2846,7 +2846,7 @@ shinyServer(function(input,output,session){
                             ((((o-e)^2)/e)[,1])/test$statistic * 100)
         colnames(chisq.contri)<-c("Observed",
                                   "Expected",
-                                  "Chi-squared contribution (%)")
+                                  "Chi-squared contributions (%)")
         return(chisq.contri)
       }
     }
