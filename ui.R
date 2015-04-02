@@ -36,6 +36,7 @@ shinyUI(fluidPage(
                              tags$h5("Example dataset to try Redhyte out with:"),
                              tags$a(href="https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/adult.txt",
                                     "US Census dataset",target="_blank"),
+                             tags$h5('(Refer to "About Redhyte")'),
                              tags$hr(),
                              #checkbox to indicate header == true or false
                              checkboxInput('datHeader','Header contains attribute names', TRUE),

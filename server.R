@@ -3079,16 +3079,18 @@ shinyServer(function(input,output,session){
       <h4>Where?</h4>
       <font size=3><ul>
         <li><a href=https://tohweizhong.shinyapps.io/redhyte/ target=_blank>Redhyte web app</a></li>
-        <li>Example datasets to try out Redhyte with:</li>
+        <li>Example datasets to try Redhyte out with:</li>
         <ul>
+          <li><a href=https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/ucbMelted.csv target=_blank>UC Berkeley Admission Bias dataset</a>, distributed with R
+              (<a href=http://stat.ethz.ch/R-manual/R-devel/library/datasets/html/UCBAdmissions.html target=_blank>Description of dataset</a>, some prior data cleaning was done)</li>          
           <li><a href=https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/adult.txt target=_blank>US Census dataset by UCI Machine Learning Repo</a>
               (<a href=https://archive.ics.uci.edu/ml/datasets/Adult target=_blank>Description of dataset</a>)</li>
           <li><a href=https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/mushroom_expanded.txt target=_blank>Mushroom dataset by UCI Machine Learning Repo</a>
               (<a href=https://archive.ics.uci.edu/ml/datasets/mushroom target=_blank>Description of dataset</a>)</li>
+          <li><a href=https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/arrhythmia_nameless.txt target=_blank>Arrhythmia dataset by UCI Machine Learning Repo</a>
+              (<a href=https://archive.ics.uci.edu/ml/datasets/Arrhythmia target=_blank>Description of dataset</a>, some prior data cleaning was done)</li>
           <li><a href=https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/titanicMelted.csv target=_blank>Titanic dataset</a>, distributed with R
               (<a href=http://stat.ethz.ch/R-manual/R-devel/library/datasets/html/Titanic.html target=_blank>Description of dataset</a>, some prior data cleaning was done)</li>
-          <li><a href=https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/ucbMelted.csv target=_blank>UC Berkeley Admission Bias dataset</a>, distributed with R
-              (<a href=http://stat.ethz.ch/R-manual/R-devel/library/datasets/html/UCBAdmissions.html target=_blank>Description of dataset</a>, some prior data cleaning was done)</li>
         </ul>
       </ul></font>
 
