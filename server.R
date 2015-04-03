@@ -1958,6 +1958,12 @@ shinyServer(function(input,output,session){
       colnames(tmp)<-""
       return(tmp)
     }
+    
+    else if(length(minedAttributes()[[3]]) == 1){
+      df<-data.frame(minedAttributes()[[3]])
+      colnames(df)<-"Mined context attributes"
+      return(df)
+    }
     df<-data.frame(minedAttributes()[[3]])
     
     # function to retrieve which model did the attributes come from
@@ -1981,9 +1987,11 @@ shinyServer(function(input,output,session){
   
   # variable importance plot of RF models
   output$VIplot.tgt<-renderPlot({
-    varImpPlot(minedAttributes()[["mod.tgt"]],main="Variable Importance for Target Model")
+    if(length(minedAttributes()[[3]]) > 1)
+      varImpPlot(minedAttributes()[["mod.tgt"]],main="Variable Importance for Target Model")
   })
   output$VIplot.cmp<-renderPlot({
+    if(length(minedAttributes()[[3]]) > 1)
     varImpPlot(minedAttributes()[["mod.cmp"]],main="Variable Importance for Comparing Model")
   })
   
@@ -2396,7 +2404,7 @@ shinyServer(function(input,output,session){
         contri<-mean(abs(all.contri),na.rm=TRUE)
         
         # remove NAs, look for Simpson's Paradox
-        all.dl[is.na(dl)]<-0
+        all.dl[is.na(all.dl)]<-0
         if(any(all.dl > 0)) SP.vec<-c(SP.vec,FALSE)
         else SP.vec<-c(SP.vec,TRUE)
         
@@ -2425,7 +2433,8 @@ shinyServer(function(input,output,session){
   output$analyse.sort.ctrl.two<-renderUI({
     if(!is.null(minedAttributes()[["mined.attr"]])){
       selectizeInput("analyse.sort.two","Then by?",
-                     c("sufficient","SR","difflift","contri","indplift","adj.indplift","pvalue","adj.pvalue"))
+                     c("sufficient","SR","difflift","contri","indplift","adj.indplift","pvalue","adj.pvalue"),
+                     selected="indplift")
     }
   }) # return: input$analyse.sort.two
   
@@ -2437,43 +2446,29 @@ shinyServer(function(input,output,session){
       sort.first.by<-which(colnames(prop.df) == input$analyse.sort.one)
       then.by<-which(colnames(prop.df) == input$analyse.sort.two)
       
-      # sort descendingly for sufficient and SR only
-      # 1: sufficient
-      # 2: SR
-      # 5: indplift
+      # 1: sufficient   (sort *descendingly*)
+      # 2: SR           (sort *descendingly*)
+      # 3: difflift     (sort ascendingly)
+      # 4; contri       (sort ascendingly)
+      # 5: indplift     (sort ascendingly)
+      # 6: adj.indplift (sort ascendingly)
+      # 7: pvalue       (sort ascendingly)
+      # 8: adj.pvalue   (sort ascendingly)
       
       # first case: {1 or 2, 1 or 2}
       if((sort.first.by == 1 || sort.first.by == 2) && (then.by == 1 || then.by == 2))
         prop.df<-prop.df[order(-prop.df[,sort.first.by],-prop.df[,then.by]),]
       
       # second case: {1 or 2, not 1 and 2}
-      else if((sort.first.by == 1 || sort.first.by == 2) && (then.by != 1 && then.by != 2)){
-        if(then.by != 5) 
+      else if((sort.first.by == 1 || sort.first.by == 2) && (then.by != 1 && then.by != 2))
           prop.df<-prop.df[order(-prop.df[,sort.first.by],prop.df[,then.by]),]
-        else if(then.by == 5)
-          prop.df<-prop.df[order(-prop.df[,sort.first.by],abs(prop.df[,then.by])),]
-      }
       
       # third case: {not 1 and 2, 1 or 2}
-      else if((sort.first.by != 1 && sort.first.by != 2) && (then.by == 1 && then.by == 2)){
-        if(sort.first.by != 5)
+      else if((sort.first.by != 1 && sort.first.by != 2) && (then.by == 1 || then.by == 2))
           prop.df<-prop.df[order(prop.df[,sort.first.by],-prop.df[,then.by]),]
-        else (sort.first.by == 5)
-        prop.df<-prop.df[order(abs(prop.df[,sort.first.by]),-prop.df[,then.by]),]
-      }
       
       # at this point, both must be neither 1 or 2
-      # fourth case: {5, not 1 and 2}
-      else if(sort.first.by == 5)
-        prop.df<-prop.df[order(abs(prop.df[,sort.first.by]),prop.df[,then.by]),]
-      
-      # fifth case: {not 1 and 2, 5}
-      else if(then.by == 5)
-        prop.df<-prop.df[order(prop.df[,sort.first.by],abs(prop.df[,then.by])),]
-      
-      # sixth case: {not 1 and 2 and 5, not 1 and 2 and 5}
-      else
-        prop.df<-prop.df[order(prop.df[,sort.first.by],prop.df[,then.by]),]
+      else prop.df<-prop.df[order(prop.df[,sort.first.by],prop.df[,then.by]),]
       
       prop.df<-subset(prop.df,
                       select=c(sufficient,SR,difflift,contri,indplift,adj.indplift,pvalue,adj.pvalue))
