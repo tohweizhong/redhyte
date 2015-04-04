@@ -981,9 +981,9 @@ shinyServer(function(input,output,session){
   
   # download contexted data
   output$ctx.download<-downloadHandler(
-    filename = function() {paste("contexted_data", '.csv', sep='') },
+    filename = function() {paste("Redhyte_contexted_data", '.csv', sep='') },
     content = function(file) {
-      write.csv(Data2()[[1]], file)
+      write.csv(Data2()[[1]], file, row.names=FALSE)
     }
   )
   
@@ -2405,8 +2405,8 @@ shinyServer(function(input,output,session){
         
         # remove NAs, look for Simpson's Paradox
         all.dl[is.na(all.dl)]<-0
-        if(any(all.dl > 0)) SP.vec<-c(SP.vec,FALSE)
-        else SP.vec<-c(SP.vec,TRUE)
+        if(all(all.dl < 0)) SP.vec<-c(SP.vec,TRUE)
+        else SP.vec<-c(SP.vec,FALSE)
         
         if(is.nan(dl)) SP.vec[length(SP.vec)]<-FALSE
         
@@ -3006,7 +3006,7 @@ shinyServer(function(input,output,session){
   })
   
   output$log.download<-downloadHandler(
-    filename = function(){paste("session_log_", date(), '.csv',sep='')},
+    filename = function(){paste("Redhyte_session_log_", date(), '.csv',sep='')},
     content = function(file){
       write.table(Settings(),file,quote=FALSE,row.names=FALSE,na="NA",sep=" :: ",col.names=FALSE)
     }
