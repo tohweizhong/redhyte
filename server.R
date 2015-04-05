@@ -976,7 +976,7 @@ shinyServer(function(input,output,session){
   
   # display contexted data
   output$ctx.data<-renderTable({
-    data.frame(Data()[[1]][1:input$ctxRows,])
+    data.frame(Data2()[[1]][1:input$ctxRows,])
   },digits=3)
   
   # download contexted data
@@ -2254,7 +2254,10 @@ shinyServer(function(input,output,session){
         prop.df$i2prime[i]<-compute.indp(tab.to.prop)[2]
       }
       
-      else{
+      else{ # 040415: code can be further improved here
+        # even if there arent 4 cells in the contingency table
+        # it would still be interesting to take a look
+        # at the counts, rather than setting them to NA
         prop.df$c11[i]<-prop.df$c12[i]<-NA
         prop.df$c21[i]<-prop.df$c22[i]<-NA
         prop.df$n1prime[i]<-prop.df$n2prime[i]<-NA
@@ -2636,35 +2639,36 @@ shinyServer(function(input,output,session){
       rows.to.prop<-which(df[,Actx] == vctx)
       df.to.prop<-df[rows.to.prop,c("cmp.class","tgt.class")]
       tab<-table(df.to.prop)
-      
-      rownames(tab)<-Groupings()[[3]]
-      colnames(tab)<-Groupings()[[2]]
-      
-      append.col<-c((tab[1,1]+tab[1,2]),
-                    (tab[2,1]+tab[2,2]))
-      append.row<-c((tab[1,1]+tab[2,1]),
-                    (tab[1,2]+tab[2,2]),
-                    sum(tab))
-      
-      append.col<-round(append.col,2)
-      append.row<-round(append.row,2)
-      
-      # include cell proportions in rendered table
-      cell.proportions<-c(tab[1,1]/(tab[1,1]+tab[1,2]),
-                          tab[1,2]/(tab[1,1]+tab[1,2]),
-                          tab[2,1]/(tab[2,1]+tab[2,2]),
-                          tab[2,2]/(tab[2,1]+tab[2,2]))
-      cell.proportions<-round(cell.proportions,2)
-      
-      tab[1,1]<-paste(tab[1,1]," (",cell.proportions[1],")",sep="")
-      tab[1,2]<-paste(tab[1,2]," (",cell.proportions[2],")",sep="")
-      tab[2,1]<-paste(tab[2,1]," (",cell.proportions[3],")",sep="")
-      tab[2,2]<-paste(tab[2,2]," (",cell.proportions[4],")",sep="")
-      
-      tab<-cbind(tab,append.col)
-      tab<-rbind(tab,append.row)
-      colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Total"
-      return(tab)
+      if(nrow(tab)*ncol(tab) == 4){
+        rownames(tab)<-Groupings()[[3]]
+        colnames(tab)<-Groupings()[[2]]
+        
+        append.col<-c((tab[1,1]+tab[1,2]),
+                      (tab[2,1]+tab[2,2]))
+        append.row<-c((tab[1,1]+tab[2,1]),
+                      (tab[1,2]+tab[2,2]),
+                      sum(tab))
+        
+        append.col<-round(append.col,2)
+        append.row<-round(append.row,2)
+        
+        # include cell proportions in rendered table
+        cell.proportions<-c(tab[1,1]/(tab[1,1]+tab[1,2]),
+                            tab[1,2]/(tab[1,1]+tab[1,2]),
+                            tab[2,1]/(tab[2,1]+tab[2,2]),
+                            tab[2,2]/(tab[2,1]+tab[2,2]))
+        cell.proportions<-round(cell.proportions,2)
+        
+        tab[1,1]<-paste(tab[1,1]," (",cell.proportions[1],")",sep="")
+        tab[1,2]<-paste(tab[1,2]," (",cell.proportions[2],")",sep="")
+        tab[2,1]<-paste(tab[2,1]," (",cell.proportions[3],")",sep="")
+        tab[2,2]<-paste(tab[2,2]," (",cell.proportions[4],")",sep="")
+        
+        tab<-cbind(tab,append.col)
+        tab<-rbind(tab,append.row)
+        colnames(tab)[ncol(tab)]<-rownames(tab)[nrow(tab)]<-"Total"
+        return(tab)
+      }
     }
   })
   output$analyse.test<-renderTable({
@@ -2678,19 +2682,25 @@ shinyServer(function(input,output,session){
       rows.to.prop<-which(df[,Actx] == vctx)
       df.to.prop<-df[rows.to.prop,c("cmp.class","tgt.class")]
       tab<-table(df.to.prop)
-      
-      test<-chisq.test(tab)
-      stats<-test$statistic
-      pvalue<-test$p.value
-      method<-test$method
-      
-      returnMe<-as.data.frame(c(as.character(method),
-                                as.character(round(stats,3)),
-                                as.character(pvalue)))
-      
-      rownames(returnMe)<-c("Method","Test statistic","p-value")
-      colnames(returnMe)<-paste("Chi-squared test on mined hypothesis: ",item,sep="")
-      return(returnMe)
+      if(nrow(tab)*ncol(tab) == 4){
+        test<-chisq.test(tab)
+        stats<-test$statistic
+        pvalue<-test$p.value
+        method<-test$method
+        
+        returnMe<-as.data.frame(c(as.character(method),
+                                  as.character(round(stats,3)),
+                                  as.character(pvalue)))
+        
+        rownames(returnMe)<-c("Method","Test statistic","p-value")
+        colnames(returnMe)<-paste("Chi-squared test on mined hypothesis: ",item,sep="")
+        return(returnMe)
+      }
+      else{
+        tab<-data.frame("Insufficient support for hypothesis")
+        colnames(tab)<-""
+        return(tab)
+      }
     }
   })
   output$analyse.hypothesis.statement<-renderText({
@@ -2775,9 +2785,10 @@ shinyServer(function(input,output,session){
         rows.to.prop<-which(df[,Actx] == vctx)
         df.to.prop<-df[rows.to.prop,c(input$comparingAttr,"tgt.class")]
         tab<-table(df.to.prop)
-        
-        colnames(tab)<-Groupings()[["Atgt.names"]]
-        return(tab)
+        if(nrow(tab)*ncol(tab) > 4){
+          colnames(tab)<-Groupings()[["Atgt.names"]]
+          return(tab)
+        }
       }
     }
   })
@@ -2805,18 +2816,20 @@ shinyServer(function(input,output,session){
         df.to.prop<-df[rows.to.prop,c(input$comparingAttr,"tgt.class")]
         tab<-table(df.to.prop)
         
-        # flat chi-sq
-        test<-chisq.test(tab)
-        stats<-test$statistic
-        pvalue<-test$p.value
-        method<-test$method
-        
-        returnMe<-as.data.frame(c(as.character(method),
-                                  as.character(round(stats,3)),
-                                  as.character(pvalue)))
-        rownames(returnMe)<-c("Method","Test statistic","p-value")
-        colnames(returnMe)<-paste("Flat chi-squared test on mined hypothesis: ",item,sep="")
-        returnMe
+        if(nrow(tab)*ncol(tab) > 4){
+          # flat chi-sq
+          test<-chisq.test(tab)
+          stats<-test$statistic
+          pvalue<-test$p.value
+          method<-test$method
+          
+          returnMe<-as.data.frame(c(as.character(method),
+                                    as.character(round(stats,3)),
+                                    as.character(pvalue)))
+          rownames(returnMe)<-c("Method","Test statistic","p-value")
+          colnames(returnMe)<-paste("Flat chi-squared test on mined hypothesis: ",item,sep="")
+          returnMe
+        }
       }
     }
   })
@@ -2843,20 +2856,21 @@ shinyServer(function(input,output,session){
         rows.to.prop<-which(df[,Actx] == vctx)
         df.to.prop<-df[rows.to.prop,c(input$comparingAttr,"tgt.class")]
         tab<-table(df.to.prop)
-        
-        test<-chisq.test(tab)
-        o<-test$observed
-        e<-test$expected
-        #vtgt<-colnames(o)[which(colnames(o) == "1")] # vtgt is tgt.class == 1
-        #cmp.classes<-rownames(e) # <--- want to compute top contributor for Acmp,
-        # for vtgt only
-        chisq.contri<-cbind(o[,1],
-                            e[,1],
-                            ((((o-e)^2)/e)[,1])/test$statistic * 100)
-        colnames(chisq.contri)<-c("Observed",
-                                  "Expected",
-                                  "Chi-squared contributions (%)")
-        return(chisq.contri)
+        if(nrow(tab)*ncol(tab) > 4){
+          test<-chisq.test(tab)
+          o<-test$observed
+          e<-test$expected
+          #vtgt<-colnames(o)[which(colnames(o) == "1")] # vtgt is tgt.class == 1
+          #cmp.classes<-rownames(e) # <--- want to compute top contributor for Acmp,
+          # for vtgt only
+          chisq.contri<-cbind(o[,1],
+                              e[,1],
+                              ((((o-e)^2)/e)[,1])/test$statistic * 100)
+          colnames(chisq.contri)<-c("Observed",
+                                    "Expected",
+                                    "Chi-squared contributions (%)")
+          return(chisq.contri)
+        }
       }
     }
   })

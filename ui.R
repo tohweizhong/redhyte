@@ -225,7 +225,7 @@ shinyUI(fluidPage(
                        For each of these two models, Redhyte extract the top attributes that contribute
                        to the classification of target and/or comparing attributes, if the model(s) is/are accurate."),
                          tags$h5("Confusion matrices of the models, a list of mined context attributes, random forest variable importance plots 
-                       and stratified histograms of the mined context attributes are displayed after mining."),
+                       and stratified histograms/barplots of the mined context attributes are displayed after mining."),
                          tags$h4("Initial hypothesis: "),
                          verbatimTextOutput("hypothesis.statement.cm"),
                          navlistPanel(id="ctx",
@@ -279,11 +279,11 @@ shinyUI(fluidPage(
                                                verbatimTextOutput("analyse.hypothesis.statement"),
                                                tableOutput("analyse.cont.tab"),
                                                tableOutput("analyse.test"),
-                                               h5(textOutput("text.analyse.flat.table")),
+                                               #h5(textOutput("text.analyse.flat.table")),
                                                tableOutput("analyse.flat.table"),
-                                               h5(textOutput("text.analyse.flat.chi.sq")),
+                                               #h5(textOutput("text.analyse.flat.chi.sq")),
                                                tableOutput("analyse.flat.chi.sq"),
-                                               h5(textOutput("text.analyse.chi.sq.top.cont")),
+                                               #h5(textOutput("text.analyse.chi.sq.top.cont")),
                                                tableOutput("analyse.chi.sq.top.cont")),
                                       tabPanel("Mined hypotheses",
                                                tableOutput("hypotheses")),
