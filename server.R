@@ -3088,6 +3088,8 @@ shinyServer(function(input,output,session){
       <h4>Where?</h4>
       <font size=3><ul>
         <li><a href=https://tohweizhong.shinyapps.io/redhyte/ target=_blank>Redhyte web app</a></li>
+        <li><a href=https://github.com/tohweizhong/redhyte target=_blank>GitHub repo</a></li>
+
         <li>Example datasets to try Redhyte out with:</li>
         <ul>
           <li><a href=https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/ucbMelted.csv target=_blank>UC Berkeley Admission Bias dataset</a>, distributed with R
