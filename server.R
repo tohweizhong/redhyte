@@ -836,7 +836,7 @@ shinyServer(function(input,output,session){
       
       returnMe<-as.data.frame(c(as.character(method),
                                  as.character(round(stats,3)),
-                                 as.character(pvalue)))
+                                 as.character(formatC(pvalue))))
       rownames(returnMe)<-c("Method","Test statistic","p-value")
       colnames(returnMe)<-"Initial chi-squared test on contingency table"
       returnMe
@@ -850,7 +850,7 @@ shinyServer(function(input,output,session){
       
       returnMe<-as.data.frame(c(as.character(method),
                                 as.character(round(stats,3)),
-                                as.character(pvalue)))
+                                as.character(formatC(pvalue))))
       rownames(returnMe)<-c("Method","Test statistic","p-value")
       colnames(returnMe)<-"Initial t-test on means"
       returnMe
@@ -909,7 +909,7 @@ shinyServer(function(input,output,session){
       
       returnMe<-as.data.frame(c(as.character(method),
                                 as.character(round(stats,3)),
-                                as.character(pvalue)))
+                                as.character(formatC(pvalue))))
       rownames(returnMe)<-c("Method","Test statistic","p-value")
       colnames(returnMe)<-"Chi-squared test on contingency table"
       returnMe
@@ -1104,7 +1104,7 @@ shinyServer(function(input,output,session){
         
         returnMe<-as.data.frame(c(as.character(method),
                                   as.character(round(stats,3)),
-                                  as.character(pvalue)))
+                                  as.character(formatC(pvalue))))
         rownames(returnMe)<-c("Method","Test statistic","p-value")
         colnames(returnMe)<-paste("Shapiro-Wilk test for normality of ",
                                   input$targetAttr,
@@ -1153,7 +1153,7 @@ shinyServer(function(input,output,session){
         
         returnMe<-as.data.frame(c(as.character(method),
                                   as.character(round(stats,3)),
-                                  as.character(pvalue)))
+                                  as.character(formatC(pvalue))))
         rownames(returnMe)<-c("Method","Test statistic","p-value")
         colnames(returnMe)<-paste("Shapiro-Wilk test for normality of ",
                                   input$targetAttr,
@@ -1207,7 +1207,7 @@ shinyServer(function(input,output,session){
       
       returnMe<-as.data.frame(c(as.character(method),
                                 as.character(round(stats,3)),
-                                as.character(pvalue)))
+                                as.character(formatC(pvalue))))
       rownames(returnMe)<-c("Method","Test statistic","p-value")
       colnames(returnMe)<-"F-test for equal variances"
       returnMe
@@ -1246,7 +1246,7 @@ shinyServer(function(input,output,session){
         
         returnMe<-as.data.frame(c(as.character(method),
                                   as.character(round(stats,3)),
-                                  as.character(pvalue)))
+                                  as.character(formatC(pvalue))))
         rownames(returnMe)<-c("Method","Test statistic","p-value")
         colnames(returnMe)<-"Non-parametric Wilcoxon rank sum test on means"
         returnMe
@@ -1319,7 +1319,7 @@ shinyServer(function(input,output,session){
               
               MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
                                    round(stats,3),
-                                   round(pvalue,3)))
+                                   formatC(pvalue)))
             }
           }
         }
@@ -1363,7 +1363,7 @@ shinyServer(function(input,output,session){
       
       returnMe<-as.data.frame(c(as.character(method),
                                 as.character(round(stats,3)),
-                                as.character(pvalue)))
+                                as.character(formatC(pvalue))))
       rownames(returnMe)<-c("Method","Test statistic","p-value")
       colnames(returnMe)<-"Flat chi-squared test on discretized target attribute"
       returnMe
@@ -1437,7 +1437,7 @@ shinyServer(function(input,output,session){
       
       returnMe<-as.data.frame(c(as.character(method),
                                 as.character(round(stats,3)),
-                                as.character(pvalue)))
+                                as.character(formatC(pvalue))))
       rownames(returnMe)<-c("Method","Test statistic","p-value")
       colnames(returnMe)<-"Flat chi-squared test"
       returnMe
@@ -1536,7 +1536,7 @@ shinyServer(function(input,output,session){
               
               MH.df<-rbind(MH.df,c(colnames(df.dis)[j],
                                    round(stats,3),
-                                   round(pvalue,3)))
+                                   formatC(pvalue,3)))
             }
           }
         }
@@ -2555,7 +2555,7 @@ shinyServer(function(input,output,session){
       
       returnMe<-as.data.frame(c(as.character(method),
                                 as.character(round(stats,3)),
-                                as.character(pvalue)))
+                                as.character(formatC(pvalue))))
       rownames(returnMe)<-c("Method","Test statistic","p-value")
       colnames(returnMe)<-"Initial chi-squared test on contingency table"
       returnMe
@@ -2568,7 +2568,7 @@ shinyServer(function(input,output,session){
       
       returnMe<-as.data.frame(c(as.character(method),
                                 as.character(round(stats,3)),
-                                as.character(pvalue)))
+                                as.character(formatC(pvalue))))
       rownames(returnMe)<-c("Method","Test statistic","p-value")
       colnames(returnMe)<-"Chi-squared test on contingency table"
       returnMe
@@ -2690,7 +2690,7 @@ shinyServer(function(input,output,session){
         
         returnMe<-as.data.frame(c(as.character(method),
                                   as.character(round(stats,3)),
-                                  as.character(pvalue)))
+                                  as.character(formatC(pvalue))))
         
         rownames(returnMe)<-c("Method","Test statistic","p-value")
         colnames(returnMe)<-paste("Chi-squared test on mined hypothesis: ",item,sep="")
@@ -2825,7 +2825,7 @@ shinyServer(function(input,output,session){
           
           returnMe<-as.data.frame(c(as.character(method),
                                     as.character(round(stats,3)),
-                                    as.character(pvalue)))
+                                    as.character(formatC(pvalue))))
           rownames(returnMe)<-c("Method","Test statistic","p-value")
           colnames(returnMe)<-paste("Flat chi-squared test on mined hypothesis: ",item,sep="")
           returnMe
