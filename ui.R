@@ -184,7 +184,7 @@ shinyUI(fluidPage(
                          tags$h5("Objectives:"),
                          tags$h5("-> if initial test is a t-test, i) check parametric assumptions and ii) find chi-squared top contributor if valid"),
                          tags$h5("-> if initial test is a collapsed chi-squared test, find top contributor amongst the classes of the comparing attribute"),
-                         tags$h5("-> for both t-test and collapsed chi-squared test, use Cochran-Mantel-Haenszel Chi-Squared Test on k 2x2 tables to identify potential confounders"),
+                         tags$h5("-> finally, use Cochran-Mantel-Haenszel Chi-Squared Test on k 2x2 tables to identify potential confounders"),
                          tags$h4("Your hypothesis:"),
                          verbatimTextOutput("hypothesis.statement.td"),
                          navlistPanel(id="diag",
