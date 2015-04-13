@@ -34,7 +34,7 @@ shinyUI(fluidPage(
                                        tags$h5(tags$strong('Choose file to analyse')),
                                        accept=c('text/csv', 'text/comma-separated-values,text/plain')),
                              tags$h5("Example dataset to try Redhyte out with:"),
-                             tags$a(href="https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/adult.txt",
+                             tags$a(href="https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/adult.csv",
                                     "US Census dataset",target="_blank"),
                              tags$h5('(Refer to "About Redhyte")'),
                              tags$hr(),

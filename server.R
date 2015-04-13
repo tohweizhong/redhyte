@@ -3094,7 +3094,7 @@ shinyServer(function(input,output,session){
         <ul>
           <li><a href=https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/ucbMelted.csv target=_blank>UC Berkeley Admission Bias dataset</a>, distributed with R
               (<a href=http://stat.ethz.ch/R-manual/R-devel/library/datasets/html/UCBAdmissions.html target=_blank>Description of dataset</a>, some prior data cleaning was done)</li>          
-          <li><a href=https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/adult.txt target=_blank>US Census dataset by UCI Machine Learning Repo</a>
+          <li><a href=https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/adult.csv target=_blank>US Census dataset by UCI Machine Learning Repo</a>
               (<a href=https://archive.ics.uci.edu/ml/datasets/Adult target=_blank>Description of dataset</a>)</li>
           <li><a href=https://dl.dropboxusercontent.com/u/36842028/linkouts/datasets/mushroom_expanded.txt target=_blank>Mushroom dataset by UCI Machine Learning Repo</a>
               (<a href=https://archive.ics.uci.edu/ml/datasets/mushroom target=_blank>Description of dataset</a>)</li>
