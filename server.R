@@ -2907,6 +2907,155 @@ shinyServer(function(input,output,session){
   })
   
   #=============================================#
+  #============8. Statistical adjustments=======#
+  #=============================================#
+  
+  Adjustment.Model<-reactive({
+    
+    # function to generate a formula with all pairwise 2-way interaction terms
+    # input:
+    #   @ vec: a vector of strings, representing all variable names,
+    #          excluding the target/response variable
+    #   @ tgt: name of the target/response variable
+    # output: a single formula
+    itr.formula<-function(vec,tgt){
+      fm<-paste(tgt,paste0(vec,collapse="+"),sep="~")
+      tmp<-outer(vec,
+                 vec,
+                 paste,sep="*")
+      tmp<-tmp[lower.tri(tmp,diag=F)]
+      tmp<-paste0(tmp,collapse="+")
+      fm<-paste(fm,tmp,sep="+")
+      return(as.formula(fm))
+    }
+    
+    # function to generate formula without interaction terms
+    no.itr.formula<-function(vec,tgt){
+      fm<-paste(tgt,paste0(vec,collapse="+"),sep="~")
+      return(as.formula(fm))
+    }
+    
+    # set some variables
+    # data
+    df   <- Data2()[[1]] # take Data2, Atgt not discretized yet
+    type <- Data2()[[2]]
+    # attributes
+    Atgt <- input$targetAttr
+    Acmp <- input$comparingAttr
+    mined.attr <- minedAttributes()[["mined.attr"]]
+    predictors <- c("cmp.class", mined.attr)
+    
+    #need to convert the character attributes to factors first before building models
+    #initial data input options use stringsAsFactors=FALSE (see doc.txt)
+    which.are.char<-which(Data2()[[2]] == "Cate") # all are categorical
+    df[,which.are.char]<-lapply(df[,which.are.char],factor)
+    
+    # first step: stepwise regression on mined context attributes
+    if(type[input$targetAttr] == "Num")
+      primary.mod <- lm(no.itr.formula(vec = predictors, tgt = Atgt),
+                        data = df)
+    else if(type[input$targetAttr] == "Cate")
+      primary.mod <- glm(no.itr.formula(vec = predictors, tgt = Atgt),
+                         family = binomial(link=logit), data = df)
+    step.mod<-step(primary.mod,direction="backward")
+    
+    # take the attributes shortlisted from stepwise regression
+    shr.attr <- colnames(step.mod$model)[-1] # remove target attribute
+    
+    # next, construct the adjustment model
+    # adjustment model has interaction terms
+    if(type[Atgt] == "Num")
+      adj.mod <- lm(itr.formula(vec = shr.attr, tgt = Atgt),
+                    data = df)
+    else if(type[Atgt] == "Cate")
+      adj.mod <- glm(itr.formula(vec = shr.attr, tgt = Atgt),
+                    family = binomial(link=logit), data = df)
+    
+    # for numerical target attribute, do predictions (adjusted values)
+    if(type[Atgt] == "Num"){
+      adj.dataset <- predict(adj.mod,
+                            df[,-which(colnames(df) == Atgt)])
+      adj.dataset <- data.frame(cbind(adj.dataset, df$cmp.class))
+      colnames(adj.dataset) <- c("Atgt","cmp.class")
+    }
+    else adj.dataset <- NA
+    
+    # return the adjustment model and the shortlisted attributes
+    return(list(adj.mod  = adj.mod,
+                mod.type = type[Atgt],
+                adj.dataset = adj.dataset,
+                shr.attr = shr.attr))
+  })
+  
+  output$adj.plot <- renderPlot({
+    # for numerical target attribute only
+    if(Adjustment.Model()[["mod.type"]] == "Num"){
+      par(mfrow=c(2,2))
+      hist(Data2()[[1]][,input$targetAttr])
+      plot(Data2()[[1]][,input$targetAttr], col = Data2()[[1]][,"cmp.class"])
+      hist(Adjustment.Model()[["adj.dataset"]]$Atgt)
+      plot(Adjustment.Model()[["adj.dataset"]]$Atgt, col = Data2()[[1]][,"cmp.class"])
+    }
+  })
+  
+  output$adj.adjusted.hist <- renderPlot({
+    # for numerical target attribute only
+    if(Adjustment.Model()[["mod.type"]] == "Num")
+      hist(Adjustment.Model()[["adj.dataset"]])
+  })
+  output$adj.initial.scatter <- renderPlot({
+    if(Adjustment.Model()[["mod.type"]] == "Num")
+      plot(Data2()[[1]][,input$targetAttr],
+           col = Data2()[[1]][,"cmp.class"])
+  })
+  output$adj.adjusted.scatter <- renderPlot({
+    if(Adjustment.Model()[["mod.type"]] == "Num")
+      plot(Adjustment.Model()[["adj.values"]],
+           col = Data2()[[1]][,"cmp.class"])
+  })
+
+  # useless
+  output$adj<-renderTable({
+    Adjustment.Model()[["adj.mod"]]
+  })
+  
+  output$adj.initialTest<-renderTable({
+    if(Groupings()[[1]] == "Num" && Table()[["sufficient"]] == "Sufficient"){
+      #t-test
+      test<-t.test(Data2()[[1]][,input$targetAttr]~Data2()[[1]]$cmp.class) #t-test bug resolved
+      stats<-test$statistic
+      pvalue<-test$p.value
+      method<-test$method
+      
+      returnMe<-as.data.frame(c(as.character(method),
+                                as.character(round(stats,3)),
+                                as.character(formatC(pvalue))))
+      rownames(returnMe)<-c("Method","Test statistic","p-value")
+      colnames(returnMe)<-"Initial t-test on means"
+      returnMe
+    }
+  })
+  
+  # "adjusted test"
+  output$adj.test <- renderTable({
+    if(Adjustment.Model()[["mod.type"]] == "Num"){
+      test.df <- Adjustment.Model()[["adj.dataset"]]
+      test <- t.test(test.df$Atgt ~ test.df$cmp.class)
+      stats<-test$statistic
+      pvalue<-test$p.value
+      method<-test$method
+      
+      returnMe<-as.data.frame(c(as.character(method),
+                                as.character(round(stats,3)),
+                                as.character(formatC(pvalue))))
+      rownames(returnMe)<-c("Method","Test statistic","p-value")
+      colnames(returnMe)<-paste("Initial t-test on means, on adjusted ",
+                                input$targetAttr, sep = "")
+      returnMe
+    }
+  })
+  
+  #=============================================#
   #============8. Session log===================#
   #=============================================#
   

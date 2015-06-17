@@ -294,6 +294,19 @@ shinyUI(fluidPage(
                                       widths=c(2,10))),
                 
                 #=============================================#
+                #=============8. Statistical adjustments======#
+                #=============================================#
+                
+                tabPanel("8. Statistical adjustments",
+                         navlistPanel(id="adj",
+                                      tabPanel("Numerical target attribute",
+                                               plotOutput("adj.plot"),
+                                               tableOutput("adj.initialTest"),
+                                               tableOutput("adj.test")),
+                                      tabPanel("Categorical target attribute"),
+                                      widths=c(2,10))),
+                
+                #=============================================#
                 #=============8. Session log==================#
                 #=============================================#
                 
