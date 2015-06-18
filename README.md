@@ -11,4 +11,4 @@ Iterations (see branches):
 
 * master: always WIP
 
-Redhyte (redhyte1.0) is deployed on shinyapps.io, asssessable [here](https://tohweizhong.shinyapps.io/redhyte/).
+Redhyte (redhyte1.0) is deployed on shinyapps.io, accessible [here](https://tohweizhong.shinyapps.io/redhyte/).
