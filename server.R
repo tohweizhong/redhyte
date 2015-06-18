@@ -2987,8 +2987,8 @@ shinyServer(function(input,output,session){
                 shr.attr = shr.attr))
   })
   
-  output$adj.plot <- renderPlot({
-    # for numerical target attribute only
+  # for numerical target attribute
+  output$adj.plot.num <- renderPlot({
     if(Adjustment.Model()[["mod.type"]] == "Num"){
       par(mfrow=c(2,2))
       hist(Data2()[[1]][,input$targetAttr])
@@ -2997,28 +2997,8 @@ shinyServer(function(input,output,session){
       plot(Adjustment.Model()[["adj.dataset"]]$Atgt, col = Data2()[[1]][,"cmp.class"])
     }
   })
-  
-  output$adj.adjusted.hist <- renderPlot({
-    # for numerical target attribute only
-    if(Adjustment.Model()[["mod.type"]] == "Num")
-      hist(Adjustment.Model()[["adj.dataset"]])
-  })
-  output$adj.initial.scatter <- renderPlot({
-    if(Adjustment.Model()[["mod.type"]] == "Num")
-      plot(Data2()[[1]][,input$targetAttr],
-           col = Data2()[[1]][,"cmp.class"])
-  })
-  output$adj.adjusted.scatter <- renderPlot({
-    if(Adjustment.Model()[["mod.type"]] == "Num")
-      plot(Adjustment.Model()[["adj.values"]],
-           col = Data2()[[1]][,"cmp.class"])
-  })
 
-  # useless
-  output$adj<-renderTable({
-    Adjustment.Model()[["adj.mod"]]
-  })
-  
+  # initial test
   output$adj.initialTest<-renderTable({
     if(Groupings()[[1]] == "Num" && Table()[["sufficient"]] == "Sufficient"){
       #t-test
@@ -3035,7 +3015,6 @@ shinyServer(function(input,output,session){
       returnMe
     }
   })
-  
   # "adjusted test"
   output$adj.test <- renderTable({
     if(Adjustment.Model()[["mod.type"]] == "Num"){
@@ -3052,6 +3031,25 @@ shinyServer(function(input,output,session){
       colnames(returnMe)<-paste("Initial t-test on means, on adjusted ",
                                 input$targetAttr, sep = "")
       returnMe
+    }
+  })
+  
+  # categorical target attribute
+  # select one context item and adjust for it
+  output$adj.ctrl <- renderUI({
+    if(Adjustment.Model()[["mod.type"]] == "Cate"){
+      prop.df <- Hypotheses()
+      ctx.items <- rownames(prop.df)
+      selectizeInput("adj.which.item",
+                     "Select context item to adjust for",
+                     ctx.items)
+    }
+  })
+  
+
+  output$adj.plot.cate <- renderPlot({
+    if(Adjustment.Model()[["mod.type"]] == "Cate"){
+      plot(rnorm(100,0,1) ~ rnorm(100,0,1))
     }
   })
   

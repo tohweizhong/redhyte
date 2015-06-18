@@ -300,10 +300,12 @@ shinyUI(fluidPage(
                 tabPanel("8. Statistical adjustments",
                          navlistPanel(id="adj",
                                       tabPanel("Numerical target attribute",
-                                               plotOutput("adj.plot"),
+                                               plotOutput("adj.plot.num"),
                                                tableOutput("adj.initialTest"),
                                                tableOutput("adj.test")),
-                                      tabPanel("Categorical target attribute"),
+                                      tabPanel("Categorical target attribute",
+                                               htmlOutput("adj.ctrl"),
+                                               plotOutput("adj.plot.cate")),
                                       widths=c(2,10))),
                 
                 #=============================================#
