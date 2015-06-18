@@ -2911,7 +2911,6 @@ shinyServer(function(input,output,session){
   #=============================================#
   
   Adjustment.Model<-reactive({
-    
     # function to generate a formula with all pairwise 2-way interaction terms
     # input:
     #   @ vec: a vector of strings, representing all variable names,
@@ -3028,7 +3027,7 @@ shinyServer(function(input,output,session){
                                 as.character(round(stats,3)),
                                 as.character(formatC(pvalue))))
       rownames(returnMe)<-c("Method","Test statistic","p-value")
-      colnames(returnMe)<-paste("Initial t-test on means, on adjusted ",
+      colnames(returnMe)<-paste("t-test on means, on adjusted ",
                                 input$targetAttr, sep = "")
       returnMe
     }
@@ -3038,7 +3037,9 @@ shinyServer(function(input,output,session){
   # select one context item and adjust for it
   output$adj.ctrl <- renderUI({
     if(Adjustment.Model()[["mod.type"]] == "Cate"){
+      shr.attr <- Adjustment.Model()[["shr.attr"]]
       prop.df <- Hypotheses()
+      prop.df <- prop.df[which(prop.df$Actx == shr.attr),]
       ctx.items <- rownames(prop.df)
       selectizeInput("adj.which.item",
                      "Select context item to adjust for",
@@ -3046,7 +3047,33 @@ shinyServer(function(input,output,session){
     }
   })
   
+  What.if <- reactive({
+    if(Adjustment.Model()[["mod.type"]] == "Cate"){
+      to.be.adj <- input$adj.which.item
+      adj.attr  <- unlist(strsplit(to.be.adj,"="))[1]
+      adj.value <- unlist(strsplit(to.be.adj,"="))[2]
+      
+      adj.mod <- Adjustment.Model()[["adj.mod"]]
+      
+      
+      adj.dataset <- Adjustment.Model()[["adj.dataset"]]
+      shr.attr <- Adjustment.Model()[["shr.attr"]]
+      
+      
+      #combinations <- expand.grid()
+      str(adj.dataset)
+      print(shr.attr)
+      
+      return(adj.dataset[1:20,])
+    }
+  })
 
+  output$tmp <- renderTable({
+    
+    What.if()
+    
+  })
+  
   output$adj.plot.cate <- renderPlot({
     if(Adjustment.Model()[["mod.type"]] == "Cate"){
       plot(rnorm(100,0,1) ~ rnorm(100,0,1))
