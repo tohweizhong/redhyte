@@ -2950,11 +2950,12 @@ shinyServer(function(input,output,session){
     df[,which.are.char]<-lapply(df[,which.are.char],factor)
     
     # first step: stepwise regression on mined context attributes
+    # excluding the comparing attribute
     if(type[input$targetAttr] == "Num")
-      primary.mod <- lm(no.itr.formula(vec = predictors, tgt = Atgt),
+      primary.mod <- lm(no.itr.formula(vec = mined.attr, tgt = Atgt),
                         data = df)
     else if(type[input$targetAttr] == "Cate")
-      primary.mod <- glm(no.itr.formula(vec = predictors, tgt = Atgt),
+      primary.mod <- glm(no.itr.formula(vec = mined.attr, tgt = Atgt),
                          family = binomial(link=logit), data = df)
     step.mod<-step(primary.mod,direction="backward")
     
@@ -2982,7 +2983,7 @@ shinyServer(function(input,output,session){
     # return the adjustment model and the shortlisted attributes
     return(list(adj.mod  = adj.mod,
                 mod.type = type[Atgt],
-                adj.dataset = adj.dataset,
+                adj.dataset = adj.dataset, # only for numerical target attribute
                 shr.attr = shr.attr))
   })
   
@@ -3005,7 +3006,6 @@ shinyServer(function(input,output,session){
       stats<-test$statistic
       pvalue<-test$p.value
       method<-test$method
-      
       returnMe<-as.data.frame(c(as.character(method),
                                 as.character(round(stats,3)),
                                 as.character(formatC(pvalue))))
@@ -3022,7 +3022,6 @@ shinyServer(function(input,output,session){
       stats<-test$statistic
       pvalue<-test$p.value
       method<-test$method
-      
       returnMe<-as.data.frame(c(as.character(method),
                                 as.character(round(stats,3)),
                                 as.character(formatC(pvalue))))
@@ -3034,45 +3033,63 @@ shinyServer(function(input,output,session){
   })
   
   # categorical target attribute
-  # select one context item and adjust for it
+  # select k context item and adjust for them,
+  # where k is the number of shortlisted context attributes
+  # from stepwise regression
   output$adj.ctrl <- renderUI({
     if(Adjustment.Model()[["mod.type"]] == "Cate"){
       shr.attr <- Adjustment.Model()[["shr.attr"]]
       prop.df <- Hypotheses()
-      prop.df <- prop.df[which(prop.df$Actx == shr.attr),]
+      
+      rows <- NULL
+      for(a.attr in shr.attr) rows <- c(rows, which(prop.df$Actx == a.attr))
+      
+      prop.df <- prop.df[rows,]
       ctx.items <- rownames(prop.df)
-      selectizeInput("adj.which.item",
-                     "Select context item to adjust for",
-                     ctx.items)
+      checkboxGroupInput("adj.which.item",
+                         "Select context item to adjust for",
+                         ctx.items)
     }
   })
   
+  # for categorical target attribute
   What.if <- reactive({
     if(Adjustment.Model()[["mod.type"]] == "Cate"){
       to.be.adj <- input$adj.which.item
-      adj.attr  <- unlist(strsplit(to.be.adj,"="))[1]
-      adj.value <- unlist(strsplit(to.be.adj,"="))[2]
+      num.shr.attr <- length(Adjustment.Model()[["shr.attr"]])
+      if(length(to.be.adj) != num.shr.attr){
+        tmp <- data.frame("Incorrect number of attributes to adjust for")
+        colnames(tmp) <- ""
+        return(tmp)
+      }
       
-      adj.mod <- Adjustment.Model()[["adj.mod"]]
+      get.attr <- function(s) unlist(strsplit(s,"="))[1]
+      get.item <- function(s) unlist(strsplit(s,"="))[2]
       
+      to.be.adj.attrs <- sapply(to.be.adj, FUN = get.attr)
+      to.be.adj.items <- sapply(to.be.adj, FUN = get.item)
       
-      adj.dataset <- Adjustment.Model()[["adj.dataset"]]
-      shr.attr <- Adjustment.Model()[["shr.attr"]]
+      # also need to consider that the user may check wrongly
+      if(length(unique(to.be.adj.attrs)) != num.shr.attr){
+        tmp <- data.frame("Incorrect number of attributes to adjust for")
+        colnames(tmp) <- ""
+        return(tmp)
+      }
       
+      to.adj <- data.frame(to.be.adj.items, stringsAsFactors=F)
+      for(i in seq(num.shr.attr)){
+        rownames(to.adj)[i] <- to.be.adj.attrs[i]
+      }
+      return(to.adj)
       
-      #combinations <- expand.grid()
-      str(adj.dataset)
-      print(shr.attr)
-      
-      return(adj.dataset[1:20,])
     }
   })
 
-  output$tmp <- renderTable({
-    
+  output$adj.what.if <- renderTable({
     What.if()
-    
   })
+  
+  
   
   output$adj.plot.cate <- renderPlot({
     if(Adjustment.Model()[["mod.type"]] == "Cate"){

@@ -305,7 +305,7 @@ shinyUI(fluidPage(
                                                tableOutput("adj.test")),
                                       tabPanel("Categorical target attribute",
                                                htmlOutput("adj.ctrl"),
-                                               tableOutput("tmp"),
+                                               tableOutput("adj.what.if"),
                                                plotOutput("adj.plot.cate")),
                                       widths=c(2,10))),
                 
