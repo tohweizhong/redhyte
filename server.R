@@ -54,7 +54,7 @@ shinyServer(function(input,output,session){
     #print(str(df))
     
     #is apparently the property of print.default()
-
+    
     #checking the variable type of the attributes: numerical or categorical
     #and number of classes for cate. attr.
     
@@ -141,7 +141,7 @@ shinyServer(function(input,output,session){
       colnames(tb)<-c(input$viz.which.attr1,"Frequency")
       tb
     }
-
+    
   })
   output$viz.tukeyfive2<-renderTable({
     if(Data()[[2]][input$viz.which.attr2]=="Num"){
@@ -170,7 +170,7 @@ shinyServer(function(input,output,session){
               cex.names=0.9,
               main=input$viz.which.attr1)
     }
-      
+    
   })
   output$viz.hist2<-renderPlot({
     if(Data()[[2]][input$viz.which.attr2]=="Num")
@@ -204,10 +204,10 @@ shinyServer(function(input,output,session){
     type2<-Data()[[2]][input$viz.which.attr2]
     
     if(type1 == "Num" && type2 == "Num")
-    plot(Data()[[1]][,input$viz.which.attr2]~
-           Data()[[1]][,input$viz.which.attr1],
-         xlab=input$viz.which.attr1,
-         ylab=input$viz.which.attr2)
+      plot(Data()[[1]][,input$viz.which.attr2]~
+             Data()[[1]][,input$viz.which.attr1],
+           xlab=input$viz.which.attr1,
+           ylab=input$viz.which.attr2)
     else if(type1 == "Num" && type2 =="Cate")
       boxplot(Data()[[1]][,input$viz.which.attr1]~
                 Data()[[1]][,input$viz.which.attr2],
@@ -263,7 +263,7 @@ shinyServer(function(input,output,session){
     else type<-"Type: Categorical"
     type
   })
-
+  
   #*********************************************#
   #***************REACTIVE**********************#
   #*********************************************#
@@ -377,9 +377,9 @@ shinyServer(function(input,output,session){
     return(list(tgt.attr.sup=tgt.attr.sup,
                 cmp.attr.sup=cmp.attr.sup,
                 ctx.attr.sup=ctx.attr.sup
-                ))
+    ))
   })
-
+  
   #*********************************************#
   #***************END REACTIVE******************#
   #*********************************************#
@@ -392,7 +392,7 @@ shinyServer(function(input,output,session){
       
       i<-1
       for(c in .choices){
-  
+        
         #sup<-Ctx.state()[[1]][i]
         sup<-length(which(Data()[[1]][,input$targetAttr] == c))
         .names<-c(.names,paste(c," (",sup,")",sep=""))
@@ -451,7 +451,7 @@ shinyServer(function(input,output,session){
                          choices=c(sort(.choices)))
     }
   }) #return: input$whichcmpclassesY
-
+  
   # === Initial context === #
   
   #context control
@@ -493,7 +493,7 @@ shinyServer(function(input,output,session){
   #*********************************************#
   #***************REACTIVE**********************#
   #*********************************************#
-
+  
   # Groupings() is a simple reactive module to
   # -> Keep track of type of Atgt (numerical or cate)
   # -> keep track of tgt.class and cmp.class groupings
@@ -540,7 +540,7 @@ shinyServer(function(input,output,session){
   # Data()[[3]] contains the number of classes for each categorical attribute,
   # which changes for Atgt and Acmp, depending on initial context
   # 030914: will return Data()[[[3]]] as it is anyway for now.
-
+  
   # Data2() consists of *THREE* things at the moment
   #  1. Data2()[[1]] is the data itself, including the mean cutoff attribute if Atgt is num
   #  2. Data2()[[2]] is the type of variable: numerical or categorical
@@ -601,7 +601,7 @@ shinyServer(function(input,output,session){
                            stringsAsFactors=F) #ugly, will change this later
       rownames(items.df)<-NULL
       colnames(items.df)<-c("Actx","vctx")
-  
+      
       # based on the ctx items, retrieve the rows
       list.of.rows<-vector("list",length(ctx.attr))
       for(i in seq(length(ctx.attr))){
@@ -624,7 +624,7 @@ shinyServer(function(input,output,session){
     }
     # retrieve the data
     dfWithCtx<-dfWithCtx[rowsToUse,]
-
+    
     # step three: finally, add tgt.class for cate Atgt and cmp.class based on tgt and cmp items
     if(Groupings()[[1]] == "Cate" && is.null(dfWithCtx$tgt.class)){
       dfWithCtx$tgt.class<-sapply(dfWithCtx[,input$targetAttr],
@@ -697,7 +697,7 @@ shinyServer(function(input,output,session){
                     tab.type="Contingency",
                     tab.df=df,
                     sufficient="Sufficient"))
-      
+        
       }
       else{
         tab<-data.frame("Insufficient support for hypothesis")
@@ -717,7 +717,7 @@ shinyServer(function(input,output,session){
       
       if(length(which(df$cmp.class == "1")) !=  0
          && length(which(df$cmp.class == "2")) != 0){
-      
+        
         # first, the data.frame of means and std deviation
         mean1<-mean(df[which(df$cmp.class == "1"),input$targetAttr])
         mean2<-mean(df[which(df$cmp.class == "2"),input$targetAttr])
@@ -756,11 +756,11 @@ shinyServer(function(input,output,session){
       }
     }
   })
-
+  
   #*********************************************#
   #***************END REACTIVE******************#
   #*********************************************#
-
+  
   # === Table(s) & test(s) === #
   
   # for the next 4 output objects:
@@ -826,7 +826,7 @@ shinyServer(function(input,output,session){
     # 081014: only t-test and chi-squared tests are used now.
     # no more ANOVA
     # 2 groups only
-
+    
     # check the type of table
     if(Groupings()[[1]] == "Cate" && Table()[["sufficient"]] == "Sufficient"){
       test<-chisq.test(Table()[[1]]) #chisq.test() works on the table itself
@@ -835,8 +835,8 @@ shinyServer(function(input,output,session){
       method<-test$method
       
       returnMe<-as.data.frame(c(as.character(method),
-                                 as.character(round(stats,3)),
-                                 as.character(formatC(pvalue))))
+                                as.character(round(stats,3)),
+                                as.character(formatC(pvalue))))
       rownames(returnMe)<-c("Method","Test statistic","p-value")
       colnames(returnMe)<-"Initial chi-squared test on contingency table"
       returnMe
@@ -915,7 +915,7 @@ shinyServer(function(input,output,session){
       returnMe
     }
   })
-
+  
   # hypothesis statement
   output$hypothesis.statement.it<-renderText({
     if(is.null(input$targetAttr) || is.null(input$comparingAttr)) return("")
@@ -1083,7 +1083,7 @@ shinyServer(function(input,output,session){
   # -> display flat table
   # -> do flat chi-sq test, find top contributor
   # -> M-H test for 3rd attribute association (assumes no 3-way interaction)
-
+  
   # === Continuous target attribute === #
   
   output$text.SWtest<-renderText({
@@ -1167,23 +1167,23 @@ shinyServer(function(input,output,session){
       else if(numSam < 3){
         returnMe<-data.frame("Insufficient support for Shapiro Wilk test")
         colnames(returnMe)<-paste("Shapiro-Wilk test for normality of ",
-                             input$targetAttr,
-                             " in ",
-                             input$comparingAttr,
-                             " = {",
-                             Groupings()[["Acmp.names"]][2],
-                             "}",sep="")
+                                  input$targetAttr,
+                                  " in ",
+                                  input$comparingAttr,
+                                  " = {",
+                                  Groupings()[["Acmp.names"]][2],
+                                  "}",sep="")
         returnMe
       }
       else if(numSam > 5000){
         returnMe<-data.frame("Subpopulation too large for Shapiro Wilk test")
         colnames(returnMe)<-paste("Shapiro-Wilk test for normality of ",
-                             input$targetAttr,
-                             " in ",
-                             input$comparingAttr,
-                             " = {",
-                             Groupings()[["Acmp.names"]][2],
-                             "}",sep="")
+                                  input$targetAttr,
+                                  " in ",
+                                  input$comparingAttr,
+                                  " = {",
+                                  Groupings()[["Acmp.names"]][2],
+                                  "}",sep="")
         returnMe
       }
     }
@@ -1324,8 +1324,8 @@ shinyServer(function(input,output,session){
           }
         }
       }
-    colnames(MH.df)<-c("3rd attribute","Cochran-Mantel-Haenszel Chi-squared","p-value")
-    return(MH.df)
+      colnames(MH.df)<-c("3rd attribute","Cochran-Mantel-Haenszel Chi-squared","p-value")
+      return(MH.df)
     }
   })
   #===#
@@ -1397,7 +1397,7 @@ shinyServer(function(input,output,session){
       return(chisq.contri)
     }
   })
-
+  
   # === Categorical target attribute === #
   
   # Test diagnostics for categorical Acmp, collapsed chi-sq
@@ -1545,13 +1545,13 @@ shinyServer(function(input,output,session){
       return(MH.df)
     }
   })
-
+  
   #*********************************************#
   #***************REACTIVE**********************#
   #*********************************************#
   
   # Objective of Data3(): discretize all attributes for ctx mining
-
+  
   Data3<-reactive({
     df<-Data2()[[1]]
     attr.type<-Data2()[[2]]
@@ -1887,9 +1887,9 @@ shinyServer(function(input,output,session){
       
       # naming the confusion matrices rendered in UI correctly
       rownames.cm.tgt<-sapply(Groupings()[[2]],
-                          FUN=function(x){
-                            return(paste("Actual: ",x,sep=""))
-                          })
+                              FUN=function(x){
+                                return(paste("Actual: ",x,sep=""))
+                              })
       colnames.cm.tgt<-sapply(Groupings()[[2]],
                               FUN=function(x){
                                 return(paste("Predicted: ",x,sep=""))
@@ -1942,7 +1942,7 @@ shinyServer(function(input,output,session){
   output$run.time.cmp<-renderText({
     return(paste("Runtime for comparing model: ",round(minedAttributes()[["run.time.cmp"]],3),sep=""))
   })
-
+  
   # confusion matrices
   output$cm.tgt<-renderTable({
     minedAttributes()[[1]]
@@ -1992,7 +1992,7 @@ shinyServer(function(input,output,session){
   })
   output$VIplot.cmp<-renderPlot({
     if(length(minedAttributes()[[3]]) > 1)
-    varImpPlot(minedAttributes()[["mod.cmp"]],main="Variable Importance for Comparing Model")
+      varImpPlot(minedAttributes()[["mod.cmp"]],main="Variable Importance for Comparing Model")
   })
   
   # === Visualization === #
@@ -2078,7 +2078,7 @@ shinyServer(function(input,output,session){
       return(tab)
     }
   })
-
+  
   #render the plot for one mined attribute indicated by user
   output$mined.attr.viz<-renderPlot({
     if(is.null(minedAttributes()[[3]])) return(NULL)
@@ -2094,7 +2094,7 @@ shinyServer(function(input,output,session){
     #**console**#
     #print(paste("ncol(df.to.plot): ",ncol(df.to.plot)))
     par(mfrow=c(2,2))
-
+    
     #need to consider whether Atgt is numerical or categorical
     #check this using the Data()[[2]]
     for(j in seq(1:2)){
@@ -2136,7 +2136,7 @@ shinyServer(function(input,output,session){
   #=============================================#
   #============7. Hypothesis mining=============#
   #=============================================#
-
+  
   #*********************************************#
   #***************REACTIVE**********************#
   #*********************************************#
@@ -2169,14 +2169,14 @@ shinyServer(function(input,output,session){
     
     # function to compute indp factor, given a 2x2 table
     compute.indp<-function(tab){
-     sum<-sum(tab)
-     c11<-tab[1,1]
-     c12<-tab[1,2]
-     c21<-tab[2,1]
-     c22<-tab[2,2]
-     i1<-(c11/((c11+c12)*(c11+c21)))*sum
-     i2<-(c21/((c11+c21)*(c21+c22)))*sum
-     return(c(i1,i2))
+      sum<-sum(tab)
+      c11<-tab[1,1]
+      c12<-tab[1,2]
+      c21<-tab[2,1]
+      c22<-tab[2,2]
+      i1<-(c11/((c11+c12)*(c11+c21)))*sum
+      i2<-(c21/((c11+c21)*(c21+c22)))*sum
+      return(c(i1,i2))
     }
     
     # compute initial proportions
@@ -2308,8 +2308,8 @@ shinyServer(function(input,output,session){
                        })
     
     prop.df$indplift<-apply(prop.df[,c("i1prime","i2prime")],
-                      MARGIN=1,
-                      FUN=compute.il)
+                            MARGIN=1,
+                            FUN=compute.il)
     
     # 210115: including new version of indplift: adjusted indplift
     tmp<-compute.sup(cont.tab)
@@ -2464,11 +2464,11 @@ shinyServer(function(input,output,session){
       
       # second case: {1 or 2, not 1 and 2}
       else if((sort.first.by == 1 || sort.first.by == 2) && (then.by != 1 && then.by != 2))
-          prop.df<-prop.df[order(-prop.df[,sort.first.by],prop.df[,then.by]),]
+        prop.df<-prop.df[order(-prop.df[,sort.first.by],prop.df[,then.by]),]
       
       # third case: {not 1 and 2, 1 or 2}
       else if((sort.first.by != 1 && sort.first.by != 2) && (then.by == 1 || then.by == 2))
-          prop.df<-prop.df[order(prop.df[,sort.first.by],-prop.df[,then.by]),]
+        prop.df<-prop.df[order(prop.df[,sort.first.by],-prop.df[,then.by]),]
       
       # at this point, both must be neither 1 or 2
       else prop.df<-prop.df[order(prop.df[,sort.first.by],prop.df[,then.by]),]
@@ -2936,7 +2936,7 @@ shinyServer(function(input,output,session){
     
     # set some variables
     # data
-    df   <- Data2()[[1]] # take Data2, Atgt not discretized yet
+    df   <- Data2()[[1]] # take Data2, all numerical attr not discretized yet
     type <- Data2()[[2]]
     # attributes
     Atgt <- input$targetAttr
@@ -2944,10 +2944,32 @@ shinyServer(function(input,output,session){
     mined.attr <- minedAttributes()[["mined.attr"]]
     predictors <- c("cmp.class", mined.attr)
     
+    # discretize all attributes other than the (numerical) target attribute
+    # also, convert them to factors
+    mean.discre<-function(an.attr){
+      m<-mean(df[,an.attr])
+      new.col<-sapply(df[,an.attr],
+                      FUN=function(x){
+                        if(x>=m) return("above/equal mean")
+                        else return("below mean")})
+      return(new.col)
+    }
+    which.are.num<-which(type == "Num")
+    for(an.attr in which.are.num){
+      if(colnames(df)[an.attr] != input$targetAttr){
+        df[,an.attr]<-mean.discre(an.attr)
+        df[,an.attr] <- factor(df[,an.attr])
+      }
+    }
     #need to convert the character attributes to factors first before building models
     #initial data input options use stringsAsFactors=FALSE (see doc.txt)
-    which.are.char<-which(Data2()[[2]] == "Cate") # all are categorical
-    df[,which.are.char]<-lapply(df[,which.are.char],factor)
+    #which.are.char<-which(Data2()[[2]] == "Cate") # all are categorical
+    df<-data.frame(apply(df,
+              MARGIN = 2,
+              FUN = function(x){
+                if(class(x) == "character")
+                  return(factor(x))
+              }))
     
     # first step: stepwise regression on mined context attributes
     # excluding the comparing attribute
@@ -2959,26 +2981,28 @@ shinyServer(function(input,output,session){
                          family = binomial(link=logit), data = df)
     step.mod<-step(primary.mod,direction="backward")
     
+    
     # take the attributes shortlisted from stepwise regression
     shr.attr <- colnames(step.mod$model)[-1] # remove target attribute
     
     # next, construct the adjustment model
     # adjustment model has interaction terms
+    # note that cmp.class may not be selected from stepwise regression
     if(type[Atgt] == "Num")
-      adj.mod <- lm(itr.formula(vec = shr.attr, tgt = Atgt),
+      adj.mod <- lm(itr.formula(vec = c(shr.attr,"cmp.class"), tgt = Atgt),
                     data = df)
     else if(type[Atgt] == "Cate")
-      adj.mod <- glm(itr.formula(vec = shr.attr, tgt = Atgt),
-                    family = binomial(link=logit), data = df)
+      adj.mod <- glm(itr.formula(vec = c(shr.attr,"cmp.class"), tgt = Atgt),
+                     family = binomial(link=logit), data = df)
     
     # for numerical target attribute, do predictions (adjusted values)
     if(type[Atgt] == "Num"){
       adj.dataset <- predict(adj.mod,
-                            df[,-which(colnames(df) == Atgt)])
+                             df[,-which(colnames(df) == Atgt)])
       adj.dataset <- data.frame(cbind(adj.dataset, df$cmp.class))
       colnames(adj.dataset) <- c("Atgt","cmp.class")
     }
-    else adj.dataset <- NA
+    else adj.dataset <- NA # no adjustments for categorical Atgt
     
     # return the adjustment model and the shortlisted attributes
     return(list(adj.mod  = adj.mod,
@@ -2988,6 +3012,7 @@ shinyServer(function(input,output,session){
   })
   
   # for numerical target attribute
+  # plots, initial test and "adjusted test"
   output$adj.plot.num <- renderPlot({
     if(Adjustment.Model()[["mod.type"]] == "Num"){
       par(mfrow=c(2,2))
@@ -2997,8 +3022,6 @@ shinyServer(function(input,output,session){
       plot(Adjustment.Model()[["adj.dataset"]]$Atgt, col = Data2()[[1]][,"cmp.class"])
     }
   })
-
-  # initial test
   output$adj.initialTest<-renderTable({
     if(Groupings()[[1]] == "Num" && Table()[["sufficient"]] == "Sufficient"){
       #t-test
@@ -3014,7 +3037,6 @@ shinyServer(function(input,output,session){
       returnMe
     }
   })
-  # "adjusted test"
   output$adj.test <- renderTable({
     if(Adjustment.Model()[["mod.type"]] == "Num"){
       test.df <- Adjustment.Model()[["adj.dataset"]]
@@ -3032,18 +3054,17 @@ shinyServer(function(input,output,session){
     }
   })
   
-  # categorical target attribute
-  # select k context item and adjust for them,
+  # for categorical target attribute
+  # select k context items and adjust for them,
   # where k is the number of shortlisted context attributes
   # from stepwise regression
   output$adj.ctrl <- renderUI({
     if(Adjustment.Model()[["mod.type"]] == "Cate"){
       shr.attr <- Adjustment.Model()[["shr.attr"]]
-      prop.df <- Hypotheses()
-      
+      prop.df <- Hypotheses() # to retrieve context items
       rows <- NULL
-      for(a.attr in shr.attr) rows <- c(rows, which(prop.df$Actx == a.attr))
-      
+      for(a.attr in shr.attr)
+        rows <- c(rows, which(prop.df$Actx == a.attr))
       prop.df <- prop.df[rows,]
       ctx.items <- rownames(prop.df)
       checkboxGroupInput("adj.which.item",
@@ -3051,16 +3072,24 @@ shinyServer(function(input,output,session){
                          ctx.items)
     }
   })
-  
   # for categorical target attribute
+  # What-if analysis
+  # get the items to adjust for
   What.if <- reactive({
     if(Adjustment.Model()[["mod.type"]] == "Cate"){
       to.be.adj <- input$adj.which.item
       num.shr.attr <- length(Adjustment.Model()[["shr.attr"]])
+      if(length(to.be.adj) < num.shr.attr){
+        tmp <- data.frame("Insufficient number of attributes to adjust for")
+        colnames(tmp) <- ""
+        return(list(to.be.adj = tmp,
+                    ready = FALSE))
+      }
       if(length(to.be.adj) != num.shr.attr){
         tmp <- data.frame("Incorrect number of attributes to adjust for")
         colnames(tmp) <- ""
-        return(tmp)
+        return(list(to.be.adj = tmp,
+                    ready = FALSE))
       }
       
       get.attr <- function(s) unlist(strsplit(s,"="))[1]
@@ -3073,27 +3102,115 @@ shinyServer(function(input,output,session){
       if(length(unique(to.be.adj.attrs)) != num.shr.attr){
         tmp <- data.frame("Incorrect number of attributes to adjust for")
         colnames(tmp) <- ""
-        return(tmp)
+        return(list(to.be.adj = tmp,
+                    ready = FALSE))
       }
       
       to.adj <- data.frame(to.be.adj.items, stringsAsFactors=F)
       for(i in seq(num.shr.attr)){
         rownames(to.adj)[i] <- to.be.adj.attrs[i]
       }
-      return(to.adj)
-      
+      colnames(to.adj) <- "To be adjusted for"
+      return(list(to.be.adj = to.adj,
+                  ready = TRUE))
     }
   })
-
+  
   output$adj.what.if <- renderTable({
-    What.if()
+    What.if()[["to.be.adj"]]
   })
   
-  
-  
   output$adj.plot.cate <- renderPlot({
-    if(Adjustment.Model()[["mod.type"]] == "Cate"){
-      plot(rnorm(100,0,1) ~ rnorm(100,0,1))
+    
+    if(Adjustment.Model()[["mod.type"]] == "Cate" && What.if()[["ready"]] == TRUE){
+      adj.mod <- Adjustment.Model()[["adj.mod"]]
+      to.be.adj <- What.if()[["to.be.adj"]]
+      
+      # new data to do prediction on
+      newdata <- data.frame(t(to.be.adj))
+      newdata$cmp.class <- "1"
+      newdata <- rbind(newdata, c(t(to.be.adj), "2"))
+      rownames(newdata) <- c("1","2")
+      
+      # predictions
+      newdata$prob <- predict(adj.mod,
+                              newdata,
+                              type = "response")
+      print(newdata)
+      
+      # get initial proportions
+      tab <- Table()[["cont.tab"]]
+      initial.prob<-c(tab[1,1]/sum(tab[1,]),
+                      tab[2,1]/sum(tab[2,]))
+      names(initial.prob)<-rownames(tab)
+      
+      # plot
+      plot.dat <- data.frame(Initial = initial.prob,
+                             Adjusted = newdata$prob)
+      barplot(as.matrix(plot.dat),
+              main=paste(input$targetAttr, " ~ ", input$comparingAttr),
+              ylab=paste("Pr(", input$targetAttr, " == ", colnames(tab)[1]),
+              beside=TRUE, 
+              col=terrain.colors(2),ylim=c(0,1))
+      legend("topright", rownames(tab), cex=0.8, 
+             fill=terrain.colors(2))
+      
+      # do z-test on proportions
+      # initial test
+      sample.sz <- nrow(Data2()[[1]])
+      t0<-prop.test(initial.prob*sample.sz,c(sample.sz,sample.sz))
+      pv<-t0$p.value
+      
+      newdata$counts<-round(newdata$prob*sample.sz)
+      t1<-prop.test(newdata$counts,c(sample.sz,sample.sz))
+      pv<-c(pv,t1$p.value)
+      
+      # add stars
+      pv.stars<-sapply(pv,FUN=function(pv){
+        stars<-""
+        if(pv<0.05)  stars<-paste(stars,"*",sep="")
+        if(pv<0.01)  stars<-paste(stars,"*",sep="")
+        if(pv<0.001) stars<-paste(stars,"*",sep="")
+        stars
+      })
+      
+      for(i in seq(2)){
+        if(i == 1){incre<-1}
+        else{incre<-incre+2}
+        text(x=i+incre,y=max(plot.dat[,i])+0.1,pv.stars[i])
+      }
+    }
+  })
+  
+  output$adj.initialTest.cate<-renderTable({
+    if(Groupings()[[1]] == "Num" && Table()[["sufficient"]] == "Sufficient"){
+      #t-test
+      test<-t.test(Data2()[[1]][,input$targetAttr]~Data2()[[1]]$cmp.class) #t-test bug resolved
+      stats<-test$statistic
+      pvalue<-test$p.value
+      method<-test$method
+      returnMe<-as.data.frame(c(as.character(method),
+                                as.character(round(stats,3)),
+                                as.character(formatC(pvalue))))
+      rownames(returnMe)<-c("Method","Test statistic","p-value")
+      colnames(returnMe)<-"Initial t-test on means"
+      returnMe
+    }
+  })
+  output$adj.test <- renderTable({
+    if(Adjustment.Model()[["mod.type"]] == "Num"){
+      test.df <- Adjustment.Model()[["adj.dataset"]]
+      test <- t.test(test.df$Atgt ~ test.df$cmp.class)
+      stats<-test$statistic
+      pvalue<-test$p.value
+      method<-test$method
+      returnMe<-as.data.frame(c(as.character(method),
+                                as.character(round(stats,3)),
+                                as.character(formatC(pvalue))))
+      rownames(returnMe)<-c("Method","Test statistic","p-value")
+      colnames(returnMe)<-paste("t-test on means, on adjusted ",
+                                input$targetAttr, sep = "")
+      returnMe
     }
   })
   
@@ -3297,7 +3414,7 @@ shinyServer(function(input,output,session){
       </ul></font>
 
       "
-      ,sep="")
+                    ,sep="")
   })
   
   #*********************************************#
