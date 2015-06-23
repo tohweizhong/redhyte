@@ -2958,19 +2958,37 @@ shinyServer(function(input,output,session){
     for(an.attr in which.are.num){
       if(colnames(df)[an.attr] != input$targetAttr){
         df[,an.attr]<-mean.discre(an.attr)
-        df[,an.attr] <- factor(df[,an.attr])
+        
       }
     }
-    #need to convert the character attributes to factors first before building models
-    #initial data input options use stringsAsFactors=FALSE (see doc.txt)
-    #which.are.char<-which(Data2()[[2]] == "Cate") # all are categorical
-    df<-data.frame(apply(df,
-              MARGIN = 2,
-              FUN = function(x){
-                if(class(x) == "character")
-                  return(factor(x))
-              }))
     
+    print("after mean discretization")
+    str(df)
+    
+    # now convert everything to factors
+    for(an.attr in colnames(df)){
+      if(an.attr == input$targetAttr){
+        # if categorical, factor it
+        if(type[an.attr] == "Cate")
+          df[,an.attr]<-factor(df[,an.attr])
+      }
+      else{
+        df[,an.attr]<-factor(df[,an.attr])
+      }
+    }
+    print("after factor")
+    str(df)
+#     #need to convert the character attributes to factors first before building models
+#     #initial data input options use stringsAsFactors=FALSE (see doc.txt)
+#     #which.are.char<-which(Data2()[[2]] == "Cate") # all are categorical
+#     df<-data.frame(apply(df,
+#               MARGIN = 2,
+#               FUN = function(x){
+#                 if(class(x) == "character")
+#                   return(factor(x))
+#               }))
+#     print("after conversion to factors")
+#     str(df)
     # first step: stepwise regression on mined context attributes
     # excluding the comparing attribute
     if(type[input$targetAttr] == "Num")
@@ -2979,6 +2997,7 @@ shinyServer(function(input,output,session){
     else if(type[input$targetAttr] == "Cate")
       primary.mod <- glm(no.itr.formula(vec = mined.attr, tgt = Atgt),
                          family = binomial(link=logit), data = df)
+    str(primary.mod)
     step.mod<-step(primary.mod,direction="backward")
     
     
