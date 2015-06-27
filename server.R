@@ -2946,6 +2946,7 @@ shinyServer(function(input,output,session){
     
     # discretize all attributes other than the (numerical) target attribute
     # also, convert them to factors
+    # function to do mean discretization
     mean.discre<-function(an.attr){
       m<-mean(df[,an.attr])
       new.col<-sapply(df[,an.attr],
@@ -2958,12 +2959,8 @@ shinyServer(function(input,output,session){
     for(an.attr in which.are.num){
       if(colnames(df)[an.attr] != input$targetAttr){
         df[,an.attr]<-mean.discre(an.attr)
-        
       }
     }
-    
-    print("after mean discretization")
-    str(df)
     
     # now convert everything to factors
     for(an.attr in colnames(df)){
@@ -2976,19 +2973,20 @@ shinyServer(function(input,output,session){
         df[,an.attr]<-factor(df[,an.attr])
       }
     }
-    print("after factor")
-    str(df)
-#     #need to convert the character attributes to factors first before building models
-#     #initial data input options use stringsAsFactors=FALSE (see doc.txt)
-#     #which.are.char<-which(Data2()[[2]] == "Cate") # all are categorical
-#     df<-data.frame(apply(df,
-#               MARGIN = 2,
-#               FUN = function(x){
-#                 if(class(x) == "character")
-#                   return(factor(x))
-#               }))
-#     print("after conversion to factors")
-#     str(df)
+    
+    #     #need to convert the character attributes to factors first before building models
+    #     #initial data input options use stringsAsFactors=FALSE (see doc.txt)
+    #     #which.are.char<-which(Data2()[[2]] == "Cate") # all are categorical
+    #     df<-data.frame(apply(df,
+    #               MARGIN = 2,
+    #               FUN = function(x){
+    #                 if(class(x) == "character")
+    #                   return(factor(x))
+    #               }))
+    #     print("after conversion to factors")
+    #     str(df)
+    
+    
     # first step: stepwise regression on mined context attributes
     # excluding the comparing attribute
     if(type[input$targetAttr] == "Num")
@@ -3008,39 +3006,76 @@ shinyServer(function(input,output,session){
     # adjustment model has interaction terms
     # note that cmp.class may not be selected from stepwise regression
     if(type[Atgt] == "Num")
-      adj.mod <- lm(itr.formula(vec = c(shr.attr,"cmp.class"), tgt = Atgt),
+      adj.mod <- lm(itr.formula(vec = shr.attr, tgt = Atgt),
                     data = df)
     else if(type[Atgt] == "Cate")
-      adj.mod <- glm(itr.formula(vec = c(shr.attr,"cmp.class"), tgt = Atgt),
+      adj.mod <- glm(itr.formula(vec = shr.attr, tgt = Atgt),
                      family = binomial(link=logit), data = df)
     
     # for numerical target attribute, do predictions (adjusted values)
     if(type[Atgt] == "Num"){
-      adj.dataset <- predict(adj.mod,
-                             df[,-which(colnames(df) == Atgt)])
-      adj.dataset <- data.frame(cbind(adj.dataset, df$cmp.class))
-      colnames(adj.dataset) <- c("Atgt","cmp.class")
+      predicted <- predict(adj.mod,
+                           df[,-which(colnames(df) == Atgt)])
+      
+      # 270615: take difference between observed and predicted
+      delta <- df[,Atgt] - predicted
+      
+      delta <- data.frame(cbind(delta, df$cmp.class))
+      
+      
+      colnames(delta) <- c("Atgt","cmp.class")
+      
     }
     else adj.dataset <- NA # no adjustments for categorical Atgt
     
     # return the adjustment model and the shortlisted attributes
     return(list(adj.mod  = adj.mod,
                 mod.type = type[Atgt],
-                adj.dataset = adj.dataset, # only for numerical target attribute
+                adj.dataset = delta, # only for numerical target attribute
                 shr.attr = shr.attr))
   })
   
   # for numerical target attribute
   # plots, initial test and "adjusted test"
-  output$adj.plot.num <- renderPlot({
+  output$adj.plot.num.initial <- renderPlot({
     if(Adjustment.Model()[["mod.type"]] == "Num"){
       par(mfrow=c(2,2))
-      hist(Data2()[[1]][,input$targetAttr])
-      plot(Data2()[[1]][,input$targetAttr], col = Data2()[[1]][,"cmp.class"])
-      hist(Adjustment.Model()[["adj.dataset"]]$Atgt)
-      plot(Adjustment.Model()[["adj.dataset"]]$Atgt, col = Data2()[[1]][,"cmp.class"])
+      plot.df<-Data2()[[1]]
+      
+      hist(plot.df[which(plot.df$cmp.class == "1"),input$targetAttr],
+           main = "Actual target attr, cmp.class 1")
+      plot(plot.df[which(plot.df$cmp.class == "1"),input$targetAttr],
+           main = "Actual target attr, cmp.class 2")
+      
+      hist(plot.df[which(plot.df$cmp.class == "2"),input$targetAttr],
+           main = "Actual target attr, cmp.class 2")
+      plot(plot.df[which(plot.df$cmp.class == "2"),input$targetAttr],
+           main = "Actual target attr, cmp.class 2")
+      
     }
   })
+  
+  output$adj.plot.num.delta <- renderPlot({
+    if(Adjustment.Model()[["mod.type"]] == "Num"){
+      
+      
+      par(mfrow=c(2,2))
+      plot.df<-Adjustment.Model()[["adj.dataset"]]
+      
+      hist(plot.df[which(plot.df$cmp.class == "1"),"Atgt"],
+           main = "Delta, cmp.class 1")
+      plot(plot.df[which(plot.df$cmp.class == "1"),"Atgt"],
+           main = "Delta, cmp.class 2")
+      
+      hist(plot.df[which(plot.df$cmp.class == "2"),"Atgt"],
+           main = "delta, cmp.class 2")
+      plot(plot.df[which(plot.df$cmp.class == "2"),"Atgt"],
+           main = "delta, cmp.class 2")
+    }
+  })
+  
+  
+  
   output$adj.initialTest<-renderTable({
     if(Groupings()[[1]] == "Num" && Table()[["sufficient"]] == "Sufficient"){
       #t-test
@@ -3059,6 +3094,9 @@ shinyServer(function(input,output,session){
   output$adj.test <- renderTable({
     if(Adjustment.Model()[["mod.type"]] == "Num"){
       test.df <- Adjustment.Model()[["adj.dataset"]]
+      
+      str(test.df)
+      
       test <- t.test(test.df$Atgt ~ test.df$cmp.class)
       stats<-test$statistic
       pvalue<-test$p.value
