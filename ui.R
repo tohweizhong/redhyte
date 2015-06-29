@@ -120,6 +120,7 @@ shinyUI(fluidPage(
                 
                 tabPanel("3. Initial test",
                          tags$h4("Set up your initial hypothesis and test"),
+                         tags$h5('Refer to "About Redhyte" for a glossary of terms'),
                          tags$h5("Your hypothesis:"),
                          verbatimTextOutput("hypothesis.statement.it"),
                          navlistPanel(id="initial",
@@ -303,7 +304,7 @@ shinyUI(fluidPage(
                                                plotOutput("adj.plot.num.initial"),
                                                plotOutput("adj.plot.num.delta"),
                                                tableOutput("adj.initialTest"),
-                                               tableOutput("adj.test")),
+                                               tableOutput("adj.test.num")),
                                       tabPanel("Categorical target attribute",
                                                sidebarPanel(
                                                  htmlOutput("adj.what.if"),
@@ -313,21 +314,42 @@ shinyUI(fluidPage(
                                       widths=c(2,10))),
                 
                 #=============================================#
-                #=============8. Session log==================#
+                #=============9. Attribute analysis===========#
                 #=============================================#
                 
-                tabPanel("8. Log",
+                tabPanel("9. Attributes analysis"),
+                
+                #=============================================#
+                #=============10. Session log=================#
+                #=============================================#
+                
+                tabPanel("10. Log",
                          tags$h4("Analysis session log"),
                          downloadButton("log.download","Download session log"),
                          tags$hr(),
                          tableOutput("session.log")),
                 
                 #=============================================#
-                #=============9. About Redhyte================#
+                #=============11. About Redhyte===============#
                 #=============================================#
                 
-                tabPanel("9. About Redhyte",
-                         uiOutput("about.text"))
+                tabPanel("11. About Redhyte",
+                         navlistPanel(id="about",
+                                      tabPanel("About",
+                                               uiOutput("about.text")),
+                                      tabPanel("Glossary",
+                                               tags$h5("Target attribute: variable in the hypothesis 
+                                                       representing the response or result."),
+                                               tags$h5("Target attribute value:"),
+                                               tags$h5("Comparing attribute: variable in the hypothesis 
+                                                       representing the act of comparison and/or intervention."),
+                                               tags$h5("Context attribute: all other variables that are not 
+                                                       the target or the comparing attribute but are used to subset data 
+                                                       used for the hypothesis"),
+                                               tags$h5("Context item: an attribute-value pair for a given categorical attribute, 
+                                                       e.g. {Gender = Male}"),
+                                               tags$h5("Context: the set of context items that is used in a hypothesis")),
+                                      widths=c(2,10)))
     )#end tabset panel
     ,width=12) #end main panel, sidebarLayout
 ))#end fluidPage, end shinyUI

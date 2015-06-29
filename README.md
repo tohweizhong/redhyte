@@ -12,3 +12,5 @@ Iterations (see branches):
 * master: always WIP
 
 Redhyte (redhyte1.0) is deployed on shinyapps.io, accessible [here](https://tohweizhong.shinyapps.io/redhyte/).
+
+A copy of the user tutorial is available [here](https://dl.dropboxusercontent.com/u/36842028/homepage/pdf/redhyte%20tutorial_linked%20to%20homepage.pdf).

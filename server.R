@@ -170,7 +170,6 @@ shinyServer(function(input,output,session){
               cex.names=0.9,
               main=input$viz.which.attr1)
     }
-    
   })
   output$viz.hist2<-renderPlot({
     if(Data()[[2]][input$viz.which.attr2]=="Num")
@@ -1476,7 +1475,6 @@ shinyServer(function(input,output,session){
     }
   })
   output$MHtest.cate<-renderTable({
-    
     if(Groupings()[["Atgt.type"]] == "Cate"){
       df<-Data2()[[1]]
       attr.type<-Data2()[[2]]
@@ -1647,7 +1645,6 @@ shinyServer(function(input,output,session){
   })
   
   # === Attribute to exclude === #
-  
   output$attr.to.exclude<-renderUI({
     cinitial.attr<-c(input$targetAttr,
                      input$comparingAttr,
@@ -2142,7 +2139,6 @@ shinyServer(function(input,output,session){
   #*********************************************#
   
   Hypotheses<-reactive({
-    
     tgt.attr<-input$targetAttr
     cmp.attr<-input$comparingAttr
     mined.attr<-minedAttributes()[[3]]
@@ -3004,12 +3000,12 @@ shinyServer(function(input,output,session){
     
     # next, construct the adjustment model
     # adjustment model has interaction terms
-    # note that cmp.class may not be selected from stepwise regression
+    # adjustment model for numerical Atgt does not have Acmp or cmp.class
     if(type[Atgt] == "Num")
       adj.mod <- lm(itr.formula(vec = shr.attr, tgt = Atgt),
                     data = df)
     else if(type[Atgt] == "Cate")
-      adj.mod <- glm(itr.formula(vec = shr.attr, tgt = Atgt),
+      adj.mod <- glm(itr.formula(vec = c(shr.attr,"cmp.class"), tgt = Atgt),
                      family = binomial(link=logit), data = df)
     
     # for numerical target attribute, do predictions (adjusted values)
@@ -3019,14 +3015,10 @@ shinyServer(function(input,output,session){
       
       # 270615: take difference between observed and predicted
       delta <- df[,Atgt] - predicted
-      
       delta <- data.frame(cbind(delta, df$cmp.class))
-      
-      
       colnames(delta) <- c("Atgt","cmp.class")
-      
     }
-    else adj.dataset <- NA # no adjustments for categorical Atgt
+    else delta <- NA # no adjustments for categorical Atgt
     
     # return the adjustment model and the shortlisted attributes
     return(list(adj.mod  = adj.mod,
@@ -3043,14 +3035,17 @@ shinyServer(function(input,output,session){
       plot.df<-Data2()[[1]]
       
       hist(plot.df[which(plot.df$cmp.class == "1"),input$targetAttr],
-           main = "Actual target attr, cmp.class 1")
+           main = "Actual target attr, cmp.class 1",
+           xlab = "Target attr")
       plot(plot.df[which(plot.df$cmp.class == "1"),input$targetAttr],
-           main = "Actual target attr, cmp.class 2")
-      
+           main = "Actual target attr, cmp.class 1",
+           ylab = "Target attr")
       hist(plot.df[which(plot.df$cmp.class == "2"),input$targetAttr],
-           main = "Actual target attr, cmp.class 2")
+           main = "Actual target attr, cmp.class 2",
+           xlab = "Target attr")
       plot(plot.df[which(plot.df$cmp.class == "2"),input$targetAttr],
-           main = "Actual target attr, cmp.class 2")
+           main = "Actual target attr, cmp.class 2",
+           ylab = "Target attr")
       
     }
   })
@@ -3058,19 +3053,22 @@ shinyServer(function(input,output,session){
   output$adj.plot.num.delta <- renderPlot({
     if(Adjustment.Model()[["mod.type"]] == "Num"){
       
-      
       par(mfrow=c(2,2))
       plot.df<-Adjustment.Model()[["adj.dataset"]]
       
       hist(plot.df[which(plot.df$cmp.class == "1"),"Atgt"],
-           main = "Delta, cmp.class 1")
+           main = "Delta, cmp.class 1",
+           xlab = "Delta")
       plot(plot.df[which(plot.df$cmp.class == "1"),"Atgt"],
-           main = "Delta, cmp.class 2")
+           main = "Delta, cmp.class 2",
+           ylab = "Delta")
       
       hist(plot.df[which(plot.df$cmp.class == "2"),"Atgt"],
-           main = "delta, cmp.class 2")
+           main = "delta, cmp.class 2",
+           xlab = "Delta")
       plot(plot.df[which(plot.df$cmp.class == "2"),"Atgt"],
-           main = "delta, cmp.class 2")
+           main = "delta, cmp.class 2",
+           ylab = "Delta")
     }
   })
   
@@ -3091,11 +3089,9 @@ shinyServer(function(input,output,session){
       returnMe
     }
   })
-  output$adj.test <- renderTable({
+  output$adj.test.num <- renderTable({
     if(Adjustment.Model()[["mod.type"]] == "Num"){
-      test.df <- Adjustment.Model()[["adj.dataset"]]
-      
-      str(test.df)
+      test.df <- Adjustment.Model()[["adj.dataset"]] #delta
       
       test <- t.test(test.df$Atgt ~ test.df$cmp.class)
       stats<-test$statistic
@@ -3105,7 +3101,7 @@ shinyServer(function(input,output,session){
                                 as.character(round(stats,3)),
                                 as.character(formatC(pvalue))))
       rownames(returnMe)<-c("Method","Test statistic","p-value")
-      colnames(returnMe)<-paste("t-test on means, on adjusted ",
+      colnames(returnMe)<-paste("t-test on means, on delta of ",
                                 input$targetAttr, sep = "")
       returnMe
     }
@@ -3206,7 +3202,7 @@ shinyServer(function(input,output,session){
                              Adjusted = newdata$prob)
       barplot(as.matrix(plot.dat),
               main=paste(input$targetAttr, " ~ ", input$comparingAttr),
-              ylab=paste("Pr(", input$targetAttr, " == ", colnames(tab)[1]),
+              ylab=paste("Pr(", input$targetAttr, " == ", colnames(tab)[1], ")"),
               beside=TRUE, 
               col=terrain.colors(2),ylim=c(0,1))
       legend("topright", rownames(tab), cex=0.8, 
@@ -3220,11 +3216,14 @@ shinyServer(function(input,output,session){
       
       newdata$counts<-round(newdata$prob*sample.sz)
       t1<-prop.test(newdata$counts,c(sample.sz,sample.sz))
+      print(t1$p.value)
+      print(t1)
       pv<-c(pv,t1$p.value)
       
       # add stars
       pv.stars<-sapply(pv,FUN=function(pv){
         stars<-""
+        if(is.na(pv)) return("")
         if(pv<0.05)  stars<-paste(stars,"*",sep="")
         if(pv<0.01)  stars<-paste(stars,"*",sep="")
         if(pv<0.001) stars<-paste(stars,"*",sep="")
@@ -3254,7 +3253,11 @@ shinyServer(function(input,output,session){
       returnMe
     }
   })
-  output$adj.test <- renderTable({
+  
+  
+  
+  
+  output$adj.test.cate <- renderTable({
     if(Adjustment.Model()[["mod.type"]] == "Num"){
       test.df <- Adjustment.Model()[["adj.dataset"]]
       test <- t.test(test.df$Atgt ~ test.df$cmp.class)
@@ -3268,11 +3271,18 @@ shinyServer(function(input,output,session){
       colnames(returnMe)<-paste("t-test on means, on adjusted ",
                                 input$targetAttr, sep = "")
       returnMe
+      return(NULL)
     }
   })
   
   #=============================================#
-  #============8. Session log===================#
+  #=============9. Attribute analysis===========#
+  #=============================================#
+  
+  
+  
+  #=============================================#
+  #============10. Session log==================#
   #=============================================#
   
   #*********************************************#
@@ -3392,7 +3402,7 @@ shinyServer(function(input,output,session){
   )
   
   #=============================================#
-  #============9. About Redhyte=================#
+  #============11. About Redhyte================#
   #=============================================#
   
   #*********************************************#

@@ -1,3 +1,19 @@
+*LIST OF REACTIVE OBJECTS*
+Data()
+Groupings()
+Table()
+Data2()
+Test() (incomplete implementation)
+Data3()
+minedAttributes()
+Hypotheses()
+Adjustment.Model()
+What.if()
+Settings()
+
+
+
+
 This is a piece of coding documentation/text dump/code dump
 
 <li><a href=https://github.com/tohweizhong/redhyte target=_blank>Source code on Github</a></li>
@@ -12,14 +28,6 @@ second column will be column of table
 
 tags$br(),tags$br(),tags$br(),tags$br(),tags$br(),
 tags$br(),tags$br(),tags$br(),tags$br(),tags$br(),
-
-*LIST OF REACTIVE OBJECTS*
-Data()
-Table()
-Data2()
-Test() (incomplete implementation)
-minedAttributes()
-
 
 Data() has stringsAsFactors=F, because if use TRUE,
 generated tables will consist of all classes on Atgt and/or Acmp,

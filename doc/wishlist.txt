@@ -2,17 +2,7 @@ WISHLIST
 
 #===CRUCIAL===#
 
--> mined context attributes table in context mining, name properly
-
--> play around with RF parameters
-
 -> find classic use-cases and examples datasets
-
--> one unified example for SP, hypo analysis, difflift, contri and indplift
-
--> test speeds on the classic datasets
-
--> using googleVis or similiar API/packages to do interactive graphics
 
 -> clean code
   $ make naming of variables, functions, modules more consistent
@@ -25,7 +15,7 @@ WISHLIST
 
 #===OPTIONAL===#
 
--> user tutorial
+-> using googleVis or similiar API/packages to do interactive graphics
 
 -> check for sufficient in mined hypothesis analysis
 

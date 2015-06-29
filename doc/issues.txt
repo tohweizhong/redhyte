@@ -1,1 +1,6 @@
 issues
+
+UI
+-> barplot for what-if analysis: stars cant be seen when probability is 1
+
+-> flush navlistPanel()
