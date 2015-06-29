@@ -1,8 +1,4 @@
-source("settings.R")
-library(shiny)
-library(shinyIncubator)
-library(shinythemes)
-library(randomForest)
+source("pkgs.R")
 
 shinyUI(fluidPage(
   #theme = shinytheme("cerulean"),
@@ -317,7 +313,8 @@ shinyUI(fluidPage(
                 #=============9. Attribute analysis===========#
                 #=============================================#
                 
-                tabPanel("9. Attributes analysis"),
+                tabPanel("9. Attributes analysis",
+                         uiOutput("many.tables")),
                 
                 #=============================================#
                 #=============10. Session log=================#

@@ -3279,7 +3279,24 @@ shinyServer(function(input,output,session){
   #=============9. Attribute analysis===========#
   #=============================================#
   
-  
+  output$many.tables<-renderUI({
+    
+    tablize <- function(attrs, df){
+      tables <- list()
+      for(an.attr in attrs){
+        a.table <- table(df[,c(an.attr,"cmp.class")])
+        tables[[as.character(an.attr)]] <-
+          print(xtable(a.table, caption = paste("Mined attribute:", an.attr)),
+                type = "html",
+                html.table.attributes = 'class="data table table-bordered table-condensed"',
+                caption.placement = "top")
+      }
+      return(lapply(tables,paste))
+    }
+    
+    out <- tablize(minedAttributes()[["mined.attr"]], Data2()[[1]])
+    return(div(HTML(out),class="shiny-html-output"))
+  })
   
   #=============================================#
   #============10. Session log==================#
