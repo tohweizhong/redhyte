@@ -2871,6 +2871,87 @@ shinyServer(function(input,output,session){
     }
   })
   
+  # comet chart
+  output$comet.chart <- renderPlot({
+    atgt <- input$targetAttr
+    acmp <- input$comparingAttr
+    
+    # take initial table
+    if(Table()[["tab.type"]] == "Contingency"){
+      tab <- Table()[[1]]
+      prop0 <- c(tab[1,1] / sum(tab[1,]), tab[2,1] / sum(tab[2,]))
+      sup0 <- c(sum(tab[1,]), sum(tab[2,]))
+    }
+    else if(Table()[["tab.type"]] == "Comparison"){
+      tab <- Table()[["cont.tab"]]
+      prop0 <- c(tab[1,1] / sum(tab[1,]), tab[2,1] / sum(tab[2,]))
+      sup0 <- c(sum(tab[1,]), sum(tab[2,]))
+    }
+    
+    # do subsetting
+    if(!is.null(minedAttributes()[["mined.attr"]])){
+      item<-input$analyse.which.item
+      Actx<-unlist(strsplit(item,"="))[1]
+      vctx<-unlist(strsplit(item,"="))[2]
+      
+      df<-Data3()[[1]][,c("tgt.class","cmp.class",Actx)]
+      
+      rows.to.prop<-which(df[,Actx] == vctx)
+      df.to.prop<-df[rows.to.prop,c("cmp.class","tgt.class")]
+      tab<-table(df.to.prop)
+      if(nrow(tab) * ncol(tab) == 4){
+        prop1 <- c(tab[1,1] / sum(tab[1,]), tab[2,1] / sum(tab[2,]))
+        sup1 <- c(sum(tab[1,]), sum(tab[2,]))
+      }
+    }
+    plot.dat<-cbind(prop0,sup0)
+    plot.dat<-data.frame(rbind(plot.dat,cbind(prop1,sup1)))
+    plot.dat<-cbind(plot.dat,
+                    c(Groupings()[[3]][1],
+                      Groupings()[[3]][2],
+                      Groupings()[[3]][1],
+                      Groupings()[[3]][2]),
+                    c(0,0,1,1))
+    colnames(plot.dat) <- c("Proportions","Support","Comparing.attribute.group","after")
+    
+    #library(ggplot2)
+    #library(grid)
+    th<-theme(
+      plot.title = element_text(face="bold", color = "black", size=12),
+      #legend.position=c(1,1),
+      legend.justification=c(1,1),
+      axis.title.x=element_text(face="bold",color="black",size=11),
+      axis.title.y=element_text(face="bold",color="black",size=11)
+    )
+    gg<-ggplot(data=plot.dat,aes(x=Support,y=Proportions))
+    gg<-gg+geom_point(data=plot.dat[c(1:2),],aes(x=Support,
+                                                 y=Proportions,
+                                                 colour=Comparing.attribute.group),
+                      size=5)
+    gg<-gg+geom_point(data=plot.dat[c(3:4),],aes(x=Support,
+                                                 y=Proportions,
+                                                 colour=Comparing.attribute.group),
+                      size=5)
+    gg<-gg+geom_segment(aes_string(x=plot.dat$Support[1],
+                                   y=plot.dat$Proportions[1],
+                                   xend=plot.dat$Support[3],
+                                   yend=plot.dat$Proportions[3]),
+                        arrow=arrow())
+    
+    gg<-gg+geom_segment(aes_string(x=plot.dat$Support[2],
+                                   y=plot.dat$Proportions[2],
+                                   xend=plot.dat$Support[4],
+                                   yend=plot.dat$Proportions[4]),
+                        arrow=arrow())
+    
+    
+    gg<-gg+ theme_bw()+th
+    print(plot.dat)
+    gg
+    
+    
+  })
+  
   # === Hypothesis mining metrics === #
   
   output$analyse.plot.metric.ctrl.one<-renderUI({
@@ -3000,7 +3081,8 @@ shinyServer(function(input,output,session){
     
     # next, construct the adjustment model
     # adjustment model has interaction terms
-    # adjustment model for numerical Atgt does not have Acmp or cmp.class
+    # **adjustment model for numerical Atgt does not have Acmp or cmp.class**
+    # **adjustment model for categorical has Acmp or cmp.class**
     if(type[Atgt] == "Num")
       adj.mod <- lm(itr.formula(vec = shr.attr, tgt = Atgt),
                     data = df)
@@ -3031,21 +3113,26 @@ shinyServer(function(input,output,session){
   # plots, initial test and "adjusted test"
   output$adj.plot.num.initial <- renderPlot({
     if(Adjustment.Model()[["mod.type"]] == "Num"){
+      Atgt <- input$targetAttr
+      Acmp <- input$comparingAttr
+      cmp.class1 <- Groupings()[["Acmp.names"]][1]
+      cmp.class2 <- Groupings()[["Acmp.names"]][2]
+      
       par(mfrow=c(2,2))
       plot.df<-Data2()[[1]]
       
       hist(plot.df[which(plot.df$cmp.class == "1"),input$targetAttr],
-           main = "Actual target attr, cmp.class 1",
-           xlab = "Target attr")
+           main = paste(Atgt, " for ", cmp.class1, sep = ""),
+           xlab = Atgt)
       plot(plot.df[which(plot.df$cmp.class == "1"),input$targetAttr],
-           main = "Actual target attr, cmp.class 1",
-           ylab = "Target attr")
+           main = paste(Atgt, " for ", cmp.class1, sep = ""),
+           ylab = Atgt)
       hist(plot.df[which(plot.df$cmp.class == "2"),input$targetAttr],
-           main = "Actual target attr, cmp.class 2",
-           xlab = "Target attr")
+           main = paste(Atgt, " for ", cmp.class2, sep = ""),
+           xlab = Atgt)
       plot(plot.df[which(plot.df$cmp.class == "2"),input$targetAttr],
-           main = "Actual target attr, cmp.class 2",
-           ylab = "Target attr")
+           main = paste(Atgt, " for ", cmp.class2, sep = ""),
+           ylab = Atgt)
       
     }
   })
@@ -3053,21 +3140,26 @@ shinyServer(function(input,output,session){
   output$adj.plot.num.delta <- renderPlot({
     if(Adjustment.Model()[["mod.type"]] == "Num"){
       
+      Atgt <- input$targetAttr
+      Acmp <- input$comparingAttr
+      cmp.class1 <- Groupings()[["Acmp.names"]][1]
+      cmp.class2 <- Groupings()[["Acmp.names"]][2]
+      
       par(mfrow=c(2,2))
       plot.df<-Adjustment.Model()[["adj.dataset"]]
       
       hist(plot.df[which(plot.df$cmp.class == "1"),"Atgt"],
-           main = "Delta, cmp.class 1",
+           main = paste("Adjustments for ", Atgt, ", ",cmp.class1),
            xlab = "Delta")
       plot(plot.df[which(plot.df$cmp.class == "1"),"Atgt"],
-           main = "Delta, cmp.class 2",
+           main = paste("Adjustments for ", Atgt, ", ",cmp.class1),
            ylab = "Delta")
       
       hist(plot.df[which(plot.df$cmp.class == "2"),"Atgt"],
-           main = "delta, cmp.class 2",
+           main = paste("Adjustments for ", Atgt, ", ",cmp.class2),
            xlab = "Delta")
       plot(plot.df[which(plot.df$cmp.class == "2"),"Atgt"],
-           main = "delta, cmp.class 2",
+           main = paste("Adjustments for ", Atgt, ", ",cmp.class2),
            ylab = "Delta")
     }
   })
@@ -3113,6 +3205,7 @@ shinyServer(function(input,output,session){
   # from stepwise regression
   output$adj.ctrl <- renderUI({
     if(Adjustment.Model()[["mod.type"]] == "Cate"){
+      
       shr.attr <- Adjustment.Model()[["shr.attr"]]
       prop.df <- Hypotheses() # to retrieve context items
       rows <- NULL
@@ -3276,7 +3369,7 @@ shinyServer(function(input,output,session){
   })
   
   #=============================================#
-  #=============9. Attribute analysis===========#
+  #=============9. Attributes analysis==========#
   #=============================================#
   
   output$many.tables<-renderUI({

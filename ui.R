@@ -276,6 +276,7 @@ shinyUI(fluidPage(
                                                verbatimTextOutput("analyse.hypothesis.statement"),
                                                tableOutput("analyse.cont.tab"),
                                                tableOutput("analyse.test"),
+                                               plotOutput("comet.chart"),
                                                #h5(textOutput("text.analyse.flat.table")),
                                                tableOutput("analyse.flat.table"),
                                                #h5(textOutput("text.analyse.flat.chi.sq")),
@@ -310,11 +311,15 @@ shinyUI(fluidPage(
                                       widths=c(2,10))),
                 
                 #=============================================#
-                #=============9. Attribute analysis===========#
+                #=============9. Attributes analysis==========#
                 #=============================================#
                 
                 tabPanel("9. Attributes analysis",
-                         uiOutput("many.tables")),
+                         navlistPanel(id="analysis",
+                                      tabPanel("Tables",
+                                        uiOutput("many.tables")),
+                                      tabPanel("Plots"),
+                                      widths=c(2,10))),
                 
                 #=============================================#
                 #=============10. Session log=================#
