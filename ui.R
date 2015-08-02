@@ -296,10 +296,28 @@ shinyUI(fluidPage(
                 #=============================================#
                 
                 tabPanel("8. Statistical adjustments",
+                         tags$h4("Accounting for mined context attributes using statistical adjustments"),
+                         tags$h5("In addition to inserting mined context items into the initial hypothesis to look out
+                                  for issues such as Simpson's Reversals, these mined context attributes can also be
+                                  held accounted for using regression models. The regression model is constructed using the
+                                  target attribute as the response variable and the mined context attributes as predictors. We call this resultant model the adjustment model."),
+                         tags$h5("For numerical target attributes, linear regression is used as the adjustment model. For
+                                  categorical target attributes, the logistic regression model is used instead."),
+                         tags$h5("To construct the adjustment model, Redhyte firsts uses the stepwise regression algorithm
+                                  to further shortlist, from the mined context attributes, a subset of them to be used for adjustments in the adjustment model.
+                                  Next, the adjustment model is constructed as follows:"),
+                         tags$h5(" (1) For numerical target attribute: Target attribute ~ Intercept + (Set of shortlisted mined context attributes)"),
+                         tags$h5(" (2) For categorical target attribute: Target attribute ~ Intercept +  Comparing attribute + (Set of shortlisted mined context attributes)"),
+                         tags$h5('After the construction of the adjustment model, (1) gives the required numerical adjustments (computed as actual values in dataset - fitted values from model) 
+                                  on the target attribute, to be plotted below,
+                                  while (2) provides a method to conduct "what-if" analysis in Redhyte (refer to "About Redhyte", under "About statistical adjustments").'),
                          navlistPanel(id="adj",
                                       tabPanel("Numerical target attribute",
+                                               tags$h5("Before adjustments:"),
                                                plotOutput("adj.plot.num.initial"),
+                                               tags$h5("Required adjustments computed using the adjustment model:"),
                                                plotOutput("adj.plot.num.delta"),
+                                               tags$h5("Statistical tests:"),
                                                tableOutput("adj.initialTest"),
                                                tableOutput("adj.test.num")),
                                       tabPanel("Categorical target attribute",
@@ -314,28 +332,29 @@ shinyUI(fluidPage(
                 #=============9. Attributes analysis==========#
                 #=============================================#
                 
-                tabPanel("9. Attributes analysis",
-                         navlistPanel(id="analysis",
-                                      tabPanel("Tables",
-                                        uiOutput("many.tables")),
-                                      tabPanel("Plots"),
-                                      widths=c(2,10))),
+                # not used
+                # tabPanel("9. Attributes analysis",
+                #          navlistPanel(id="analysis",
+                #                       tabPanel("Tables",
+                #                         uiOutput("many.tables")),
+                #                       tabPanel("Plots"),
+                #                       widths=c(2,10))),
                 
                 #=============================================#
-                #=============10. Session log=================#
+                #=============9. Session log=================#
                 #=============================================#
                 
-                tabPanel("10. Log",
+                tabPanel("9. Log",
                          tags$h4("Analysis session log"),
                          downloadButton("log.download","Download session log"),
                          tags$hr(),
                          tableOutput("session.log")),
                 
                 #=============================================#
-                #=============11. About Redhyte===============#
+                #=============10. About Redhyte===============#
                 #=============================================#
                 
-                tabPanel("11. About Redhyte",
+                tabPanel("10. About Redhyte",
                          navlistPanel(id="about",
                                       tabPanel("About",
                                                uiOutput("about.text")),
@@ -351,6 +370,8 @@ shinyUI(fluidPage(
                                                tags$h5("Context item: an attribute-value pair for a given categorical attribute, 
                                                        e.g. {Gender = Male}"),
                                                tags$h5("Context: the set of context items that is used in a hypothesis")),
+                                      tabPanel("About statistical adjustments",
+                                               includeMarkdown("markdown/adjustments.md")), # <- MIND = BLOWNED
                                       widths=c(2,10)))
     )#end tabset panel
     ,width=12) #end main panel, sidebarLayout

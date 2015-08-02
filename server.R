@@ -2914,8 +2914,6 @@ shinyServer(function(input,output,session){
                     c(0,0,1,1))
     colnames(plot.dat) <- c("Proportions","Support","Comparing.attribute.group","after")
     
-    #library(ggplot2)
-    #library(grid)
     th<-theme(
       plot.title = element_text(face="bold", color = "black", size=12),
       #legend.position=c(1,1),
@@ -3063,50 +3061,56 @@ shinyServer(function(input,output,session){
     #     print("after conversion to factors")
     #     str(df)
     
-    
+  
     # first step: stepwise regression on mined context attributes
     # excluding the comparing attribute
-    if(type[input$targetAttr] == "Num")
-      primary.mod <- lm(no.itr.formula(vec = mined.attr, tgt = Atgt),
-                        data = df)
-    else if(type[input$targetAttr] == "Cate")
-      primary.mod <- glm(no.itr.formula(vec = mined.attr, tgt = Atgt),
-                         family = binomial(link=logit), data = df)
-    str(primary.mod)
-    step.mod<-step(primary.mod,direction="backward")
-    
-    
-    # take the attributes shortlisted from stepwise regression
-    shr.attr <- colnames(step.mod$model)[-1] # remove target attribute
-    
-    # next, construct the adjustment model
-    # adjustment model has interaction terms
-    # **adjustment model for numerical Atgt does not have Acmp or cmp.class**
-    # **adjustment model for categorical has Acmp or cmp.class**
-    if(type[Atgt] == "Num")
-      adj.mod <- lm(itr.formula(vec = shr.attr, tgt = Atgt),
-                    data = df)
-    else if(type[Atgt] == "Cate")
-      adj.mod <- glm(itr.formula(vec = c(shr.attr,"cmp.class"), tgt = Atgt),
-                     family = binomial(link=logit), data = df)
-    
-    # for numerical target attribute, do predictions (adjusted values)
-    if(type[Atgt] == "Num"){
-      predicted <- predict(adj.mod,
-                           df[,-which(colnames(df) == Atgt)])
+    withProgress(session, {
+      setProgress(message="Working on statistical adjustments...",detail="This might take a while...")
+      if(type[input$targetAttr] == "Num")
+        primary.mod <- lm(no.itr.formula(vec = mined.attr, tgt = Atgt),
+                          data = df)
+      else if(type[input$targetAttr] == "Cate")
+        primary.mod <- glm(no.itr.formula(vec = mined.attr, tgt = Atgt),
+                           family = binomial(link=logit), data = df)
+      str(primary.mod)
+      step.mod<-step(primary.mod,direction="backward")
       
-      # 270615: take difference between observed and predicted
-      delta <- df[,Atgt] - predicted
-      delta <- data.frame(cbind(delta, df$cmp.class))
-      colnames(delta) <- c("Atgt","cmp.class")
-    }
-    else delta <- NA # no adjustments for categorical Atgt
-    
-    # return the adjustment model and the shortlisted attributes
-    return(list(adj.mod  = adj.mod,
-                mod.type = type[Atgt],
-                adj.dataset = delta, # only for numerical target attribute
-                shr.attr = shr.attr))
+      setProgress(message="Stepwise regression done!",detail = "Constructing adjustment model...")
+      
+      
+      
+      # take the attributes shortlisted from stepwise regression
+      shr.attr <- colnames(step.mod$model)[-1] # remove target attribute
+      
+      # next, construct the adjustment model
+      # adjustment model has interaction terms
+      # **adjustment model for numerical Atgt does not have Acmp or cmp.class**
+      # **adjustment model for categorical has Acmp or cmp.class**
+      if(type[Atgt] == "Num")
+        adj.mod <- lm(itr.formula(vec = shr.attr, tgt = Atgt),
+                      data = df)
+      else if(type[Atgt] == "Cate")
+        adj.mod <- glm(itr.formula(vec = c(shr.attr,"cmp.class"), tgt = Atgt),
+                       family = binomial(link=logit), data = df)
+      
+      # for numerical target attribute, do predictions (adjusted values)
+      if(type[Atgt] == "Num"){
+        predicted <- predict(adj.mod,
+                             df[,-which(colnames(df) == Atgt)])
+        
+        # 270615: take difference between observed and predicted
+        delta <- df[,Atgt] - predicted
+        delta <- data.frame(cbind(delta, df$cmp.class))
+        colnames(delta) <- c("Atgt","cmp.class")
+      }
+      else delta <- NA # no adjustments for categorical Atgt
+      
+      # return the adjustment model and the shortlisted attributes
+      return(list(adj.mod  = adj.mod,
+                  mod.type = type[Atgt],
+                  adj.dataset = delta, # only for numerical target attribute
+                  shr.attr = shr.attr))
+    })
   })
   
   # for numerical target attribute
@@ -3372,9 +3376,10 @@ shinyServer(function(input,output,session){
   #=============9. Attributes analysis==========#
   #=============================================#
   
+  # NOT USED
   output$many.tables<-renderUI({
     
-    tablize <- function(attrs, df){
+    tableize <- function(attrs, df){
       tables <- list()
       for(an.attr in attrs){
         a.table <- table(df[,c(an.attr,"cmp.class")])
@@ -3387,7 +3392,7 @@ shinyServer(function(input,output,session){
       return(lapply(tables,paste))
     }
     
-    out <- tablize(minedAttributes()[["mined.attr"]], Data2()[[1]])
+    out <- tableize(minedAttributes()[["mined.attr"]], Data2()[[1]])
     return(div(HTML(out),class="shiny-html-output"))
   })
   
