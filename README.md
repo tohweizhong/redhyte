@@ -17,4 +17,4 @@ A copy of the user tutorial is available [here](https://dl.dropboxusercontent.co
 
 Deck used for [8th Asian Conference on Intelligent Information and Database Systems](https://aciids.pwr.edu.pl/index.php#about), 14-16 March 2016, Da Nang, Vietnam available [here](http://www.slideshare.net/tohweizhong/redhyte-towards-a-selfdiagnosing-selfcorrecting-and-helpful-analytic-platform).
 
-Conference proceedings available [here](http://link.springer.com/book/10.1007%2F978-3-662-49390-8).
+Conference proceedings available [here](http://link.springer.com/chapter/10.1007/978-3-662-49390-8_1).
