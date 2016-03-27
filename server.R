@@ -3575,10 +3575,24 @@ shinyServer(function(input,output,session){
           and is part of Toh's undergraduate Honours work.
       </strong></h5>
 
+      <h4>When?</h4>
+      <h5><strong>
+          The most recent stable version of Redhyte, redhyte1.0, was completed on the 8th April 2015.
+                    
+          Redhyte was presented during the <a href=https://aciids.pwr.edu.pl/ target=_blank>8th Asian Conference on Intelligent Information and Database Systems (ACIIDS 2016)</a>, 14th to 16th March 2016 at Da Nang, Vietnam.
+      </strong></h5>
+                    
       <h4>Where?</h4>
       <font size=3><ul>
         <li><a href=https://tohweizhong.shinyapps.io/redhyte/ target=_blank>Redhyte web app</a></li>
         <li><a href=https://github.com/tohweizhong/redhyte target=_blank>GitHub repo</a></li>
+                    
+        <li><a href=https://www.comp.nus.edu.sg/~wongls/psZ/tohweizhong-fyp2015.pdf target=_blank>Honours thesis</a></li>
+        <li><a href=https://dl.dropboxusercontent.com/u/36842028/homepage/pdf/redhyte%20tutorial_linked%20to%20homepage.pdf target=_blank>User tutorial (WIP)</a></li>
+                    
+        <li><a href=http://link.springer.com/chapter/10.1007/978-3-662-49390-8_1 target=_blank>ACIIDS 2016 conference proceedings</a></li>
+        <li><a href=http://www.slideshare.net/tohweizhong/redhyte-towards-a-selfdiagnosing-selfcorrecting-and-helpful-analytic-platform target=_blank>ACIIDS 2016 conference slide deck</a></li>
+                    
 
         <li>Example datasets to try Redhyte out with:</li>
         <ul>
